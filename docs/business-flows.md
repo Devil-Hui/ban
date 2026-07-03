@@ -1,6 +1,6 @@
-# 排班小程序 — 完整业务流程文档 v3.1
+# 排班小程序 — 完整业务流程文档 v3.2
 
-> 版本: v3.1 | 日期: 2026-07-04 | 10 幕推演 + 架构深化 + 软删除确认
+> 版本: v3.2 | 日期: 2026-07-04 | 状态机细化 + 导航精简 + AI Layer + 审计全链路
 
 ---
 
@@ -207,8 +207,9 @@
 - period_name (varchar(32))                        -- 节次名称
 - group_name (varchar(100))                        -- 分组名（冗余，加速查询）
 - is_confirmed (boolean, default false)            -- 是否已查收确认
+- is_active (boolean, default true)                -- 软删除标记（踢人后设为 false）
 - created_at
-索引：(user_id, date) 联合索引
+索引：(user_id, date, is_active) 联合索引
 ```
 
 ### 2.11 audit_logs（审计日志表，新增）
@@ -527,8 +528,9 @@ UPDATE task_responses SET is_valid = false
 WHERE user_id = $target_uid 
   AND task_id IN (SELECT id FROM tasks WHERE group_id = $gid AND status IN ('collecting','reviewing','adjusting','published'));
 
--- 4. 从 user_assignments 快照中移除
-DELETE FROM user_assignments 
+-- 4. 从 user_assignments 快照中标记无效（保留审计链路）
+UPDATE user_assignments SET is_active = false
+WHERE user_id = $target_uid
 WHERE user_id = $target_uid 
   AND task_id IN (SELECT id FROM tasks WHERE group_id = $gid);
 
@@ -565,6 +567,26 @@ WHERE EXISTS (SELECT 1 FROM tasks WHERE group_id = $gid AND status IN ('reviewin
 
 **写入表**：无（仅展示）
 **触发副作用**：无
+
+### 10.1 share_token 生成与校验逻辑
+
+```
+生成时机：发布者点击"正式发布"时
+  ↓
+  token = UUID.v4()
+  UPDATE tasks SET share_token = token WHERE id = $tid
+  ↓
+分享链接: /pages/preview/preview?task_id=$tid&share_token=$token
+
+校验逻辑 (云函数预览接口):
+  1. 查 tasks WHERE id = $tid AND share_token = $token
+  2. 不存在 → 403 "无效链接"
+  3. published_at + 7天 < NOW() → 410 "链接已过期"
+  4. 存在且未过期 → 返回脱敏排班数据
+```
+
+> **安全要点**: 不直接用 task_id 做预览参数。share_token 绑定任务，不可遍历。
+> 每次重新发布（published → adjusting → re-published）时自动刷新 share_token，旧链接失效。
 
 ---
 
@@ -611,18 +633,47 @@ VALUES ('user', $mid, 'TEMPLATE_REOPEN', $payload);
 
 ---
 
-## 四、任务状态机（修复 #11）
+## 四、任务状态机（v3.2 细化：reviewing/generating 拆分 + draft 操作）
 
 ```
-draft (草稿)
-  └─→ collecting (收集中)                            [发布者点击发布]
-        ├─→ reviewing (审核中/方案生成中)              [截止时间到]
-        │     ├─→ published (已发布)                  [发布者确认并发布]
-        │     │     ├─→ adjusting (调整中)            [发布者处理异议]
-        │     │     │     └─→ published (重新发布)     [调整完成]
-        │     │     └─→ archived (已归档)              [发布者手动归档]
-        │     └─→ collecting (重新收集)                [发布者延长截止]
-        └─→ archived (取消)                            [发布者取消任务]
+                ┌── [发布者废弃] → archived (废弃)
+                │
+draft (草稿) ───┤
+                │
+                ├── [发布者点击发布] → collecting (收集中)
+                │
+                │     ├── [截止时间到] → reviewing (等待发布者生成方案)
+                │     │
+                │     │     ├── [发布者点击生成方案] → generating (云函数计算中)
+                │     │     │         │
+                │     │     │         └── [计算完成] → reviewing (预览方案)
+                │     │     │
+                │     │     ├── [发布者确认并发布] → published (已发布)
+                │     │     │         │
+                │     │     │         ├── [发布者处理异议] → adjusting (调整中)
+                │     │     │         │         │
+                │     │     │         │         └── [调整完成] → published (重新发布)
+                │     │     │         │
+                │     │     │         └── [发布者手动归档] → archived (已归档)
+                │     │     │
+                │     │     └── [发布者延长截止] → collecting (重新收集)
+                │     │
+                │     └── [发布者取消] → archived (废弃)
+                │
+                └── [发布者编辑后发布] → collecting (收集中)
+```
+
+### 4.1 状态职责单一化
+
+| 状态 | 职责 | 谁触发 | 可执行操作 |
+|------|------|--------|-----------|
+| `draft` | 草稿 | 发布者创建 | 编辑/删除/发布/废弃 |
+| `collecting` | 收集空闲时间 | 发布者发布任务 | 截止时间到→reviewing |
+| `reviewing` | 等待/预览方案 | 截止到 / 云函数完成 | 生成方案/确认发布/延长截止 |
+| `generating` | 云函数计算中 | 发布者点击生成 | 仅等待（异步，前端轮询） |
+| `published` | 已发布 | 发布者确认 | 异议处理/归档 |
+| `adjusting` | 处理异议中 | 发布者接受异议 | 编辑→重新发布 |
+| `archived` | 已归档 | 发布者归档 | 不可操作
 ```
 
 ---
@@ -794,11 +845,72 @@ WHERE gm.user_id = $current_uid AND gm.status = 'active'
 |------|------|---------|
 | **云端优先** | 云函数调用视觉小模型（WeCLIP/MiniCPM-V） | 正常网络环境，3-5 秒返回 |
 | **本地降级** | 手动拖拽录入（course_tables.source='manual'） | 识别失败/无网络时 |
-| **模型路径** | 模型文件存云存储，云函数通过 `require` 路径加载 | 本地不需下载模型 |
+| **模型部署** | CloudBase 云函数 Layer（层）打包 | 随实例缓存，冷启动后零延时 |
+
+### 7.4.1 模型部署策略（CloudBase Layer）
+
+```
+模型文件 → 打包成 Layer → 随云函数部署
+   ↓
+云函数冷启动: Layer 自动挂载到 /opt
+   ↓
+首次调用: 模型从 Layer 加载到内存 (~200ms)
+   ↓
+实例存活期内: 后续调用零延时（模型已驻留内存）
+```
+
+**为什么不用云存储加载？**
+- 云存储每次冷启动按需下载：1-2 秒延时
+- Layer 随实例分发：首次加载后，函数实例保活期内所有请求直接命中内存缓存
+
+**体积限制**：
+- Layer 上限 50MB（压缩后）
+- 若模型超过 50MB → 改用腾讯云 OCR API 直接调用（不走本地推理）
+- 推荐 MVP 方案：**OCR API（腾讯云）+ 简单布局规则**（不依赖大模型）
+
+### 7.4.2 图片安全审核
+
+所有用户上传的课表图片必须经过：
+```
+wx.chooseImage → 云存储上传临时 URL
+  → security.imgSecCheck (云调用) 
+    → 通过 → 进入 AI 识别 / 云存储持久化
+    → 不通过 → 提示"图片违规，请重新上传"
+```
+
+### 7.4.3 排班方案前置校验
+
+云函数 `schedule-engine` 在生成方案前必须校验：
+
+```javascript
+function preCheck(task, responses) {
+  const slots = generateAllSlots(task.date_range_start, task.date_range_end, task.periods);
+  const minPeople = task.constraints.slot_min_people || 1;
+  
+  const insufficient = []; // 人数不足的时段
+  for (const slot of slots) {
+    const availableCount = responses.filter(r => 
+      r.available_slots.some(s => s.date === slot.date && s.period_id === slot.periodId)
+    ).length;
+    
+    if (availableCount < minPeople) {
+      insufficient.push({ ...slot, available: availableCount, needed: minPeople });
+    }
+  }
+  
+  if (insufficient.length > 0) {
+    return { pass: false, insufficient };
+    // 前端提示："10月3日第1-2节只有1人可用，需要至少2人"
+    // 允许发布者: (A)放宽约束 (B)手动补人 (C)忽略继续生成
+  }
+  return { pass: true };
+}
+```
 
 ```
 AI 识别流程:
   [用户上传课表图片]
+    → imgSecCheck 安全审核（必须）
     → 云存储保存原图 (image_url)
     → 云函数 ai-vision:
         1. OCR 文字识别（腾讯云 OCR API）
@@ -810,7 +922,40 @@ AI 识别流程:
 
 ---
 
-## 八、低负载设计原则
+## 八、导航与页面结构
+
+### 8.1 底部 TabBar（4 项精简）
+
+| Tab | 中文 | 功能 |
+|-----|------|------|
+| `index` | 首页 | 分组卡片列表 + 身份标签 |
+| `schedule` | 日程 | 月历视图 + 任务列表 |
+| `task` | 任务 | 根据角色动态显示：发布者=创建/管理、加入者=标记/查收 |
+| `profile` | 个人中心 | 分组管理/历史/课表/推送设置 |
+
+### 8.2 个人中心（profile 页）
+
+```
+┌────────────────────┐
+│  头像 + 昵称        │
+│  我的分组列表        │  ← 可退出（二次确认 → status='left'）
+│  历史排班记录        │  ← 时间轴展示，支持按年月筛选
+│  我的课表管理        │  ← 多学期管理，单双周 Switch
+│  推送设置            │  ← 订阅消息开关
+│  关于小程序          │
+└────────────────────┘
+```
+
+> **退出分组** = 软删除：`UPDATE group_members SET status='left'`，历史数据全保留。
+> 再入：再次输入邀请码 → 查到 status='left' → UPDATE active。
+
+### 8.3 模板/AI 识别不占独立 Tab
+
+模板配置和 AI 识别作为任务流中的二级页面，在创建任务和标记空闲时按需打开。不占独立 Tab，保持核心动线简洁。
+
+---
+
+## 九、低负载设计原则
 
 1. **算法后移至云函数**：客户端只发参数，不参与计算
 2. **主表只索引不冗余**：去掉 response_count，用 COUNT 查询
@@ -821,7 +966,7 @@ AI 识别流程:
 
 ---
 
-## 九、本次修订摘要
+## 十、本次修订摘要
 
 ### v2.0 → v3.0 (13 项反馈全面修正)
 
@@ -831,7 +976,7 @@ AI 识别流程:
 | 2 | 🔴 | 排班算法：从客户端移至云函数，随机抽取 |
 | 3 | 🔴 | 截止时间：发布者强制设定，去除随机抖动 |
 | 4 | 🔴 | 异议处理：增加 adjusting 状态 + 重新发布 + 归档 |
-| 5 | 🔴 | 踢人清理：软删除 task_responses (is_valid=false) + 清 user_assignments |
+| 5 | 🔴 | 踢人清理：软删除 task_responses (is_valid=false) + user_assignments (is_active=false) |
 | 6 | 🔴 | 手机号权限：独立 API + AES 加密 + 脱敏显示 |
 | 7 | 🟡 | 课表入口：手动拖拽 + "从课表导入"，合并标记页 |
 | 8 | 🟡 | 日程同步：新增 user_assignments 快照表 |
@@ -843,14 +988,18 @@ AI 识别流程:
 | — | 🆕 | 审计日志：新增 audit_logs 表 |
 | — | 🆕 | 方案生成：纯随机抽取 + 发布者可手动指定人选 |
 
-### v3.0 → v3.1 (10 幕推演 + 架构深化)
+### v3.1 → v3.2 (状态机细化 + 审计全链路 + 导航精简)
 
 | # | 变更 |
 |---|------|
-| 🆕 | tasks 新增 `previous_schemes`（adjusting 回滚备份）+ `share_token`（预览安全） |
-| 🆕 | 系统架构四层分离（表现层/接口层/服务层/数据层）|
-| 🆕 | 软删除重入逻辑正式确认：`kicked/left → 查黑名单 → UPDATE active` |
-| 🆕 | 首页卡片查询流：`groups JOIN group_members` 返回角色标签 |
-| 🆕 | AI 视觉识别策略：云端视觉小模型 + 手动拖拽降级，模型存云存储路径加载 |
-| 🔧 | group_members 唯一索引确认：(group_id, user_id) 联合唯一 |
-| 🔧 | task_responses 唯一索引确认：(task_id, user_id) 联合唯一 |
+| 🔴 | 状态机拆分: drafting 可编辑/废弃；reviewing/generating 职责分离 |
+| 🔴 | user_assignments 改用 is_active 软删除（保留审计链路，不用物理 DELETE） |
+| 🟡 | share_token 生成与校验逻辑：UUID + 7 天过期 + 重发布刷新 |
+| 🟡 | AI 模型部署改为 CloudBase Layer（替代云存储加载，消除冷启动延迟） |
+| 🟡 | 排班方案生成前置校验：人数不足时提示发布者（放宽/补人/忽略） |
+| 🟡 | 图片上传增加 security.imgSecCheck 云调用安全审核 |
+| 🟢 | 导航精简为 4 Tab：首页/日程/任务/个人中心 |
+| 🟢 | 个人中心明确：分组管理（可退出再入）、历史排班、课表管理、推送设置 |
+| 🟢 | 周范围：周一~周日默认，单双周 Switch，支持自定义日期 |
+| 🟢 | 通知机制：4 节点（创建/截止前/发布/异议更新），关键页面引导订阅 |
+| 🟢 | MVP AI：OCR API + 简单布局规则，非占位页 |
