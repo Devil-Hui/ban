@@ -96,6 +96,7 @@
 - phone (varchar(80), nullable)                   -- 手机号（AES 加密存储）
 - role_in_group (enum: 'publisher', 'member', default 'member')
 - status (enum: 'active', 'left', 'kicked', default 'active')
+- is_blacklisted (tinyint, default 0)             -- 是否被拉黑（拉黑后无法通过邀请码重新加入）
 - joined_at, left_at, kicked_at, kicked_reason
 索引：(group_id, user_id) 联合唯一索引
 ```
@@ -529,7 +530,7 @@ WHERE group_id = $gid AND user_id = $operator_uid AND role_in_group = 'publisher
 
 -- 2. 踢出
 UPDATE group_members 
-SET status = 'kicked', kicked_at = NOW(), kicked_reason = $reason
+SET status = 'kicked', kicked_at = NOW(), kicked_reason = $reason, is_blacklisted = $is_blacklisted
 WHERE group_id = $gid AND user_id = $target_uid;
 
 -- 3. 软删除该成员在所有未结束任务中的空闲标记
@@ -540,7 +541,6 @@ WHERE user_id = $target_uid
 -- 4. 从 user_assignments 快照中标记无效（保留审计链路）
 UPDATE user_assignments SET is_active = false
 WHERE user_id = $target_uid
-WHERE user_id = $target_uid 
   AND task_id IN (SELECT id FROM tasks WHERE group_id = $gid);
 
 -- 5. 审计日志
@@ -873,7 +873,7 @@ WHERE gm.user_id = $current_uid AND gm.status = 'active'
 用户点击任意卡片 → wx.setStorageSync('activeGroupId', card.id) → 进入该分组上下文
 ```
 
-### 7.4 AI 识别策略（腾讯云 OCR API）
+### 8.4 AI 识别策略（腾讯云 OCR API）
 
 | 层级 | 方案 | 适用场景 |
 |------|------|---------|
@@ -882,7 +882,7 @@ WHERE gm.user_id = $current_uid AND gm.status = 'active'
 | **本地降级** | 手动拖拽录入（personal_calendars.source='manual'） | API 失败 / 结果不可解析 |
 | **模型部署** | 无本地模型，纯 API 调用 | 无需 GPU，无需 Layer |
 
-### 7.4.1 识别流程
+### 8.4.1 识别流程
 
 ```
 用户上传图片
@@ -903,7 +903,7 @@ WHERE gm.user_id = $current_uid AND gm.status = 'active'
   失败 → 前端展示"试试手动输入"按钮 → 一键切换拖拽网格
 ```
 
-### 7.4.2 图片安全审核
+### 8.4.2 图片安全审核
 
 ```
 wx.chooseImage (仅拍照/相册，不支持聊天记录转发)
@@ -913,7 +913,7 @@ wx.chooseImage (仅拍照/相册，不支持聊天记录转发)
     → 不通过 → 提示"图片违规，请重新上传"
 ```
 
-### 7.4.3 排班方案前置校验
+### 8.4.3 排班方案前置校验
 
 云函数 `schedule-engine` 在生成方案前必须校验：
 
