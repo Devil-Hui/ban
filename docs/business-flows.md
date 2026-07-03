@@ -1,6 +1,6 @@
-# 排班小程序 — 完整业务流程文档 v3.0
+# 排班小程序 — 完整业务流程文档 v3.1
 
-> 版本: v3.0 | 日期: 2026-07-03 | 基于 13 项反馈全面修正
+> 版本: v3.1 | 日期: 2026-07-04 | 10 幕推演 + 架构深化 + 软删除确认
 
 ---
 
@@ -113,9 +113,11 @@
 - status (enum: 'draft', 'collecting', 'reviewing', 'adjusting', 'published', 'archived')
 - publisher_id (bigint, FK->users.id)             -- 发布者
 - selected_scheme_id (bigint, nullable)
-- final_schedules (json)                           -- 最终排班结果
+- final_schedules (json)                           -- 当前排班结果
+- previous_schemes (json, nullable)                -- 上一版排班结果（adjusting 回滚用）
+- share_token (varchar(64), nullable, indexed)     -- 分享预览 token（7天有效）
 - created_at, updated_at, published_at
-索引：(group_id, status), publisher_id, deadline
+索引：(group_id, status), publisher_id, deadline, share_token
 ```
 
 ### 2.5 task_responses（空闲时间/可值班标记表）
@@ -131,19 +133,25 @@
 索引：(task_id, user_id) 联合唯一索引
 ```
 
-### 2.6 course_tables（用户手动课表，AI 降级后）
+### 2.6 course_tables（用户课表，支持手动+视觉识别双入口）
 ```
 字段：
 - id (PK)
 - user_id (bigint, FK->users.id, indexed)
-- semester_name (varchar(100))                    -- 学期名称
+- source (enum: 'manual', 'ai_vision', default 'manual')  -- 录入来源
+- image_url (varchar(255), nullable)               -- AI 识别时上传的原图
+- semester_name (varchar(100))                      -- 学期名称
 - week_pattern (enum: 'current', 'odd', 'even', default 'current')
-- slots (json)                                     -- 手动拖拽标记的课表
+- slots (json)                                       -- 课表数据
   [{day_of_week: 1, periods: [1,2,3], name: "高等数学", location: ""}]
+- ai_confidence (decimal(3,2), nullable)             -- AI 识别置信度（仅 source='ai_vision'）
 - created_at, updated_at
 索引：user_id 索引
-注意："AI帮识别"首期仅为占位页，课表功能降级为手动拖拽录入
 ```
+
+> **AI 识别策略**：接入轻量视觉小模型（如微信 WeCLIP 或 MiniCPM-V），
+> 上传课表图片后云端 OCR + 布局分析 → 返回 3 种样式方案 → 用户三选一确认。
+> 识别失败时降级为手动拖拽录入，不阻塞用户。
 
 ### 2.7 task_receipts（任务查收表）
 ```
@@ -671,7 +679,138 @@ draft (草稿)
 
 ---
 
-## 七、低负载设计原则
+## 七、系统架构（四层分离）
+
+```
+┌──────────────────────────────────────────────────┐
+│             表现层 (Presentation)                  │
+│  微信小程序原生 (WXML/WXSS/JS)                      │
+│  TDesign WeChat 组件库                             │
+│  自定义组件: 网格标记、日历视图、邀请码卡片             │
+└─────────────────┬────────────────────────────────┘
+                  │ HTTPS + JWT
+┌─────────────────▼────────────────────────────────┐
+│             接口层 (API Gateway)                    │
+│  CloudBase HTTP 云函数 + 访问鉴权                    │
+│  接口鉴权: JWT (openid + 角色)                       │
+│  参数校验、脱敏、限流                                 │
+└─────────────────┬────────────────────────────────┘
+                  │
+┌─────────────────▼────────────────────────────────┐
+│            服务层 (Business Logic)                  │
+│  云函数聚合:                                        │
+│  - user-service     (登录/资料)                    │
+│  - group-service    (创建/加入/踢人)                │
+│  - task-service     (任务创建/收集/排班)             │
+│  - schedule-engine  (排班算法，独立云函数)            │
+│  - ai-vision        (课表视觉识别，独立云函数)        │
+│  - notification     (消息推送模板管理)               │
+└─────────────────┬────────────────────────────────┘
+                  │
+┌─────────────────▼────────────────────────────────┐
+│             数据层 (Data Layer)                     │
+│  CloudBase MySQL (按 2.1-2.11 表设计)               │
+│  云存储: 课表图片、用户头像                           │
+│  定时触发器: 每 30s 扫 countdowns 关闭任务            │
+│  notify_queue: 异步推送队列                          │
+└──────────────────────────────────────────────────┘
+```
+
+### 7.1 核心设计决策
+
+| 决策 | 方案 | 理由 |
+|------|------|------|
+| 数据库 | CloudBase MySQL | 排班 JOIN 多，关系型最稳 |
+| 算法位置 | 独立云函数 schedule-engine | 可独立升级，不影响业务 |
+| 存储 | 最小化冗余 | 去 response_count，快照表读多写少 |
+| 安全 | 手机号 AES-256 + 脱敏 | 预览页只返脱敏数据 |
+| 审计 | audit_logs 全量记录 | H5 后台可查所有敏感操作 |
+| 扩展性 | constraints JSON 预留 | 加"技能排班""连续上限"只需改算法 |
+
+### 7.2 软删除与成员重入（专家确认）
+
+**结论：软删除保留，物理删除不用。**
+
+**场景演示**：
+```
+小红被踢出 → group_members.status = 'kicked' (不删行)
+  ↓
+小红再输入邀请码 → 查到 status='kicked'
+  ├─ 未在黑名单 → UPDATE status='active', cleared_at=NULL（重新激活）
+  └─ 在黑名单 → 提示"您已被踢出，需联系发布者"
+
+小红主动退出 → status = 'left'
+  ↓
+小红再输入邀请码 → 查到 status='left'
+  └─ 系统判断未拉黑 → UPDATE status='active'（重新激活）
+```
+
+**物理删除的三大危害**：
+1. `task_responses` 和 `user_assignments` 的 `user_id` 变孤儿 → 排班历史显示"已失效用户"
+2. `audit_logs` 的 `target_id` 无法关联 → 审计断链
+3. 被踢用户拿到邀请码可悄无声息重新 INSERT → 发布者无法察觉历史
+
+**group_members 重入逻辑伪代码**：
+```sql
+IF EXISTS (SELECT 1 FROM group_members WHERE group_id=$gid AND user_id=$uid) THEN
+  IF status IN ('kicked','left') AND NOT is_blacklisted THEN
+    UPDATE SET status='active', kicked_at=NULL, left_at=NULL;
+    -- 成功重新加入，历史保留
+  ELSE
+    -- 拒绝，提示"需联系发布者"
+  END IF;
+ELSE
+  INSERT INTO group_members (group_id, user_id, display_name, role_in_group, status)
+  VALUES ($gid, $uid, $name, 'member', 'active');
+END IF;
+```
+
+### 7.3 首页分组卡片查询流（跨分组身份切换）
+
+```
+用户进入首页
+  ↓
+SELECT g.id, g.name, g.invite_code, gm.role_in_group
+FROM groups g
+JOIN group_members gm ON g.id = gm.group_id
+WHERE gm.user_id = $current_uid AND gm.status = 'active'
+  ↓
+返回:
+  [
+    { id: "G001", name: "计科202值班群", role: "publisher", invite_code: "X9K2M" },
+    { id: "G002", name: "学生会值班",   role: "member",    invite_code: null }
+  ]
+  ↓
+前端渲染卡片:
+  卡片1: "计科202值班群" [发布者] [管理▶][新建任务+]
+  卡片2: "学生会值班"   [成员]   [标记空闲▷]
+  ↓
+用户点击任意卡片 → wx.setStorageSync('activeGroupId', card.id) → 进入该分组上下文
+```
+
+### 7.4 AI 视觉识别模型策略
+
+| 层级 | 方案 | 适用场景 |
+|------|------|---------|
+| **云端优先** | 云函数调用视觉小模型（WeCLIP/MiniCPM-V） | 正常网络环境，3-5 秒返回 |
+| **本地降级** | 手动拖拽录入（course_tables.source='manual'） | 识别失败/无网络时 |
+| **模型路径** | 模型文件存云存储，云函数通过 `require` 路径加载 | 本地不需下载模型 |
+
+```
+AI 识别流程:
+  [用户上传课表图片]
+    → 云存储保存原图 (image_url)
+    → 云函数 ai-vision:
+        1. OCR 文字识别（腾讯云 OCR API）
+        2. 布局分析（视觉小模型定位行列关系）
+        3. 输出 3 种样式方案
+    → 成功: 返回方案 → 用户三选一 → 写入 course_tables (source='ai_vision')
+    → 失败: 降级提示 → 用户手动拖拽 → 写入 course_tables (source='manual')
+```
+
+---
+
+## 八、低负载设计原则
 
 1. **算法后移至云函数**：客户端只发参数，不参与计算
 2. **主表只索引不冗余**：去掉 response_count，用 COUNT 查询
@@ -682,7 +821,9 @@ draft (草稿)
 
 ---
 
-## 八、本次修订摘要 (v2.0 → v3.0)
+## 九、本次修订摘要
+
+### v2.0 → v3.0 (13 项反馈全面修正)
 
 | # | 类型 | 变更 |
 |---|------|------|
@@ -692,12 +833,24 @@ draft (草稿)
 | 4 | 🔴 | 异议处理：增加 adjusting 状态 + 重新发布 + 归档 |
 | 5 | 🔴 | 踢人清理：软删除 task_responses (is_valid=false) + 清 user_assignments |
 | 6 | 🔴 | 手机号权限：独立 API + AES 加密 + 脱敏显示 |
-| 7 | 🟡 | AI 降级：去 AI 识别，改为手动拖拽标记 + 课表导入 |
+| 7 | 🟡 | 课表入口：手动拖拽 + "从课表导入"，合并标记页 |
 | 8 | 🟡 | 日程同步：新增 user_assignments 快照表 |
-| 9 | 🟡 | 身份切换：首页展示分组卡片 + 角色标签，去全局切换 |
+| 9 | 🟡 | 身份切换：首页卡片 + 角色标签，去全局切换 |
 | 10 | 🟡 | 预览隐私：预览页只显示姓名+时段，加 7 天有效期 |
 | 11 | 🟢 | 状态机：增加 adjusting 和 collecting(重开) 分支 |
-| 12 | 🟢 | 约束字段：tasks.constraints 新增 slot_min_people 最多/日/周等 |
+| 12 | 🟢 | 约束字段：tasks.constraints 新增 slot_min_people/日/周 |
 | 13 | 🟢 | 计数冗余：删 response_count，用 COUNT 替代 |
 | — | 🆕 | 审计日志：新增 audit_logs 表 |
 | — | 🆕 | 方案生成：纯随机抽取 + 发布者可手动指定人选 |
+
+### v3.0 → v3.1 (10 幕推演 + 架构深化)
+
+| # | 变更 |
+|---|------|
+| 🆕 | tasks 新增 `previous_schemes`（adjusting 回滚备份）+ `share_token`（预览安全） |
+| 🆕 | 系统架构四层分离（表现层/接口层/服务层/数据层）|
+| 🆕 | 软删除重入逻辑正式确认：`kicked/left → 查黑名单 → UPDATE active` |
+| 🆕 | 首页卡片查询流：`groups JOIN group_members` 返回角色标签 |
+| 🆕 | AI 视觉识别策略：云端视觉小模型 + 手动拖拽降级，模型存云存储路径加载 |
+| 🔧 | group_members 唯一索引确认：(group_id, user_id) 联合唯一 |
+| 🔧 | task_responses 唯一索引确认：(task_id, user_id) 联合唯一 |
