@@ -1,10 +1,19 @@
-# 排班小程序 — 完整业务流程文档 v3.2
+# 排班小程序 — 完整业务流程文档 v3.3
 
-> 版本: v3.2 | 日期: 2026-07-04 | 状态机细化 + 导航精简 + AI Layer + 审计全链路
+> 版本: v3.3 | 日期: 2026-07-04 | 场景泛化 + OCR API + 隐私边界 + 降级闭环
 
 ---
 
-## 一、术语定义（修正后）
+## 一、术语定义（最终收敛）
+
+### 产品定位
+**通用轻量协同排班平台**。不局限于大学场景。"节次/课表"仅是一种预置模板，
+底层模型为可配置时间段 + 可选个人日历。适配企业轮班、志愿者排班、社团值班等场景。
+
+### 资源基线
+**1核2G 可平滑支撑全部服务**。CloudBase 云函数按量计费、自动伸缩，
+单实例 512MB~1GB 即可。定时任务、消息队列、AI 识图均走云服务，无需常驻服务器。
+自建 Node.js 后端 2核4G 也可承载万级用户日常使用。
 
 ### 四个角色，两端分离
 
@@ -70,7 +79,7 @@
 - created_by (bigint, FK->users.id, indexed)     -- 创建者 = 发布者
 - mode (enum: 'timeline', 'shift', 'custom', default 'shift')
 - time_config (json)                              -- 节次/时间段 JSON
-- week_pattern (enum: 'natural', 'odd', 'even', default 'natural')
+- cycle_rule (enum: 'weekly', 'odd_weekly', 'even_weekly', 'custom', default 'weekly')
 - status (enum: 'active', 'archived', default 'active')
 - created_at, updated_at
 索引：invite_code 唯一索引, created_by 索引
@@ -100,9 +109,9 @@
 - description (text)
 - date_range_start (date, indexed)
 - date_range_end (date)
-- week_pattern (enum: 'natural', 'odd', 'even', default 'natural')
+- cycle_rule (enum: 'weekly', 'odd_weekly', 'even_weekly', 'custom', default 'weekly')
 - template_style (tinyint)                        -- 样式 1/2/3
-- periods (json)                                  -- 节次定义 [{id, name, start, end}]
+- periods (json)                                  -- 班次定义 [{id, name, start, end}]，支持任意命名（如"早班""晚班""A班"）
 - constraints (json)                               -- 排班约束
   {
     "slot_min_people": 1,                         -- 每时段最少值班人数
@@ -133,25 +142,25 @@
 索引：(task_id, user_id) 联合唯一索引
 ```
 
-### 2.6 course_tables（用户课表，支持手动+视觉识别双入口）
+### 2.6 personal_calendars（个人日历，原 course_tables 重命名）
 ```
 字段：
 - id (PK)
 - user_id (bigint, FK->users.id, indexed)
 - source (enum: 'manual', 'ai_vision', default 'manual')  -- 录入来源
 - image_url (varchar(255), nullable)               -- AI 识别时上传的原图
-- semester_name (varchar(100))                      -- 学期名称
-- week_pattern (enum: 'current', 'odd', 'even', default 'current')
-- slots (json)                                       -- 课表数据
-  [{day_of_week: 1, periods: [1,2,3], name: "高等数学", location: ""}]
+- name (varchar(100))                                -- 日历名称（如"2026秋季课表"）
+- cycle_rule (enum: 'weekly', 'odd_weekly', 'even_weekly', 'custom', default 'weekly')
+- slots (json)                                       -- 忙闲时段
+  [{day_of_week: 1, periods: [1,2,3], label: "高等数学", location: ""}]
 - ai_confidence (decimal(3,2), nullable)             -- AI 识别置信度（仅 source='ai_vision'）
 - created_at, updated_at
 索引：user_id 索引
 ```
 
-> **AI 识别策略**：接入轻量视觉小模型（如微信 WeCLIP 或 MiniCPM-V），
-> 上传课表图片后云端 OCR + 布局分析 → 返回 3 种样式方案 → 用户三选一确认。
-> 识别失败时降级为手动拖拽录入，不阻塞用户。
+> **语义泛化**："课表"→"个人日历"。用户可维护多个日历（课表/工作/其他），
+> 每个日历独立配置循环规则（每周/单周/双周/自定义）。
+> 标记空闲时选择对应日历导入，功能完全可选。
 
 ### 2.7 task_receipts（任务查收表）
 ```
@@ -298,7 +307,7 @@ WHERE group_id = $gid AND user_id = $uid AND role_in_group = 'publisher';
 
 -- 插入任务
 INSERT INTO tasks (group_id, title, description, date_range_start, date_range_end,
-  week_pattern, periods, constraints, deadline, status, publisher_id)
+  cycle_rule, periods, constraints, deadline, status, publisher_id)
 VALUES ($gid, $title, $desc, $start, $end, $pattern, $periods, $constraints, $deadline, 'collecting', $uid);
 
 -- 推送"创建提醒"给所有 group_members
@@ -730,7 +739,32 @@ draft (草稿) ───┤
 
 ---
 
-## 七、系统架构（四层分离）
+## 七、隐私边界与降级闭环
+
+### 7.0 隐私三级管控
+
+| 阶段 | 可见范围 | 可见内容 |
+|------|---------|---------|
+| **标记阶段** (collecting) | 仅自己 | 自己的空闲标记，其他人标记不可见 |
+| **方案预览** (reviewing) | 仅发布者 | 所有成员的标记汇总 + 生成方案 |
+| **发布后** (published) | 全组成员 | 排班表：姓名 + 脱敏手机号（138****1234） |
+
+> **微信号永不在任何地方展示或存储。**
+> 微信登录仅获取 openid + 昵称，昵称作为 group_members.display_name 初始值。
+> 手机号在数据库 AES-256 加密存储，发布者查看时通过独立接口解密后立即脱敏。
+
+### 7.1 降级闭环矩阵
+
+| 依赖 | 成功路径 | 降级路径 | 用户体验 |
+|------|---------|---------|---------|
+| OCR API | 腾讯云 OCR → 布局解析 → 3 种方案 | "试试手动输入"按钮 → 拖拽网格 | 不阻塞，一键切换 |
+| 订阅消息 | 微信推送 → 成员收到通知 | 静默重试 3 次 → 小程序内红点 | 不丢消息，静默兜底 |
+| 排班方案 | 人数充足 → 随机抽取 | 前置校验 → 发布者放宽/补人/忽略 | 不报错，给选择 |
+| 云函数 | 正常调用 | 返回错误码 → 前端 toast + 重试按钮 | 可感知，可重试 |
+
+---
+
+## 八、系统架构（四层分离）
 
 ```
 ┌──────────────────────────────────────────────────┐
@@ -767,7 +801,7 @@ draft (草稿) ───┤
 └──────────────────────────────────────────────────┘
 ```
 
-### 7.1 核心设计决策
+### 8.1 核心设计决策
 
 | 决策 | 方案 | 理由 |
 |------|------|------|
@@ -778,7 +812,7 @@ draft (草稿) ───┤
 | 审计 | audit_logs 全量记录 | H5 后台可查所有敏感操作 |
 | 扩展性 | constraints JSON 预留 | 加"技能排班""连续上限"只需改算法 |
 
-### 7.2 软删除与成员重入（专家确认）
+### 8.2 软删除与成员重入（专家确认）
 
 **结论：软删除保留，物理删除不用。**
 
@@ -816,7 +850,7 @@ ELSE
 END IF;
 ```
 
-### 7.3 首页分组卡片查询流（跨分组身份切换）
+### 8.3 首页分组卡片查询流（跨分组身份切换）
 
 ```
 用户进入首页
@@ -839,40 +873,41 @@ WHERE gm.user_id = $current_uid AND gm.status = 'active'
 用户点击任意卡片 → wx.setStorageSync('activeGroupId', card.id) → 进入该分组上下文
 ```
 
-### 7.4 AI 视觉识别模型策略
+### 7.4 AI 识别策略（腾讯云 OCR API）
 
 | 层级 | 方案 | 适用场景 |
 |------|------|---------|
-| **云端优先** | 云函数调用视觉小模型（WeCLIP/MiniCPM-V） | 正常网络环境，3-5 秒返回 |
-| **本地降级** | 手动拖拽录入（course_tables.source='manual'） | 识别失败/无网络时 |
-| **模型部署** | CloudBase 云函数 Layer（层）打包 | 随实例缓存，冷启动后零延时 |
+| **云端优先** | 腾讯云通用印刷体 OCR API | 拍照/相册上传，按量付费 |
+| **布局解析** | 简单规则引擎（行列关系推导） | OCR 返回文字坐标后，规则计算行列归属 |
+| **本地降级** | 手动拖拽录入（personal_calendars.source='manual'） | API 失败 / 结果不可解析 |
+| **模型部署** | 无本地模型，纯 API 调用 | 无需 GPU，无需 Layer |
 
-### 7.4.1 模型部署策略（CloudBase Layer）
+### 7.4.1 识别流程
 
 ```
-模型文件 → 打包成 Layer → 随云函数部署
-   ↓
-云函数冷启动: Layer 自动挂载到 /opt
-   ↓
-首次调用: 模型从 Layer 加载到内存 (~200ms)
-   ↓
-实例存活期内: 后续调用零延时（模型已驻留内存）
+用户上传图片
+  → imgSecCheck 安全审核（必须通过）
+  → 云存储保存原图 (image_url)
+  → 云函数 ai-vision 调用腾讯云 OCR API
+       ↓
+  OCR 返回: [{text: "高等数学", x: 120, y: 80}, {text: "周一", x: 200, y: 50}, ...]
+       ↓
+  简单规则引擎解析行列关系:
+    - 按 y 坐标聚类出"行"（节次/时间段）
+    - 按 x 坐标聚类出"列"（周一~周日）
+    - 匹配文字内容到对应格子
+       ↓
+  生成 3 种可能布局方案 → 用户三选一
+       ↓
+  确认 → 写入 personal_calendars (source='ai_vision')
+  失败 → 前端展示"试试手动输入"按钮 → 一键切换拖拽网格
 ```
-
-**为什么不用云存储加载？**
-- 云存储每次冷启动按需下载：1-2 秒延时
-- Layer 随实例分发：首次加载后，函数实例保活期内所有请求直接命中内存缓存
-
-**体积限制**：
-- Layer 上限 50MB（压缩后）
-- 若模型超过 50MB → 改用腾讯云 OCR API 直接调用（不走本地推理）
-- 推荐 MVP 方案：**OCR API（腾讯云）+ 简单布局规则**（不依赖大模型）
 
 ### 7.4.2 图片安全审核
 
-所有用户上传的课表图片必须经过：
 ```
-wx.chooseImage → 云存储上传临时 URL
+wx.chooseImage (仅拍照/相册，不支持聊天记录转发)
+  → 云存储上传临时 URL
   → security.imgSecCheck (云调用) 
     → 通过 → 进入 AI 识别 / 云存储持久化
     → 不通过 → 提示"图片违规，请重新上传"
@@ -922,9 +957,9 @@ AI 识别流程:
 
 ---
 
-## 八、导航与页面结构
+## 九、导航与页面结构
 
-### 8.1 底部 TabBar（4 项精简）
+### 9.1 底部 TabBar（4 项精简）
 
 | Tab | 中文 | 功能 |
 |-----|------|------|
@@ -933,7 +968,7 @@ AI 识别流程:
 | `task` | 任务 | 根据角色动态显示：发布者=创建/管理、加入者=标记/查收 |
 | `profile` | 个人中心 | 分组管理/历史/课表/推送设置 |
 
-### 8.2 个人中心（profile 页）
+### 9.2 个人中心（profile 页）
 
 ```
 ┌────────────────────┐
@@ -949,13 +984,13 @@ AI 识别流程:
 > **退出分组** = 软删除：`UPDATE group_members SET status='left'`，历史数据全保留。
 > 再入：再次输入邀请码 → 查到 status='left' → UPDATE active。
 
-### 8.3 模板/AI 识别不占独立 Tab
+### 9.3 模板/AI 识别不占独立 Tab
 
 模板配置和 AI 识别作为任务流中的二级页面，在创建任务和标记空闲时按需打开。不占独立 Tab，保持核心动线简洁。
 
 ---
 
-## 九、低负载设计原则
+## 十、低负载设计原则
 
 1. **算法后移至云函数**：客户端只发参数，不参与计算
 2. **主表只索引不冗余**：去掉 response_count，用 COUNT 查询
@@ -966,7 +1001,7 @@ AI 识别流程:
 
 ---
 
-## 十、本次修订摘要
+## 十一、本次修订摘要
 
 ### v2.0 → v3.0 (13 项反馈全面修正)
 
@@ -1003,3 +1038,17 @@ AI 识别流程:
 | 🟢 | 周范围：周一~周日默认，单双周 Switch，支持自定义日期 |
 | 🟢 | 通知机制：4 节点（创建/截止前/发布/异议更新），关键页面引导订阅 |
 | 🟢 | MVP AI：OCR API + 简单布局规则，非占位页 |
+
+### v3.2 → v3.3 (场景泛化 + OCR API 收敛 + 隐私边界 + 降级闭环)
+
+| # | 变更 |
+|---|------|
+| 🔴 | course_tables → personal_calendars，语义从"课表"泛化为"个人日历" |
+| 🔴 | 放弃视觉小模型 Layer，直接用腾讯云 OCR API + 简单布局规则 |
+| 🔴 | 隐私三级管控：标记阶段隔离 / 方案预览仅发布者 / 发布后脱敏可见 |
+| 🔴 | 降级闭环矩阵：OCR失败→手动、推送失败→红点、方案失败→放宽/补人 |
+| 🟡 | 产品定位从"校园排班"→"通用轻量协同排班平台" |
+| 🟡 | tasks.periods 班次支持任意命名（早班/晚班/A班等） |
+| 🟡 | week_pattern → cycle_rule，支持 weekly/odd_weekly/even_weekly/custom |
+| 🟡 | 资源基线明确：1核2G CloudBase Serverless 可平滑支撑 |
+| 🟢 | 图片上传仅拍照/相册，强制 imgSecCheck |
