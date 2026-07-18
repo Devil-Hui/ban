@@ -30,7 +30,17 @@ async function create(ctx) {
     deadline: { type: 'string', default: null },
     dateRangeStart: { type: 'string', default: null },
     dateRangeEnd: { type: 'string', default: null },
-    constraints: { type: 'object', default: { slotMinPeople: 1, maxShiftsPerWeek: null, maxShiftsPerDay: null } },
+    constraints: {
+      type: 'object',
+      default: {
+        slotMinPeople: 1,
+        slotMaxPeople: null,
+        maxShiftsPerWeek: null,
+        maxShiftsPerDay: null,
+        allowOvertime: false,
+        slotDurationMinutes: 30,
+      },
+    },
     timeMode: { type: 'string', default: null },
     scheduleProfileId: { type: 'string', default: null },
     selectedPeriodIds: { type: 'array', default: null },

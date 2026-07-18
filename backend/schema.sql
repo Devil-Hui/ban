@@ -110,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `schedule_profile_id`      VARCHAR(64)  DEFAULT NULL COMMENT '来源作息模板ID',
   `schedule_profile_version` INT          DEFAULT NULL COMMENT '作息模板版本快照',
   `periods`                  JSON         DEFAULT NULL COMMENT '时段快照 TimeSlot[]',
-  `constraints`              JSON         DEFAULT NULL COMMENT '约束 JSON',
+  `constraints`              JSON         DEFAULT NULL COMMENT '约束 JSON：slotMinPeople/slotMaxPeople/maxShiftsPerWeek/maxShiftsPerDay/allowOvertime/slotDurationMinutes',
   `deadline`                 DATETIME(3)  DEFAULT NULL COMMENT '填报截止(UTC)',
   `date_range_start`         DATE         DEFAULT NULL COMMENT '排班开始日期',
   `date_range_end`           DATE         DEFAULT NULL COMMENT '排班结束日期',

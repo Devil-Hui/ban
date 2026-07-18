@@ -2,7 +2,6 @@
   "pages": [
     "pages/index/index",
     "pages/schedule/schedule",
-    "pages/task/task",
     "pages/profile/profile",
     "pages/auth/auth",
     "pages/style-select/style-select",
@@ -12,7 +11,6 @@
     "pages/schedule-rules/schedule-rules",
     "pages/task-create/task-create",
     "pages/task-detail/task-detail",
-    "pages/task-mark/task-mark",
     "pages/member-preset/member-preset",
     "pages/joiner-fill/joiner-fill",
     "pages/publisher-review/publisher-review",
@@ -30,14 +28,14 @@
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#FFFFFF",
-    "navigationBarTitleText": "排班协同",
+    "navigationBarTitleText": "智能排班",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F7F8FA",
+    "backgroundColor": "#F8FAFC",
     "enablePullDownRefresh": false
   },
   "tabBar": {
-    "color": "#8F959E",
-    "selectedColor": "#2B6DE5",
+    "color": "#9CA3AF",
+    "selectedColor": "#22C55E",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "black",
     "list": [
@@ -54,14 +52,14 @@
         "selectedIconPath": "assets/tab/schedule-active.png"
       },
       {
-        "pagePath": "pages/task/task",
-        "text": "任务",
-        "iconPath": "assets/tab/task.png",
-        "selectedIconPath": "assets/tab/task-active.png"
+        "pagePath": "pages/join/join",
+        "text": "加入",
+        "iconPath": "assets/tab/join.png",
+        "selectedIconPath": "assets/tab/join-active.png"
       },
       {
         "pagePath": "pages/profile/profile",
-        "text": "我的",
+        "text": "个人中心",
         "iconPath": "assets/tab/profile.png",
         "selectedIconPath": "assets/tab/profile-active.png"
       }

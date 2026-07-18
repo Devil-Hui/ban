@@ -171,6 +171,34 @@ function createMemoryRepos() {
       const g = store.groups.get(id);
       return g ? clone(g) : null;
     },
+    async softDelete(id) {
+      const g = store.groups.get(id) || store.groups.get(String(id));
+      if (!g) return null;
+      g.status = 'archived';
+      g.isDeleted = 1;
+      g.updatedAt = new Date().toISOString();
+      store.groups.set(g.id, g);
+      return clone(g);
+    },
+    async getUnfilledMembers(groupId, taskId) {
+      const members = [];
+      for (const m of store.members.values()) {
+        if (String(m.groupId) !== String(groupId) || m.status !== 'active') continue;
+        const u = store.users.get(m.userId) || store.users.get(String(m.userId));
+        members.push(
+          Object.assign(clone(m), {
+            nickname: (u && u.nickname) || m.displayName || '成员',
+            avatarUrl: (u && u.avatarUrl) || '',
+          })
+        );
+      }
+      if (!taskId) return members;
+      const submitted = new Set();
+      for (const r of store.responses.values()) {
+        if (String(r.taskId) === String(taskId) && r.isValid === 1) submitted.add(String(r.userId));
+      }
+      return members.filter((m) => !submitted.has(String(m.userId)));
+    },
     async getByInviteCode(code) {
       for (const g of store.groups.values()) if (g.inviteCode === code && g.status === 'active') return clone(g);
       return null;

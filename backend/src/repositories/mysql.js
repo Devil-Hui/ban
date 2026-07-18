@@ -159,6 +159,45 @@ function createMysqlRepos(pool) {
         updatedAt: g.updated_at,
       };
     },
+    async softDelete(id) {
+      await pool.execute(
+        "UPDATE `groups` SET status = 'archived', is_deleted = 1, updated_at = NOW() WHERE id = ?",
+        [id]
+      );
+      return this.getById(id);
+    },
+    async getUnfilledMembers(groupId, taskId) {
+      if (!taskId) {
+        const [rows] = await pool.execute(
+          "SELECT * FROM group_members WHERE group_id = ? AND status = 'active'",
+          [groupId]
+        );
+        return rows.map((m) => ({
+          groupId: m.group_id,
+          userId: m.user_id,
+          roleInGroup: m.role_in_group,
+          status: m.status,
+          displayName: m.display_name,
+        }));
+      }
+      const [rows] = await pool.execute(
+        `SELECT m.* FROM group_members m
+         WHERE m.group_id = ? AND m.status = 'active'
+           AND m.user_id NOT IN (
+             SELECT user_id FROM task_responses WHERE task_id = ? AND is_valid = 1
+           )`,
+        [groupId, taskId]
+      );
+      // fallback if task_responses status differs
+      if (!rows) return [];
+      return rows.map((m) => ({
+        groupId: m.group_id,
+        userId: m.user_id,
+        roleInGroup: m.role_in_group,
+        status: m.status,
+        displayName: m.display_name,
+      }));
+    },
     async getByInviteCode(code) {
       const [rows] = await pool.execute('SELECT * FROM \`groups\` WHERE invite_code = ? AND status = ?', [code, 'active']);
       if (!rows.length) return null;

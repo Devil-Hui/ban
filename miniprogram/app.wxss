@@ -1,49 +1,52 @@
 /* ==========================================================================
-   排班协同 v4 全局设计系统
-   风格：单色系雾霾蓝 · 淡色简约 · 弥散投影 · 紧凑模块化
-   参考：Vercel / Linear / Stripe / 飞书日历
+   智能排班小程序 v6 设计系统
+   一比一对齐根目录设计板 PNG：
+   主色绿 #22C55E · 辅蓝 #3B82F6 · 警告 #F59E0B · 危险 #EF4444 · 中性灰
+   圆角 4/6/8/12/16px · 轻阴影 · 白卡片 · 浅灰底
    ========================================================================== */
 
 page {
-  /* —— 主色板（产品蓝，更高对比、更清晰） —— */
-  --c-primary: #2B6DE5;
-  --c-primary-dark: #1F56C7;
-  --c-primary-darker: #1844A0;
-  --c-primary-light: #8FB4F2;
-  --c-primary-lighter: #EAF1FF;
-  --c-primary-lightest: #F5F8FF;
+  /* —— 主色板（PNG 色彩规范） —— */
+  --c-primary: #22C55E;
+  --c-primary-dark: #16A34A;
+  --c-primary-darker: #15803D;
+  --c-primary-light: #86EFAC;
+  --c-primary-lighter: #DCFCE7;
+  --c-primary-lightest: #F0FDF4;
 
   /* —— 中性色 —— */
-  --c-bg: #F7F8FA;
+  --c-bg: #F8FAFC;
   --c-card: #FFFFFF;
-  --c-card-2: #FAFBFC;
-  --c-border: #EEF0F3;
-  --c-divider: #F0F2F5;
+  --c-card-2: #F9FAFB;
+  --c-border: #E5E7EB;
+  --c-divider: #F3F4F6;
 
   /* —— 文字 —— */
-  --c-text: #1F2329;
-  --c-text-2: #646A73;
-  --c-text-3: #8F959E;
+  --c-text: #111827;
+  --c-text-2: #6B7280;
+  --c-text-3: #9CA3AF;
   --c-text-inv: #FFFFFF;
   --f-lg: 36rpx;
 
-  /* —— 状态色（与主色协调的低饱和） —— */
-  --c-success: #6BC785;
-  --c-warning: #F2B962;
-  --c-danger: #E88B8B;
-  --c-info: #7EC8E3;
+  /* —— 状态色（PNG） —— */
+  --c-success: #22C55E;
+  --c-warning: #F59E0B;
+  --c-danger: #EF4444;
+  --c-info: #3B82F6;
 
-  /* —— 投影（弥散投影） —— */
-  --shadow-card: 0 2rpx 12rpx rgba(31, 35, 41, 0.04);
-  --shadow-elevated: 0 6rpx 20rpx rgba(31, 35, 41, 0.06);
-  --shadow-tab: 0 -1rpx 8rpx rgba(31, 35, 41, 0.04);
-  --shadow-fab: 0 8rpx 24rpx rgba(43, 109, 229, 0.28);
+  /* —— 投影（PNG：轻/中/深） —— */
+  --shadow-card: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  --shadow-elevated: 0 8rpx 24rpx rgba(0, 0, 0, 0.08);
+  --shadow-tab: 0 -1rpx 0 rgba(0, 0, 0, 0.06);
+  --shadow-fab: 0 8rpx 24rpx rgba(34, 197, 94, 0.35);
+  --shadow-cta: 0 8rpx 20rpx rgba(34, 197, 94, 0.32);
 
-  /* —— 圆角 —— */
-  --r-sm: 8rpx;
-  --r-md: 12rpx;
-  --r-lg: 16rpx;
-  --r-xl: 24rpx;
+  /* —— 圆角（PNG：4/6/8/12/16） —— */
+  --r-sm: 8rpx;   /* 4px */
+  --r-md: 12rpx;  /* 6px */
+  --r-lg: 16rpx;  /* 8px */
+  --r-xl: 24rpx;  /* 12px */
+  --r-2xl: 32rpx; /* 16px */
   --r-pill: 999rpx;
 
   /* —— 间距 —— */
@@ -53,7 +56,7 @@ page {
   --s-lg: 32rpx;
   --s-xl: 48rpx;
 
-  /* —— 字号 —— */
+  /* —— 字号（PNG：10–22 / 中粗体） —— */
   --f-display: 40rpx;
   --f-title: 32rpx;
   --f-sub: 28rpx;
@@ -61,11 +64,16 @@ page {
   --f-cap: 24rpx;
   --f-tiny: 22rpx;
 
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press: 120ms;
+  --dur-ui: 180ms;
+
   background: var(--c-bg);
   color: var(--c-text);
   font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Segoe UI", sans-serif;
   font-size: var(--f-body);
-  line-height: 1.55;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* —— 通用工具类 —— */
@@ -101,10 +109,11 @@ page {
 .fw-semibold { font-weight: 600; }
 .fw-bold { font-weight: 700; }
 
-/* —— 卡片基础（模化组件 #1） —— */
+/* —— 卡片 —— */
 .card {
   background: var(--c-card);
   border-radius: var(--r-lg);
+  border: 1rpx solid var(--c-border);
   box-shadow: var(--shadow-card);
   padding: var(--s-md);
   margin-bottom: var(--s-sm);
@@ -113,6 +122,7 @@ page {
 .card-tight {
   background: var(--c-card);
   border-radius: var(--r-md);
+  border: 1rpx solid var(--c-border);
   box-shadow: var(--shadow-card);
   padding: var(--s-sm) var(--s-md);
   margin-bottom: var(--s-sm);
@@ -121,8 +131,14 @@ page {
 .card-flat {
   background: var(--c-primary-lighter);
   border-radius: var(--r-md);
+  border: 1rpx solid transparent;
   padding: var(--s-md);
   margin-bottom: var(--s-sm);
+}
+
+.card-press:active {
+  transform: scale(0.985);
+  opacity: 0.96;
 }
 
 /* —— 标签 / 徽章 —— */
@@ -138,36 +154,69 @@ page {
 }
 
 .tag-brand { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
-.tag-success { background: rgba(107, 199, 133, 0.12); color: var(--c-success); }
-.tag-warning { background: rgba(242, 185, 98, 0.14); color: var(--c-warning); }
-.tag-danger { background: rgba(232, 139, 139, 0.12); color: var(--c-danger); }
+.tag-success { background: rgba(34, 197, 94, 0.12); color: var(--c-success); }
+.tag-warning { background: rgba(245, 158, 11, 0.12); color: var(--c-warning); }
+.tag-danger { background: rgba(239, 68, 68, 0.1); color: var(--c-danger); }
+.tag-info { background: rgba(59, 130, 246, 0.12); color: var(--c-info); }
 .tag-neutral { background: var(--c-divider); color: var(--c-text-2); }
 
-/* —— 按钮 —— */
+/* —— 按钮（可点：高度≥80rpx · press scale · 主钮阴影） —— */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 80rpx;
+  height: 84rpx;
   padding: 0 32rpx;
   border-radius: var(--r-md);
   font-size: var(--f-body);
-  font-weight: 500;
+  font-weight: 600;
   border: none;
-  transition: opacity .2s, transform .2s;
+  letter-spacing: 0.2rpx;
+  transition: opacity var(--dur-press) var(--ease-out), transform var(--dur-press) var(--ease-out), background var(--dur-ui) var(--ease-out);
 }
 .btn::after { border: none; }
-.btn:active { transform: scale(0.98); opacity: .88; }
+.btn:active { transform: scale(0.97); opacity: 0.92; }
 
-.btn-primary { background: var(--c-primary); color: var(--c-text-inv); }
+.btn-primary {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  box-shadow: var(--shadow-cta);
+}
+.btn-primary:active { background: var(--c-primary-dark); }
 .btn-primary-dark { background: var(--c-primary-dark); color: var(--c-text-inv); }
 .btn-ghost { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
-.btn-outline { background: transparent; border: 1rpx solid var(--c-border); color: var(--c-text-2); }
-.btn-text { background: transparent; color: var(--c-primary-dark); padding: 0; height: auto; }
-.btn-danger { background: rgba(232, 139, 139, 0.12); color: var(--c-danger); }
+.btn-outline {
+  background: var(--c-card);
+  border: 1rpx solid var(--c-border);
+  color: var(--c-text);
+  font-weight: 500;
+}
+.btn-text { background: transparent; color: var(--c-primary-dark); padding: 0; height: auto; box-shadow: none; }
+.btn-danger { background: rgba(226, 75, 74, 0.1); color: var(--c-danger); }
 .btn-block { width: 100%; }
-.btn-sm { height: 56rpx; padding: 0 20rpx; font-size: var(--f-cap); border-radius: var(--r-sm); }
-.btn-lg { height: 96rpx; font-size: var(--f-sub); border-radius: var(--r-lg); }
+.btn-sm { height: 60rpx; padding: 0 20rpx; font-size: var(--f-cap); border-radius: var(--r-sm); }
+.btn-lg { height: 96rpx; font-size: var(--f-sub); border-radius: var(--r-lg); font-weight: 700; }
+
+/* 底栏双按钮行（主路径通用） */
+.bottom-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  padding: 16rpx 24rpx calc(16rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1rpx solid var(--c-border);
+  box-shadow: var(--shadow-tab);
+  box-sizing: border-box;
+}
+.bb-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.bb-row .btn { flex: 1; min-width: 0; }
+.bb-row .btn-primary { flex: 1.35; }
 
 /* —— 分割线 —— */
 .divider {
@@ -332,7 +381,7 @@ page {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8rpx 24rpx rgba(43, 109, 229, 0.28);
+  box-shadow: 0 8rpx 24rpx rgba(34, 197, 94, 0.28);
   font-size: 44rpx;
   z-index: 100;
 }

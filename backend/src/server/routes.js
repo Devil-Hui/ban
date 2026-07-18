@@ -43,6 +43,7 @@ const ROUTES = [
   { method: 'GET', path: '/api/v1/users/me/calendar', handler: users.getCalendar },
   { method: 'PUT', path: '/api/v1/users/me/calendar', handler: users.upsertCalendar },
   { method: 'POST', path: '/api/v1/users/me/calendar/ocr', handler: users.ocrCalendar },
+  { method: 'POST', path: '/api/v1/users/me/calendar/sync-from-published', handler: users.syncFromPublished },
   { method: 'GET', path: '/api/v1/users/me/assignments', handler: users.listMyAssignments },
 
   // 分组
@@ -50,7 +51,10 @@ const ROUTES = [
   { method: 'GET', path: '/api/v1/groups', handler: groups.listMine },
   { method: 'POST', path: '/api/v1/groups/join', handler: groups.join },
   { method: 'GET', path: '/api/v1/groups/:groupId', handler: groups.getOne },
+  { method: 'DELETE', path: '/api/v1/groups/:groupId', handler: groups.remove },
   { method: 'GET', path: '/api/v1/groups/:groupId/members', handler: groups.listMembers },
+  { method: 'GET', path: '/api/v1/groups/:groupId/unfilled-members', handler: groups.listUnfilledMembers },
+  { method: 'POST', path: '/api/v1/groups/:groupId/remind-unfilled', handler: groups.remindUnfilled },
   { method: 'DELETE', path: '/api/v1/groups/:groupId/members/:userId', handler: groups.kick },
   { method: 'POST', path: '/api/v1/groups/:groupId/members/leave', handler: groups.leave },
 

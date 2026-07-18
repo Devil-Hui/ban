@@ -96,6 +96,52 @@ async function listMyAssignments(ctx) {
   return { list, total: list.length, month: q.month || null };
 }
 
+/**
+ * POST /api/v1/users/me/calendar/sync-from-published
+ * 设计板「同步到日历」：把已发布排班中的「我的班次」合并进 personal_calendars.slots
+ * body: { taskId? } 不传则同步全部已发布 assignments
+ */
+async function syncFromPublished(ctx) {
+  const user = requireAuth(ctx);
+  const repos = require('../repositories').getRepos();
+  if (!repos.tasks.listAssignmentsByUser) {
+    return { synced: 0, calendar: null };
+  }
+  const taskId = ctx.body && (ctx.body.taskId || ctx.body.task_id);
+  let list = await repos.tasks.listAssignmentsByUser(user.userId, { activeOnly: true });
+  if (taskId) {
+    list = (list || []).filter((a) => String(a.taskId) === String(taskId));
+  }
+  const slots = (list || []).map((a) => ({
+    date: a.date,
+    periodId: a.periodId || a.period_id || null,
+    start: a.start || null,
+    end: a.end || null,
+    name: a.periodName || a.periodLabel || a.periodId || '班次',
+    taskId: a.taskId,
+    taskTitle: a.taskTitle || a.groupName || '',
+    source: 'published_schedule',
+  }));
+
+  let existing = null;
+  try {
+    existing = await repos.users.getCalendar(user.userId);
+  } catch (_) {
+    existing = null;
+  }
+  const prevSlots = (existing && existing.slots) || [];
+  // 去掉旧的 published_schedule 同源条目，再合并
+  const kept = prevSlots.filter((s) => s && s.source !== 'published_schedule');
+  const merged = kept.concat(slots);
+  const cal = await repos.users.upsertCalendar(user.userId, {
+    semesterName: (existing && existing.semesterName) || '我的排班日历',
+    cycleRule: (existing && existing.cycleRule) || 'weekly',
+    slots: merged,
+    source: 'schedule_sync',
+  });
+  return { synced: slots.length, calendar: cal };
+}
+
 module.exports = {
   getMe,
   updateMe,
@@ -103,4 +149,5 @@ module.exports = {
   upsertCalendar,
   ocrCalendar,
   listMyAssignments,
+  syncFromPublished,
 };

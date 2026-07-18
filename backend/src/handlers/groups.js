@@ -134,4 +134,118 @@ async function leave(ctx) {
   return { member: updated };
 }
 
-module.exports = { create, listMine, getOne, join, listMembers, kick, leave };
+/**
+ * DELETE /api/v1/groups/{group_id}
+ * 设计板「删除分组」：仅发布者；软删 archived + is_deleted
+ * body.confirm === true 必填，防误触
+ */
+async function remove(ctx) {
+  const user = requireAuth(ctx);
+  await requireGroupPublisher(ctx, ctx.params.groupId);
+  const body = ctx.body || {};
+  if (body.confirm !== true && body.confirm !== 1 && body.confirm !== 'true') {
+    throw err('VALIDATION_ERROR', { message: '请确认删除分组（confirm=true）' });
+  }
+  const repos = require('../repositories').getRepos();
+  const group = await repos.groups.getById(ctx.params.groupId);
+  if (!group) throw err('GROUP_NOT_FOUND');
+  if (typeof repos.groups.softDelete !== 'function') {
+    throw err('INTERNAL_ERROR', { message: '仓储未实现 softDelete' });
+  }
+  const updated = await repos.groups.softDelete(ctx.params.groupId);
+  try {
+    const { writeAudit } = require('./audit');
+    await writeAudit(repos, ctx, {
+      targetType: 'group',
+      targetId: ctx.params.groupId,
+      action: 'group.delete',
+      beforeValue: { name: group.name, status: group.status },
+      afterValue: { status: 'archived', isDeleted: 1 },
+      reason: body.reason || null,
+    });
+  } catch (_) {}
+  return { group: updated, deleted: true };
+}
+
+/**
+ * GET /api/v1/groups/{group_id}/unfilled-members?taskId=
+ * 设计板「提醒未填写成员」名单
+ */
+async function listUnfilledMembers(ctx) {
+  requireAuth(ctx);
+  await requireGroupMember(ctx, ctx.params.groupId);
+  const taskId = (ctx.query && (ctx.query.taskId || ctx.query.task_id)) || null;
+  const repos = require('../repositories').getRepos();
+  if (typeof repos.groups.getUnfilledMembers !== 'function') {
+    // fallback: all active members
+    const members = await repos.groups.listMembers(ctx.params.groupId);
+    return { members: members || [], total: (members || []).length };
+  }
+  const members = await repos.groups.getUnfilledMembers(ctx.params.groupId, taskId);
+  return { members, total: members.length, taskId };
+}
+
+/**
+ * POST /api/v1/groups/{group_id}/remind-unfilled
+ * body: { taskId, userIds? }
+ * 站内催填；可选指定 userIds，默认全部未填
+ */
+async function remindUnfilled(ctx) {
+  const user = requireAuth(ctx);
+  await requireGroupPublisher(ctx, ctx.params.groupId);
+  const taskId = ctx.body && (ctx.body.taskId || ctx.body.task_id);
+  if (!taskId) throw err('VALIDATION_ERROR', { message: '缺少 taskId' });
+  const repos = require('../repositories').getRepos();
+  const task = await repos.tasks.getById(taskId);
+  if (!task || String(task.groupId) !== String(ctx.params.groupId)) {
+    throw err('TASK_NOT_FOUND');
+  }
+  let targets = [];
+  if (typeof repos.groups.getUnfilledMembers === 'function') {
+    targets = await repos.groups.getUnfilledMembers(ctx.params.groupId, taskId);
+  } else {
+    targets = await repos.groups.listMembers(ctx.params.groupId);
+  }
+  const only = ctx.body && Array.isArray(ctx.body.userIds) ? ctx.body.userIds.map(String) : null;
+  if (only && only.length) {
+    targets = targets.filter((m) => only.indexOf(String(m.userId)) >= 0);
+  }
+  const { notifyUser } = require('../services/notify-dispatch');
+  let sent = 0;
+  for (const m of targets) {
+    await notifyUser(repos, {
+      userId: m.userId,
+      logicalKey: 'deadline_remind',
+      title: '请填写可用时间',
+      body: `「${task.title || '排班任务'}」仍待你提交空闲，请尽快填写`,
+      taskId: task.id,
+      groupId: ctx.params.groupId,
+      taskTitle: task.title,
+      extra: { statusText: '待填写' },
+    });
+    sent += 1;
+  }
+  try {
+    const { writeAudit } = require('./audit');
+    await writeAudit(repos, ctx, {
+      targetType: 'task',
+      targetId: taskId,
+      action: 'task.remind_unfilled',
+      afterValue: { count: sent },
+    });
+  } catch (_) {}
+  return { sent, total: targets.length };
+}
+
+module.exports = {
+  create,
+  listMine,
+  getOne,
+  join,
+  listMembers,
+  kick,
+  leave,
+  remove,
+  listUnfilledMembers,
+  remindUnfilled,
+};
