@@ -1,101 +1,67 @@
-<!-- pages/index/index.wxml —— 首页（产品级：简洁、可读、可操作） -->
+<!-- pages/index/index.wxml —— 1:1 对齐设计板「1.首页」 -->
 <view class="page-home page-with-tab">
   <view class="status-bar" style="height: {{statusBarHeight}}px"></view>
 
-  <!-- 顶栏 -->
+  <!-- 顶栏：智能排班 + 头像 -->
   <view class="topbar">
-    <view class="topbar-text">
-      <view class="hello">你好，{{user.nickname}}</view>
-      <view class="date">{{todayLabel}}</view>
+    <view class="brand-row">
+      <view class="brand-logo">
+        <view class="brand-logo-grid"></view>
+      </view>
+      <text class="brand-title">智能排班</text>
     </view>
-    <view class="avatar" bindtap="goProfile">{{user.initial}}</view>
+    <view class="avatar" bindtap="goProfile" hover-class="tap-dim">{{user.initial}}</view>
   </view>
 
-  <!-- 今日概览 -->
-  <view class="stat-card">
-    <view class="stat-item" bindtap="goCalendar">
-      <view class="stat-num">{{stat.today}}</view>
-      <view class="stat-label">今日班次</view>
-    </view>
-    <view class="stat-split"></view>
-    <view class="stat-item" bindtap="goMyTask">
-      <view class="stat-num warn">{{stat.pending}}</view>
-      <view class="stat-label">待处理</view>
-    </view>
-    <view class="stat-split"></view>
-    <view class="stat-item" bindtap="goCalendar">
-      <view class="stat-num">{{stat.week}}</view>
-      <view class="stat-label">本周班次</view>
-    </view>
+  <!-- 全宽主按钮：创建分组（设计板） -->
+  <view class="btn-create" bindtap="onCreateGroup" hover-class="btn-create-hover">
+    <text class="btn-create-plus">+</text>
+    <text class="btn-create-text">创建分组</text>
   </view>
 
-  <!-- 快捷操作 -->
-  <view class="quick">
-    <view class="quick-btn primary" bindtap="onCreate">
-      <text class="qb-ico">＋</text>
-      <text class="qb-txt">创建排班</text>
+  <!-- 数据卡片列表（设计板：左色块图标 + 标题副文案 + 右侧份数/角标） -->
+  <view class="list-area">
+    <view wx:if="{{loading}}" class="loading-wrap">
+      <view class="skeleton" wx:for="{{[1,2,3]}}" wx:key="*this"></view>
     </view>
-    <view class="quick-btn" bindtap="goJoin">
-      <text class="qb-ico">⌗</text>
-      <text class="qb-txt">加入分组</text>
-    </view>
-    <view class="quick-btn" bindtap="goCalendar">
-      <text class="qb-ico">日</text>
-      <text class="qb-txt">查看日程</text>
-    </view>
-  </view>
 
-  <!-- 分组列表 -->
-  <view class="sec">
-    <view class="sec-title">我的分组</view>
-    <view class="sec-extra" wx:if="{{groups.length}}">{{groups.length}} 个</view>
-  </view>
+    <block wx:else>
+      <!-- 有分组：每组一张数据卡 -->
+      <view
+        wx:for="{{cards}}"
+        wx:key="id"
+        class="data-card"
+        data-type="{{item.type}}"
+        data-id="{{item.id}}"
+        data-task-id="{{item.taskId}}"
+        bindtap="onCardTap"
+        hover-class="data-card-hover"
+      >
+        <view class="data-icon data-icon-{{item.tone}}">{{item.iconText}}</view>
+        <view class="data-mid">
+          <view class="data-title">{{item.title}}</view>
+          <view class="data-desc">{{item.desc}}</view>
+        </view>
+        <view wx:if="{{item.badge}}" class="data-badge data-badge-{{item.badgeTone || 'green'}}">{{item.badge}}</view>
+        <view wx:elif="{{item.count != null}}" class="data-count">
+          <text class="data-count-num">{{item.count}}</text>
+          <text class="data-count-unit">{{item.unit || '份'}}</text>
+        </view>
+        <text wx:else class="data-arrow">›</text>
+      </view>
 
-  <view wx:if="{{groups.length === 0}}" class="empty">
-    <view class="empty-ico">◇</view>
-    <view class="empty-title">还没有分组</view>
-    <view class="empty-desc">创建分组发起排班，或用邀请码加入队友</view>
-    <view class="empty-actions">
-      <view class="btn-mini primary" bindtap="onCreate">创建分组</view>
-      <view class="btn-mini" bindtap="goJoin">输入邀请码</view>
-    </view>
-  </view>
-
-  <view wx:else class="group-list">
-    <view
-      class="g-card"
-      wx:for="{{groups}}"
-      wx:key="id"
-      data-id="{{item.id}}"
-      bindtap="enterGroup"
-    >
-      <view class="g-left">
-        <view class="g-avatar {{item.role === 'publisher' ? 'pub' : ''}}">
-          {{item.name[0] || '组'}}
+      <!-- 空态（设计板 08） -->
+      <view wx:if="{{cards.length === 0}}" class="empty-box">
+        <view class="empty-ico">📋</view>
+        <view class="empty-title">暂无分组</view>
+        <view class="empty-desc">还没有创建或加入任何分组</view>
+        <view class="empty-actions">
+          <view class="empty-btn primary" bindtap="onCreateGroup">去创建</view>
+          <view class="empty-btn" bindtap="goJoin">去邀请</view>
         </view>
       </view>
-      <view class="g-mid">
-        <view class="g-name-row">
-          <text class="g-name">{{item.name}}</text>
-          <text class="g-role {{item.role === 'publisher' ? 'pub' : ''}}">{{item.roleLabel}}</text>
-        </view>
-        <view class="g-meta">
-          <text>{{item.memberCount}} 成员</text>
-          <text class="dot">·</text>
-          <text>{{item.activeTaskCount}} 进行中</text>
-          <text class="dot">·</text>
-          <text>累计 {{item.totalTasks}}</text>
-        </view>
-        <view class="g-bar" wx:if="{{item.activeTaskCount > 0}}">
-          <view class="g-bar-fill" style="width: {{item.collectProgress}}%"></view>
-        </view>
-      </view>
-      <view class="g-right" catchtap="onGroupAction" data-id="{{item.id}}" data-role="{{item.role}}">
-        <text class="g-act">{{item.role === 'publisher' ? '管理' : '进入'}}</text>
-        <text class="g-arrow">›</text>
-      </view>
-    </view>
+    </block>
   </view>
 
-  <view class="bottom-space"></view>
+  <view class="safe-bottom"></view>
 </view>
