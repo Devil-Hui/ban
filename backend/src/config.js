@@ -68,9 +68,6 @@ const config = {
   wechat: {
     appid: process.env.WX_APPID || '',
     secret: process.env.WX_SECRET || '',
-    mchId: process.env.WX_MCH_ID || '',
-    mchKey: process.env.WX_MCH_KEY || '',
-    notifyUrl: process.env.WX_PAY_NOTIFY_URL || '',
   },
 
   h5: {

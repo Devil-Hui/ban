@@ -94,22 +94,9 @@ async function exchangeCodeForOpenid(code) {
   return json.openid;
 }
 
-/** 微信支付回调验签（HMAC-SHA256，key=商户 API key）；测试可注入 */
-let payCallbackVerifier = null;
-function setPayCallbackVerifier(fn) {
-  payCallbackVerifier = fn;
-}
-function verifyWxPayCallback(rawBody, signature) {
-  if (payCallbackVerifier) return payCallbackVerifier(rawBody, signature);
-  // 真实实现需按微信规则对字段排序后 HMAC；此处给出结构，生产请补全
-  return signature === signHS256(rawBody, config.wechat.mchKey || '');
-}
-
 module.exports = {
   signToken,
   verifyToken,
   exchangeCodeForOpenid,
   setWxLoginVerifier,
-  verifyWxPayCallback,
-  setPayCallbackVerifier,
 };

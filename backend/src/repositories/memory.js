@@ -10,7 +10,8 @@
  * 数据契约对齐《business-flows.md v3.5》表结构：
  *   users / groups / group_members / tasks / task_responses /
  *   user_assignments / task_receipts / personal_calendars /
- *   notify_inbox / payments_orders / schedule_jobs
+ *   notify_inbox / schedule_jobs
+ * （无支付：产品不接入微信支付）
  */
 
 const crypto = require('crypto');
@@ -42,7 +43,6 @@ function createMemoryRepos() {
     receipts: new Map(), // key: taskId:userId
     calendars: new Map(), // key: userId
     inbox: new Map(),
-    orders: new Map(),
     jobs: new Map(),
     shareTokens: new Map(), // token -> {taskId, expireAt}
     scheduleProfiles: new Map(), // id -> profile
@@ -51,7 +51,7 @@ function createMemoryRepos() {
       defaultTimeMode: 'section_range',
       defaultProfileId: 'sys_uni_45min_v1',
     },
-    seq: { user: 0, group: 0, task: 0, job: 0, msg: 0, order: 0, assign: 0 },
+    seq: { user: 0, group: 0, task: 0, job: 0, msg: 0, assign: 0 },
   };
 
   // 加载众数种子（幂等 upsert）
@@ -580,47 +580,6 @@ function createMemoryRepos() {
     },
   };
 
-  // ---------- payments ----------
-  const payments = {
-    async createOrder(data) {
-      const id = 'o_' + ++store.seq.order;
-      const order = {
-        id,
-        userId: data.userId,
-        amount: data.amount,
-        currency: data.currency || 'CNY',
-        status: 'pending',
-        channel: data.channel || 'wechat_mini',
-        prepayId: 'prepay_' + crypto.randomBytes(8).toString('hex'),
-        mwebUrl: data.channel === 'wechat_h5' ? 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=' + id : null,
-        outTradeNo: id,
-        createdAt: new Date().toISOString(),
-        paidAt: null,
-      };
-      store.orders.set(id, order);
-      return clone(order);
-    },
-    async getOrder(id) {
-      const o = store.orders.get(id);
-      return o ? clone(o) : null;
-    },
-    async updateOrder(id, patch) {
-      const o = store.orders.get(id);
-      if (!o) return null;
-      Object.assign(o, patch);
-      if (patch.status === 'paid' && !o.paidAt) o.paidAt = new Date().toISOString();
-      return clone(o);
-    },
-    async listByUser(userId, { page = 1, pageSize = 20 } = {}) {
-      let list = [];
-      for (const o of store.orders.values()) if (o.userId === userId) list.push(o);
-      list.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-      const total = list.length;
-      const start = (page - 1) * pageSize;
-      return { list: list.slice(start, start + pageSize).map(clone), total, page, pageSize };
-    },
-  };
-
   // ---------- schedule profiles（系统种子 + 分组覆盖） ----------
   const scheduleProfiles = {
     async listSystem({ status = 'active' } = {}) {
@@ -686,7 +645,7 @@ function createMemoryRepos() {
     },
   };
 
-  return { users, groups, tasks, responses, receipts, notify, payments, scheduleProfiles };
+  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles };
 }
 
 module.exports = { createMemoryRepos };

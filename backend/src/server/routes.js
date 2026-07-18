@@ -13,7 +13,6 @@ const responses = require('../handlers/responses');
 const receipts = require('../handlers/receipts');
 const preview = require('../handlers/preview');
 const notify = require('../handlers/notify');
-const payments = require('../handlers/payments');
 const scheduleProfiles = require('../handlers/scheduleProfiles');
 
 const ROUTES = [
@@ -73,11 +72,6 @@ const ROUTES = [
   { method: 'POST', path: '/api/v1/notify/subscribe', handler: notify.subscribe },
   { method: 'GET', path: '/api/v1/users/me/inbox', handler: notify.listInbox },
   { method: 'PATCH', path: '/api/v1/users/me/inbox/:messageId', handler: notify.readInbox },
-
-  // 支付
-  { method: 'POST', path: '/api/v1/payments/orders', handler: payments.createOrder },
-  { method: 'POST', path: '/api/v1/payments/notify', handler: payments.callback },
-  { method: 'GET', path: '/api/v1/payments/orders/:orderId', handler: payments.getOrder },
 ];
 
 /** 将路径模式编译为正则，并提取参数名 */

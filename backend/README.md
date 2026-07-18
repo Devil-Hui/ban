@@ -16,7 +16,7 @@ backend/
 │   │   ├── errors.js           # 分层业务错误码 + ApiError
 │   │   ├── response.js         # 统一响应包络
 │   │   ├── db.js               # mysql2 连接池 + 事务封装（lazy require）
-│   │   ├── auth.js             # JWT(HS256) + wx.login + H5 登录 + 支付验签
+│   │   ├── auth.js             # JWT(HS256) + wx.login + H5 登录
 │   │   ├── context.js          # 请求→ctx 适配（client-type/鉴权）
 │   │   └── validate.js         # 轻量参数校验
 │   ├── repositories/           # 数据访问层（可替换）
@@ -25,7 +25,7 @@ backend/
 │   │   └── index.js            # 按 DB_MODE 选择 + setRepos 注入
 │   ├── handlers/               # 业务逻辑（框架无关：ctx => data）
 │   │   ├── auth / users / groups / tasks / responses
-│   │   └── receipts / preview / notify / payments
+│   │   └── receipts / preview / notify
 │   └── server/
 │       ├── routes.js           # 统一路由表（Express/云函数共用）
 │       ├── express.js          # 本地 Express 服务
@@ -34,7 +34,7 @@ backend/
     ├── helpers.js
     ├── auth.test.js / groups.test.js / tasks.test.js
     ├── flow.test.js            # 端到端逻辑链+数据链
-    └── payments.test.js
+    └── schedule-profiles / time-domain
 ```
 
 ## 快速开始
@@ -47,7 +47,7 @@ npm install
 npm run dev
 # → listening on :3000 (mode=memory)
 
-# 运行测试（22 个用例，覆盖用户/分组/任务/支付/分享/消息）
+# 运行测试（覆盖用户/分组/任务/时段模板/分享/消息；不含支付）
 npm test
 ```
 
@@ -71,7 +71,6 @@ DB_NAME=scheduling
 通过请求头 `X-Client-Type` 区分：
 
 - **鉴权**：小程序 `wx.login`+openid 签发 JWT；H5 账号密码签发 admin JWT。
-- **支付**：小程序返回 `prepayId`（客户端 `wx.requestPayment`）；H5 返回 `mwebUrl` 跳转。
 - **分享**：小程序 `onShareAppMessage` 内页；H5 `GET /share/tasks/{id}?token=` 只读脱敏。
 - **订阅**：小程序 `wx.requestSubscribeMessage` 回传受理；H5 走消息中心轮询。
 

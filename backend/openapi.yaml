@@ -6,7 +6,7 @@ info:
     - 风格：RESTful，资源名复数、小写+连字符，方法语义化（GET/POST/PUT/PATCH/DELETE）
     - 版本：路径前缀 /api/v1
     - 鉴权：小程序端 wx.login + openid 签发 JWT；H5 端账号密码签发 JWT（请求头 Authorization: Bearer <token>）
-    - 端差异：通过请求头 X-Client-Type: miniprogram|h5 区分；支付/分享/订阅逻辑见各接口说明
+    - 端差异：通过请求头 X-Client-Type: miniprogram|h5 区分；分享/订阅逻辑见各接口说明（无支付）
     - 响应统一包络：{ code, message, data, requestId, timestamp }，code=0 表示成功
   version: 1.0.0
 servers:
@@ -33,8 +33,6 @@ tags:
     description: H5 分享预览（公开只读）
   - name: notify
     description: 消息中心与订阅
-  - name: payments
-    description: 支付（小程序/ H5）
 components:
   securitySchemes:
     bearerAuth:
@@ -106,15 +104,7 @@ components:
         body: { type: string }
         isRead: { type: integer }
         createdAt: { type: string }
-    Order:
-      type: object
-      properties:
-        id: { type: string }
-        amount: { type: number }
-        channel: { type: string, enum: [wechat_mini, wechat_h5] }
-        status: { type: string, enum: [pending, paid, closed] }
-        prepayId: { type: string }
-        mwebUrl: { type: string, nullable: true, description: H5 支付跳转地址 }
+
     LoginResult:
       type: object
       properties:
@@ -564,46 +554,5 @@ paths:
         - { name: messageId, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: 成功 }
-  /api/v1/payments/orders:
-    post:
-      tags: [payments]
-      summary: 创建支付订单
-      description: "小程序端返回 prepayId（客户端调 wx.requestPayment）；H5 端（X-Client-Type: h5）返回 mwebUrl 跳转支付。"
-      security: [bearerAuth]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [amount]
-              properties:
-                amount: { type: number, minimum: 0.01 }
-                channel: { type: string, enum: [wechat_mini, wechat_h5], description: '不传则由 X-Client-Type 推断' }
-      responses:
-        '200': { description: 成功 }
-  /api/v1/payments/notify:
-    post:
-      tags: [payments]
-      summary: 微信支付结果回调（无登录态）
-      description: 微信服务器回调，验签后更新订单状态。
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [outTradeNo]
-              properties: { outTradeNo: { type: string } }
-      responses:
-        '200': { description: "成功，返回 { received: true }" }
-  /api/v1/payments/orders/{orderId}:
-    get:
-      tags: [payments]
-      summary: 支付订单详情（仅本人）
-      security: [bearerAuth]
-      parameters:
-        - { name: orderId, in: path, required: true, schema: { type: string } }
-      responses:
-        '200': { description: 成功 }
-        '403': { description: 非本人订单（4030） }
+
+

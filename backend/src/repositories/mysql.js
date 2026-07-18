@@ -696,70 +696,6 @@ function createMysqlRepos(pool) {
     },
   };
 
-  // ---------- payments ----------
-  const payments = {
-    async createOrder(data) {
-      const outTradeNo = 'O' + Date.now() + Math.floor(Math.random() * 1000);
-      const [res] = await pool.execute(
-        'INSERT INTO payments_orders (out_trade_no, user_id, amount, currency, status, channel, prepay_id, mweb_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [
-          outTradeNo,
-          data.userId,
-          data.amount,
-          data.currency || 'CNY',
-          'pending',
-          data.channel || 'wechat_mini',
-          'prepay_' + outTradeNo,
-          data.channel === 'wechat_h5' ? 'https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?prepay_id=' + outTradeNo : null,
-        ]
-      );
-      return this.getOrder(res.insertId);
-    },
-    async getOrder(id) {
-      const [rows] = await pool.execute('SELECT * FROM payments_orders WHERE id = ?', [id]);
-      if (!rows.length) return null;
-      const o = rows[0];
-      return {
-        id: o.id,
-        userId: o.user_id,
-        amount: o.amount,
-        currency: o.currency,
-        status: o.status,
-        channel: o.channel,
-        prepayId: o.prepay_id,
-        mwebUrl: o.mweb_url,
-        outTradeNo: o.out_trade_no,
-        createdAt: o.created_at,
-        paidAt: o.paid_at,
-      };
-    },
-    async updateOrder(id, patch) {
-      const sets = [];
-      const params = [];
-      if (patch.status !== undefined) {
-        sets.push('status = ?');
-        params.push(patch.status);
-      }
-      if (patch.status === 'paid') sets.push('paid_at = NOW()');
-      params.push(id);
-      await pool.execute('UPDATE payments_orders SET ' + sets.join(', ') + ' WHERE id = ?', params);
-      return this.getOrder(id);
-    },
-    async listByUser(userId, { page = 1, pageSize = 20 } = {}) {
-      const [countRows] = await pool.execute('SELECT COUNT(*) AS c FROM payments_orders WHERE user_id = ?', [userId]);
-      const [rows] = await pool.query(
-        'SELECT * FROM payments_orders WHERE user_id = ? ORDER BY created_at DESC LIMIT ' + Math.floor(pageSize) + ' OFFSET ' + Math.floor((page - 1) * pageSize),
-        [userId]
-      );
-      return {
-        list: rows.map((o) => ({ id: o.id, amount: o.amount, status: o.status, channel: o.channel, createdAt: o.created_at })),
-        total: countRows[0].c,
-        page,
-        pageSize,
-      };
-    },
-  };
-
   // ---------- schedule profiles ----------
   const scheduleProfiles = {
     async listSystem({ status = 'active' } = {}) {
@@ -887,7 +823,7 @@ function createMysqlRepos(pool) {
     };
   }
 
-  return { users, groups, tasks, responses, receipts, notify, payments, scheduleProfiles };
+  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles };
 }
 
 module.exports = { createMysqlRepos };

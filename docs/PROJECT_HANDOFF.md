@@ -51,6 +51,7 @@
   - 不确定：是否另有远端备份
 - **是否有线上部署**：以本地联调为主。设计文档提到 CloudBase/云托管，**未落地为现成部署流水线**。体验版/正式版小程序是否已发：**不确定**。
 - **是否涉及数据库**：**是**。默认库名 `paiban`，`backend/schema.sql` 含 **16 张表**。另有 `DB_MODE=memory` 无库可跑测。
+- **是否接入支付**：**否**（产品明确不做微信支付；代码与表已移除）
 - **是否涉及第三方 API**：
   - 微信：`code2Session`、订阅消息、支付（模块有，密钥多为空/占位）  
   - 设计中有课表 OCR：**实现多为骨架**，未完整接真 OCR  
@@ -70,7 +71,7 @@
 - **相关文件**：
   - `backend/src/server/routes.js`（统一路由表，Express 与云函数共用）
   - `backend/src/server/express.js`、`cloud-function.js`
-  - `backend/src/handlers/*`（auth / users / groups / tasks / responses / receipts / preview / notify / payments / scheduleProfiles / guard）
+  - `backend/src/handlers/*`（auth / users / groups / tasks / responses / receipts / preview / notify / scheduleProfiles / guard）
   - `backend/src/repositories/{memory,mysql,index}.js`
   - `backend/src/domain/time/index.js`
   - `backend/src/core/{auth,db,errors,response,validate,context}.js`
@@ -85,7 +86,7 @@
   - MySQL 模式：本机曾跑通登录/模板/建组/加入/建任务/填报/生成/发布/异议等 B2B 链路（会话记录）
   - 生成方案会同步写候选并置 job `success`（不再只挂 pending）
 - **只写了代码未充分验证**：
-  - 支付真签回调、真实 `WX_SECRET` 的 code2Session
+  - 真实 `WX_SECRET` 的 code2Session
   - OCR 真链路
   - CloudBase 云函数部署
   - `notify_queue` / `countdowns` / `audit_logs` 业务写入覆盖不全
@@ -324,9 +325,6 @@ GET    /api/v1/share/tasks/:taskId          # 公开只读
 POST   /api/v1/notify/subscribe
 GET    /api/v1/users/me/inbox
 PATCH  /api/v1/users/me/inbox/:messageId
-POST   /api/v1/payments/orders
-POST   /api/v1/payments/notify
-GET    /api/v1/payments/orders/:orderId
 ```
 
 ### 3.6 数据库相关
@@ -341,7 +339,7 @@ GET    /api/v1/payments/orders/:orderId
 | `scripts/migrate-time-modes.sql` | 旧库增量 |
 | `scripts/seed-init.sql` | compose 首次挂载种子 |
 
-**16 表**：`users`、`groups`、`group_members`、`tasks`、`personal_calendars`、`task_responses`、`task_receipts`、`notify_inbox`、`schedule_jobs`、`payments_orders`、`schedule_profiles`、`app_settings`、`user_assignments`、`countdowns`、`notify_queue`、`audit_logs`
+**15 表**（无支付表）：`users`、`groups`、`group_members`、`tasks`、`personal_calendars`、`task_responses`、`task_receipts`、`notify_inbox`、`schedule_jobs`、`schedule_profiles`、`app_settings`、`user_assignments`、`countdowns`、`notify_queue`、`audit_logs`
 
 **tasks 关键字段**：`time_mode`、`schedule_profile_id`、`schedule_profile_version`、periods 快照类 JSON、`version` 乐观锁
 
@@ -353,7 +351,7 @@ GET    /api/v1/payments/orders/:orderId
 - `components/task-card`：任务卡片  
 - `components/schedule-view`：班表/网格视图（Duty Grid 方向）
 
-**services（API 解包）**：`auth`、`groups`、`tasks`、`responses`、`profiles`、`receipts`、`notify`、`payments`
+**services（API 解包）**：`auth`、`groups`、`tasks`、`responses`、`profiles`、`receipts`、`notify`
 
 **utils**：
 
@@ -377,7 +375,6 @@ backend/tests/
 ├── groups.test.js
 ├── tasks.test.js
 ├── flow.test.js          # 端到端逻辑链
-├── payments.test.js
 ├── schedule-profiles.test.js
 └── time-domain.test.js
 ```
@@ -466,7 +463,7 @@ backend/tests/
 - 生成引擎 = 简易轮询取人，**不是**约束求解器  
 - 热力图/提交人数聚合 API 弱  
 - H5 运维未建  
-- 支付 / OCR / 订阅模板 ID 占位  
+- OCR / 订阅模板 ID 占位  
 - **Git 大量未提交 + 无 remote**  
 - profile/schedule 等 Tab 页未接 API  
 - 设计文档与实现双份真相  
@@ -507,7 +504,6 @@ backend/tests/
 | `JWT_REFRESH_EXPIRE` | refresh 有效期 | 否 | 如 14d |
 | `WX_APPID` | 小程序 AppID | 真登录是 | 开发可假 openid |
 | `WX_SECRET` | 小程序密钥 | 真登录是 | 同上；**`[REDACTED]`** |
-| `WX_MCH_ID` / `WX_MCH_KEY` / `WX_PAY_NOTIFY_URL` | 支付 | 支付功能是 | 支付不可用 |
 | `H5_ADMIN_USER` / `H5_ADMIN_PASS` | H5 运维账号 | 用 H5 时是 | 无法 H5 登录 |
 | `CORS_ORIGINS` | CORS | 否 | * |
 | `RATE_LIMIT_MAX` | 限流 | 否 | |
@@ -696,10 +692,10 @@ npm test
 - **有效方案**：`scripts/lib/schema-sql.js` 的 `stripDatabaseSwitch`；`db-smoke.js` / `import-schema.js` 导入前剥离  
 - **验证**：`node scripts/db-smoke.js` → 16 表 + 断言通过（2026-07-18）  
 
-### 问题 8：支付 / OCR / 订阅模板
+### 问题 8：OCR / 订阅模板
 
 - **表现**：占位 ID、空密钥  
-- **相关文件**：`config.js` subscribeTemplateIds、`payments.js`、`wechat-config.md`  
+- **相关文件**：`config.js` subscribeTemplateIds、`wechat-config.md`  
 - **下一步**：按微信后台配真值  
 
 ### 问题 9：Token / 成功色双轨

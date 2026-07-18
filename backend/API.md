@@ -26,7 +26,6 @@
 | 模块 | 小程序端（miniprogram） | H5 运维端（h5） |
 |------|------------------------|-----------------|
 | 登录鉴权 | `wx.login()` 拿 `code` → `POST /auth/miniprogram/login` 换 openid 签发 JWT | 账号密码 → `POST /auth/h5/login` 签发带 `admin` 角色 JWT |
-| 支付 | 下单返回 `prepayId`，客户端调 `wx.requestPayment` 完成 | 下单返回 `mwebUrl`，跳转微信 H5 支付中间页 |
 | 分享 | 用 `onShareAppMessage` 直接打开小程序内预览页（带登录态） | 用 URL `+ ?token=` 打开 `GET /share/tasks/{id}` 只读脱敏页（无登录态） |
 | 订阅消息 | 前端 `wx.requestSubscribeMessage` 后回传受理结果到 `POST /notify/subscribe` | 无订阅消息能力，统一走消息中心轮询/红点 |
 
@@ -53,7 +52,7 @@
    └─ 成员提异议(task_receipts) → 发布者 adjust → previous_schedule 备份 + 重新发布
 ```
 
-**数据依赖**：`group_members.group_id→groups.id`；`tasks.group_id→groups.id`、`tasks.publisher_id→users.id`；`task_responses.task_id→tasks.id`；`user_assignments.task_id→tasks.id`；`notify_inbox.user_id→users.id`；`payments_orders.user_id→users.id`。所有写操作在 `published` 等状态转换处通过 **乐观锁 `version`** 与 **事务（发布方案）** 保障一致性。
+**数据依赖**：`group_members.group_id→groups.id`；`tasks.group_id→groups.id`、`tasks.publisher_id→users.id`；`task_responses.task_id→tasks.id`；`user_assignments.task_id→tasks.id`；`notify_inbox.user_id→users.id`。所有写操作在 `published` 等状态转换处通过 **乐观锁 `version`** 与 **事务（发布方案）** 保障一致性。
 
 ---
 
@@ -157,15 +156,6 @@
 | GET | /api/v1/users/me/inbox | 消息中心 | page(1), pageSize(20) → {list,total,page,pageSize,unread} |
 | PATCH | /api/v1/users/me/inbox/{messageId} | 标记已读 | messageId(路径) |
 
-### 4.9 支付 payments
-
-| 方法 | 路径 | 用途 | 关键参数 |
-|------|------|------|----------|
-| POST | /api/v1/payments/orders | 创建订单 | amount(必,>0), channel?(默认按端推断) → MP 返回 prepayId；H5 返回 mwebUrl |
-| POST | /api/v1/payments/notify | 微信回调(无登录态) | outTradeNo(必) |
-| GET | /api/v1/payments/orders/{orderId} | 订单详情(仅本人) | orderId(路径) |
-
----
 
 ## 5. 统一错误码表
 
@@ -205,9 +195,6 @@
 | 1601 | 预览链接无效 | 403 | token 错误 |
 | 1602 | 预览链接已过期，请联系发布者重新分享 | 410 | token 过期 |
 | 1701 | 订阅消息授权失败 | 400 | 空模板 |
-| 1801 | 创建支付订单失败 | 502 | 下单失败 |
-| 1802 | 支付订单不存在 | 404 | — |
-| 1803 | 支付回调验签失败 | 400 | 签名错误 |
 | 1901 | 异步任务不存在 | 404 | — |
 | 1902 | 异步任务执行失败 | 422 | job failed |
 
@@ -217,7 +204,7 @@
 
 实现层 `src/repositories/mysql.js` 对应表（详见 `docs/business-flows.md` v3.5）：
 
-`users · groups · group_members · tasks · task_responses · user_assignments · task_receipts · personal_calendars · notify_inbox · payments_orders · schedule_jobs`
+`users · groups · group_members · tasks · task_responses · user_assignments · task_receipts · personal_calendars · notify_inbox · schedule_jobs`
 
 连接配置（`src/core/db.js` + `src/config.js`）支持通过 **环境变量/`.env`** 切换 `DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME`，无需改动代码；字符集 `utf8mb4`、时区 `UTC`、连接池上限 `DB_POOL_LIMIT`。
 
@@ -231,7 +218,7 @@ npm install
 
 # 2. 内存模式跑通全链路 + 测试（无需数据库）
 npm run dev          # 本地服务（DB_MODE=memory）
-npm test             # node --test 运行 tests/，覆盖用户/分组/任务/支付/分享/消息全模块
+npm test             # node --test 运行 tests/，覆盖用户/分组/任务/时段模板/分享/消息（无支付）
 
 # 3. 生产模式（配置数据库连接后）
 DB_MODE=mysql node src/server/express.js

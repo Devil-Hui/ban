@@ -219,32 +219,10 @@ CREATE TABLE IF NOT EXISTS `schedule_jobs` (
   KEY `idx_status_created` (`status`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='异步任务';
 
--- ----------------------------
--- 10. 支付订单
--- ----------------------------
-CREATE TABLE IF NOT EXISTS `payments_orders` (
-  `id`           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `out_trade_no` VARCHAR(64)  NOT NULL COMMENT '业务订单号',
-  `user_id`      BIGINT UNSIGNED NOT NULL COMMENT '下单用户',
-  `group_id`     BIGINT UNSIGNED DEFAULT NULL,
-  `task_id`      BIGINT UNSIGNED DEFAULT NULL,
-  `channel`      ENUM('wechat_mini','wechat_h5') NOT NULL DEFAULT 'wechat_mini' COMMENT '支付渠道',
-  `amount`       INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '金额（分）',
-  `currency`     VARCHAR(8)   NOT NULL DEFAULT 'CNY',
-  `status`       ENUM('pending','paid','closed','refunded') NOT NULL DEFAULT 'pending',
-  `prepay_id`    VARCHAR(64)  DEFAULT NULL,
-  `mweb_url`     VARCHAR(512) DEFAULT NULL,
-  `paid_at`      DATETIME(3)  DEFAULT NULL,
-  `created_at`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-  `updated_at`   DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_out_trade_no` (`out_trade_no`),
-  KEY `idx_user_id` (`user_id`),
-  KEY `idx_status` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付订单';
+-- 说明：产品不接入微信支付，故无 payments_orders 表。
 
 -- ----------------------------
--- 11. 作息模板（系统种子 + 分组覆盖）
+-- 10. 作息模板（系统种子 + 分组覆盖）
 -- ----------------------------
 CREATE TABLE IF NOT EXISTS `schedule_profiles` (
   `id`                VARCHAR(64)  NOT NULL COMMENT '模板ID',

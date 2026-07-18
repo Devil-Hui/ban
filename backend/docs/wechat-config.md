@@ -1,6 +1,6 @@
-# 微信支付 / 订阅消息 / 合规配置指南
+# 微信登录 / 订阅消息 / 合规配置指南
 
-本文档说明排班小程序接入微信生态所需的后台配置，与 `backend/.env.example` 中的环境变量一一对应。前端调用示例见 `miniprogram/services/payments.js` 与 `miniprogram/services/notify.js`。
+本文档说明排班小程序接入微信生态所需的后台配置，与 `backend/.env.example` 中的环境变量一一对应。前端调用示例见 `miniprogram/services/notify.js`。**本产品不接入微信支付。**
 
 ---
 
@@ -28,33 +28,13 @@ https://api.example.com
 
 ---
 
-## 二、微信支付配置（小程序端）
+## 二、微信支付（已明确不做）
 
-### 2.1 申请与参数
-1. **微信支付商户号（MCH_ID）**：在 [pay.weixin.qq.com](https://pay.weixin.qq.com) 申请，绑定同主体小程序。
-2. 在商户平台 **API 安全** 中设置：
-   - **APIv2 密钥（商户密钥）** → `WX_MCH_KEY`（用于 `signType=MD5` 签名）
-   - **APIv3 密钥** 与 **API 证书（apiclient_cert.pem / apiclient_key.pem）**（用于 `signType=RSA`、退款、账单下载）
-   - 本项目后端默认采用 **RSA** 签名（与 `services/payments.js` 中 `signType:'RSA'` 一致），请配置 APIv3 密钥并把证书放到后端安全目录，**切勿入库**（`.gitignore` 已忽略密钥）。
-3. **支付结果回调地址** → `WX_PAY_NOTIFY_URL`，需为公网 HTTPS 且返回 `<xml><return_code><![CDATA[SUCCESS]]></return_code></xml>`。后端 `POST /api/v1/payments/notify` 已实现验签（见 `backend/src/core/auth.js` 的 `verifyWxPayCallback`，verifier 可注入测试）。
-
-### 2.2 前端支付链路
-```
-services/payments.js: createOrder({ groupId?, taskId?, amount, channel:'wechat_mini' })
-  → POST /payments/orders
-  → 后端调用微信「JSAPI 统一下单」拿到 prepay_id，服务端签名返回 5 个参数
-  → pay(payment) 调 wx.requestPayment({ timeStamp, nonceStr, package, signType, paySign })
-  → 成功回调 → 后端异步收到 /payments/notify 置订单为 paid
-```
-- **务必在 `wx.requestPayment` 的 `fail` 中区分「用户取消」与「支付失败」**（代码已处理 `errMsg.includes('cancel')`）。
-- 金额以 **分** 为单位传给后端，避免浮点误差。
-
-### 2.3 H5 支付差异（双端区分）
-- 小程序：`trade_type=JSAPI`，返回 `prepay_id` + 前端签名 → `wx.requestPayment`。
-- H5（运维/分享页）：`trade_type=MWEB`，后端返回 `mweb_url`，由 H5 页面跳转。渠道由请求头 `X-Client-Type` 区分（见 `API.md` 双端差异表）。
+产品决策：**不接入微信支付**。后端无 `/payments/*` 路由，无商户密钥配置，前端无 `services/payments.js`。若未来要做增值能力，再单独设计，不要从历史分支恢复半成品支付代码。
 
 ---
 
+## 三、
 ## 三、订阅消息（一次性订阅）
 
 ### 3.1 申请模板
@@ -91,9 +71,6 @@ services/payments.js: createOrder({ groupId?, taskId?, amount, channel:'wechat_m
 | 变量 | 用途 |
 | --- | --- |
 | `WX_APPID` / `WX_SECRET` | 小程序身份与 code2Session |
-| `WX_MCH_ID` | 微信支付商户号 |
-| `WX_MCH_KEY` | 商户 API 密钥（RSA 签名用 APIv3 密钥，此处作兼容字段） |
-| `WX_PAY_NOTIFY_URL` | 支付结果回调公网地址 |
 | `SHARE_TOKEN_TTL` | 分享只读 token 有效期（秒，默认 7 天） |
 | `JWT_SECRET` / `JWT_ACCESS_EXPIRE` / `JWT_REFRESH_EXPIRE` | 登录态签发与刷新 |
 
@@ -103,8 +80,8 @@ services/payments.js: createOrder({ groupId?, taskId?, amount, channel:'wechat_m
 
 ## 六、上架前自查清单
 - [ ] request 合法域名已配且为 HTTPS
-- [ ] 微信支付商户号已绑定、回调地址可达且验签通过
+- [x] 确认产品不做支付，代码与配置无商户密钥残留
 - [ ] 订阅消息模板 ID 已替换为真实值
 - [ ] 《隐私保护指引》已发布，隐私弹窗已接入
-- [ ] 真机（iOS + Android）登录、支付、分享、订阅全链路自测通过
+- [ ] 真机（iOS + Android）登录、分享、订阅全链路自测通过
 - [ ] 后端错误码与前端 Toast 文案对齐（`API.md` 统一错误码表）
