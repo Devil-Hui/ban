@@ -13,6 +13,7 @@ App({
     tokenReady: false,
     loginReady: false,
     loginReadyCallbacks: [],
+    notifyMode: 'inbox_only',
   },
 
   onLaunch() {
@@ -25,6 +26,13 @@ App({
   },
 
   async bootstrap() {
+    // 预拉通知模板目录（不阻塞登录；无 ID 时为 inbox_only）
+    try {
+      const notifyApi = require('./services/notify');
+      notifyApi.getTemplates().then((c) => {
+        this.globalData.notifyMode = (c && c.mode) || 'inbox_only';
+      }).catch(() => {});
+    } catch (_) {}
     try {
       const user = await silentLogin();
       this._setUser(user, { ready: true });

@@ -714,11 +714,13 @@ function createMemoryRepos() {
 
   // ---------- subscriptions（订阅授权记录） ----------
   const subscriptions = {
-    async upsert(userId, { templateIds, accepted }) {
+    async upsert(userId, data = {}) {
       const row = {
         userId,
-        templateIds: templateIds || [],
-        accepted: accepted || [],
+        templateIds: data.templateIds || [],
+        accepted: data.accepted || [],
+        keys: data.keys || data.accepted || [],
+        mode: data.mode || null,
         updatedAt: new Date().toISOString(),
       };
       store.subscriptions.set(userId, row);

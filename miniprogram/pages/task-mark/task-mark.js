@@ -321,6 +321,11 @@ Page({
     this.setData({ submitting: true });
     try {
       await ensureLogin();
+      // 用户点击提交：可请求截止提醒订阅（无真实模板 ID 时自动 inbox_only）
+      try {
+        const notifyApi = require('../../services/notify');
+        await notifyApi.subscribe({ scene: 'deadline' });
+      } catch (_) {}
       await responsesApi.submit(this.data.taskId, { availability });
       wx.showToast({ title: '提交成功', icon: 'success' });
       setTimeout(() => wx.navigateBack(), 600);

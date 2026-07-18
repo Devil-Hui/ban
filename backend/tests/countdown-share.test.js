@@ -129,3 +129,28 @@ describe('deadline worker + share preview', () => {
     assert.deepEqual(saved.accepted, ['tmpl_a']);
   });
 });
+
+describe('notify templates dual-mode', () => {
+  it('meta notify-templates returns inbox_only without env templates', async () => {
+    setup();
+    const res = await request('GET', '/api/v1/meta/notify-templates');
+    assert.ok(res.mode === 'inbox_only' || res.mode === 'wechat_subscribe');
+    assert.ok(Array.isArray(res.items));
+    assert.ok(Array.isArray(res.logicalKeys));
+  });
+
+  it('subscribe with keys works without wechat template ids', async () => {
+    const repos = setup();
+    const login = await request('POST', '/api/v1/auth/miniprogram/login', {
+      body: { code: 'sub_keys_user' },
+    });
+    const res = await request('POST', '/api/v1/notify/subscribe', {
+      token: login.accessToken,
+      body: { keys: ['task_published', 'deadline_remind'] },
+    });
+    assert.ok(res.accepted.length >= 1);
+    assert.equal(res.mode, 'inbox_only');
+    const saved = await repos.subscriptions.get(login.user.id);
+    assert.ok(saved);
+  });
+});

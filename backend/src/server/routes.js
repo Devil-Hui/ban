@@ -23,6 +23,7 @@ const ROUTES = [
 
   // 元数据 / 作息模板（P0）
   { method: 'GET', path: '/api/v1/meta/time-constants', handler: scheduleProfiles.getTimeMeta },
+  { method: 'GET', path: '/api/v1/meta/notify-templates', handler: notify.getTemplates },
   { method: 'GET', path: '/api/v1/schedule-profiles', handler: scheduleProfiles.listProfiles },
   { method: 'GET', path: '/api/v1/schedule-profiles/:profileId', handler: scheduleProfiles.getProfile },
   { method: 'GET', path: '/api/v1/groups/:groupId/schedule-profile', handler: scheduleProfiles.getGroupProfile },

@@ -351,10 +351,10 @@ Page({
   async publishScheme() {
     try {
       await ensureLogin();
-      // 发布前请求订阅（有真实模板 ID 时才会弹；否则跳过）
+      // 发布前请求订阅：有微信模板 ID 则弹窗，否则记站内偏好
       try {
         const notifyApi = require('../../services/notify');
-        await notifyApi.subscribe();
+        await notifyApi.subscribe({ scene: 'publish' });
       } catch (_) {}
       const pub = await tasksApi.publish(this.data.taskId, {});
       wx.showToast({ title: '已发布', icon: 'success' });

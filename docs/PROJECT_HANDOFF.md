@@ -835,11 +835,14 @@ npm test
 - **交付**：
   1. `domain/countdown.js` + `workers/deadline-worker.js` + `npm run worker:deadline`  
      - 建任务/延长截止写入 `countdowns`；到期 → 站内提醒 / `collecting→reviewing`  
-  2. 订阅：`.env` 的 `WX_TMPL_TASK_PUBLISHED` / `WX_TMPL_DEADLINE_REMIND`；  
-     小程序 `config.subscribeTemplateIds`；`POST /notify/subscribe` 持久化授权  
+  2. **订阅双轨（可不依赖真实微信模板）**：  
+     - 始终可用：站内 `notify_inbox`（发布/截止 worker 写入）  
+     - 可选：配置 `WX_TMPL_*` + 小程序 `subscribeTemplateIds` 后弹微信订阅  
+     - `GET /meta/notify-templates` 暴露 mode=`inbox_only|wechat_subscribe`  
+     - 我的页消息中心 +「开启提醒」；填报/发布点击时请求订阅  
   3. 分享：`share_token_expires_at` + 过期校验；预览姓名脱敏；  
      `pages/share-preview` 接 `GET /share/tasks/:id?token=`  
-- **验证**：`npm test` → **37 pass**（含 countdown-share + flow 脱敏断言）  
+- **验证**：`npm test` → **39 pass**  
 
 ### 哪些任务不要现在做？
 

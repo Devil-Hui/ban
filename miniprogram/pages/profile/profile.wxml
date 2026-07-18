@@ -63,6 +63,30 @@
     </view>
   </view>
 
+  <!-- 消息中心（站内 inbox，不依赖微信模板） -->
+  <view class="section-head inbox-section">
+    <text class="section-title">消息中心</text>
+    <text class="section-action">{{notifyModeLabel}}{{inboxUnread ? ' · ' + inboxUnread + ' 未读' : ''}}</text>
+  </view>
+  <view class="inbox-card" wx:if="{{inbox.length}}">
+    <view
+      wx:for="{{inbox}}"
+      wx:key="id"
+      class="inbox-item {{item.read ? '' : 'inbox-unread'}}"
+      bindtap="onInboxTap"
+      data-id="{{item.id}}"
+    >
+      <view class="inbox-title-row">
+        <text class="inbox-title">{{item.title}}</text>
+        <text class="inbox-time">{{item.timeText}}</text>
+      </view>
+      <view class="inbox-body">{{item.body}}</view>
+    </view>
+  </view>
+  <view class="inbox-empty" wx:else>
+    <text class="inbox-empty-text">暂无消息。发布排班或截止提醒会出现在这里。</text>
+  </view>
+
   <!-- 功能菜单 -->
   <view class="section-head">
     <text class="section-title">协同工具</text>
