@@ -42,6 +42,16 @@ const extendDeadline = (taskId, data) => post(`/tasks/${taskId}/deadline/extend`
 const cancel = (taskId) => post(`/tasks/${taskId}/cancel`);
 const adjust = (taskId, data) => post(`/tasks/${taskId}/adjust`, data);
 
+/** 公开分享预览（无需登录）：GET /share/tasks/:id?token= */
+const getShared = async (taskId, token) => {
+  const res = await get(
+    `/share/tasks/${taskId}`,
+    { token },
+    { auth: false, silent: true }
+  );
+  return res || {};
+};
+
 module.exports = {
   create,
   listByGroup,
@@ -52,4 +62,5 @@ module.exports = {
   extendDeadline,
   cancel,
   adjust,
+  getShared,
 };

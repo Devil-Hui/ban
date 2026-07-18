@@ -1,7 +1,21 @@
-<!-- pages/share-preview/share-preview.wxml —— 分享预览页（发布者选定人名后分享，加入者确认时间表） -->
+<!-- pages/share-preview/share-preview.wxml —— 分享预览页（API 脱敏 / 本地兼容） -->
 <view class="page-share">
+  <view wx:if="{{loading}}" class="share-banner">
+    <view class="sb-body">
+      <view class="sb-title">加载预览…</view>
+      <view class="sb-desc">正在校验分享凭证</view>
+    </view>
+  </view>
+  <view wx:elif="{{error}}" class="share-banner share-banner-joiner">
+    <view class="sb-icon">!</view>
+    <view class="sb-body">
+      <view class="sb-title">无法打开预览</view>
+      <view class="sb-desc">{{error}}</view>
+    </view>
+  </view>
+
   <!-- 顶部说明条：根据 role 显示不同文案 -->
-  <view class="share-banner" wx:if="{{role === 'publisher'}}">
+  <view class="share-banner" wx:if="{{!loading && !error && role === 'publisher'}}">
     <view class="sb-icon">📤</view>
     <view class="sb-body">
       <view class="sb-title">已选定 {{names.length}} 名成员</view>

@@ -120,6 +120,7 @@ CREATE TABLE IF NOT EXISTS `tasks` (
   `final_schedule`           JSON         DEFAULT NULL COMMENT '最终方案',
   `previous_schedule`        JSON         DEFAULT NULL COMMENT '上一版方案',
   `share_token`              VARCHAR(64)  DEFAULT NULL COMMENT '分享只读 token',
+  `share_token_expires_at`   DATETIME(3)  DEFAULT NULL COMMENT '分享 token 过期(UTC)',
   `generating_job_id`        BIGINT UNSIGNED DEFAULT NULL COMMENT '异步生成 job',
   `version`                  INT UNSIGNED NOT NULL DEFAULT 1 COMMENT '乐观锁',
   `published_at`             DATETIME(3)  DEFAULT NULL COMMENT '发布时间',

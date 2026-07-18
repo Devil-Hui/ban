@@ -1,209 +1,319 @@
-// pages/share-preview/share-preview.js —— 分享预览页（发布者选定人名后分享，加入者确认时间表）
+// pages/share-preview/share-preview.js —— 分享预览（接 API 脱敏排班 / 兼容本地参数）
+const tasksApi = require('../../services/tasks');
+
 Page({
   data: {
-    // 来源：publisher（发布者选定人名分享）/ joiner（加入者通过分享链接进入）
-    role: 'publisher',
+    role: 'joiner',
     from: '',
-    // 发布者选定的成员名单
+    loading: true,
+    error: '',
+    taskId: '',
+    token: '',
     names: [],
-    // 分组信息
     groupInfo: {
-      id: 'G01',
-      name: '计科202值班群',
-      initial: '计',
-      memberCount: 8,
-      taskCount: 5,
-      cycleLabel: '每周循环'
+      id: '',
+      name: '排班任务',
+      initial: '排',
+      memberCount: 0,
+      taskCount: 1,
+      cycleLabel: '只读预览',
     },
-    // 任务摘要
     task: {
-      id: 'T001',
-      title: '国庆假期值班',
-      dateRange: '10.01 - 10.07',
-      periodCount: 3,
-      publishedAt: '10-02 15:30',
-      remark: '请提前 10 分钟到岗，值班期间保持电话畅通'
+      id: '',
+      title: '加载中…',
+      dateRange: '—',
+      periodCount: 0,
+      publishedAt: '—',
+      remark: '',
     },
-    // 时段配置（按创建时原貌显示）
-    periods: [
-      { id: 'p1', label: '08:00-10:00', maxPeople: 2 },
-      { id: 'p2', label: '10:00-12:00', maxPeople: 2 },
-      { id: 'p3', label: '14:00-16:00', maxPeople: 1 }
-    ],
-    // 按周日历
+    periods: [],
     weekLabels: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
     calWeekStart: '',
     calWeekLabel: '',
     weekDays: [],
-    // 时段行 × 7 天单元格
     rows: [],
-    // 加入者确认状态
+    assignments: [],
     confirmed: false,
-    confirmedAt: ''
+    confirmedAt: '',
+    expiresAt: '',
   },
 
   onLoad(options) {
-    // 接收参数
-    const role = options.role || 'publisher'
-    const from = options.from || ''
-    let names = []
+    const role = options.role || (options.token ? 'joiner' : 'publisher');
+    const from = options.from || '';
+    const taskId = options.taskId || options.id || '';
+    const token = options.token || options.shareToken || '';
+    let names = [];
     if (options.names) {
-      names = decodeURIComponent(options.names).split(',').filter(Boolean).map((name, idx) => ({
-        id: `n${idx + 1}`,
-        name,
-        initial: name.slice(-1)
-      }))
+      names = decodeURIComponent(options.names)
+        .split(',')
+        .filter(Boolean)
+        .map((name, idx) => ({
+          id: `n${idx + 1}`,
+          name,
+          initial: name.slice(-1),
+        }));
     }
-    this.setData({ role, from, names })
+    this.setData({ role, from, taskId, token, names });
 
-    // 初始化本周日历
-    const today = new Date()
-    const dayOfWeek = today.getDay() || 7
-    const monday = new Date(today)
-    monday.setDate(today.getDate() - dayOfWeek + 1)
-    this.setData({ calWeekStart: this.formatDate(monday) }, () => {
-      this.buildWeekDays()
-      this.buildRows()
-    })
+    const today = new Date();
+    const dayOfWeek = today.getDay() || 7;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - dayOfWeek + 1);
+    this.setData({ calWeekStart: this.formatDate(monday) });
+
+    if (taskId && token) {
+      this.loadShared(taskId, token);
+    } else if (taskId) {
+      // 发布者从详情进入：尝试用已发布任务详情（需登录）拉真实数据
+      this.loadAsPublisher(taskId);
+    } else {
+      this.setData({
+        loading: false,
+        error: '缺少任务或分享凭证',
+      });
+      this.buildWeekDays();
+      this.buildRows();
+    }
+  },
+
+  async loadShared(taskId, token) {
+    this.setData({ loading: true, error: '' });
+    try {
+      const res = await tasksApi.getShared(taskId, token);
+      this.applySharedPayload(res);
+    } catch (e) {
+      const msg =
+        (e && e.message) ||
+        (e && e.code === 1602 ? '预览链接已过期' : '预览链接无效');
+      this.setData({ loading: false, error: msg, task: { title: '无法打开预览' } });
+    }
+  },
+
+  async loadAsPublisher(taskId) {
+    this.setData({ loading: true, error: '' });
+    try {
+      const t = await tasksApi.getOne(taskId);
+      const shareToken = t.shareToken || '';
+      if (shareToken) {
+        await this.loadShared(taskId, shareToken);
+        this.setData({ role: 'publisher', token: shareToken });
+        return;
+      }
+      // 未发布：仅展示任务元信息
+      const periods = (t.periods || []).map((p) => ({
+        id: p.id,
+        label: p.name || p.label || `${p.start || ''}-${p.end || ''}`,
+        maxPeople: 1,
+      }));
+      this.setData({
+        loading: false,
+        task: {
+          id: t.id,
+          title: t.title || '排班任务',
+          dateRange: this.shortRange(t.dateRangeStart, t.dateRangeEnd),
+          periodCount: periods.length,
+          publishedAt: t.publishedAt ? String(t.publishedAt).slice(0, 16) : '未发布',
+          remark: t.description || '',
+        },
+        periods,
+        assignments: [],
+      });
+      this.buildWeekDays();
+      this.buildRows();
+    } catch (_) {
+      this.setData({ loading: false, error: '加载任务失败' });
+    }
+  },
+
+  applySharedPayload(res) {
+    const t = (res && res.task) || {};
+    const schedule = t.schedule || {};
+    const assignments = schedule.assignments || [];
+    const periods = (t.periods || []).map((p) => ({
+      id: p.id,
+      label: p.name || `${p.start || ''}-${p.end || ''}` || p.id,
+      maxPeople: 2,
+    }));
+    // 从 assignments 收集脱敏名单
+    const nameSet = {};
+    assignments.forEach((a) => {
+      (a.userNames || []).forEach((n) => {
+        if (n) nameSet[n] = true;
+      });
+    });
+    const names = Object.keys(nameSet).map((name, idx) => ({
+      id: `n${idx}`,
+      name,
+      initial: name.replace(/\*/g, '').slice(-1) || '成',
+    }));
+
+    this.setData({
+      loading: false,
+      error: '',
+      names,
+      assignments,
+      periods,
+      expiresAt: (res.meta && res.meta.expiresAt) || '',
+      task: {
+        id: t.id,
+        title: t.title || '排班任务',
+        dateRange: this.shortRange(t.dateRangeStart, t.dateRangeEnd),
+        periodCount: periods.length,
+        publishedAt: t.publishedAt ? String(t.publishedAt).slice(0, 16).replace('T', ' ') : '—',
+        remark: '',
+      },
+      groupInfo: {
+        id: '',
+        name: schedule.schemeName || '排班方案',
+        initial: '班',
+        memberCount: names.length,
+        taskCount: 1,
+        cycleLabel: '只读',
+      },
+    });
+    this.buildWeekDays();
+    this.buildRowsFromAssignments();
+  },
+
+  shortRange(start, end) {
+    if (!start && !end) return '—';
+    const s = String(start || '').slice(5).replace('-', '.');
+    const e = String(end || '').slice(5).replace('-', '.');
+    if (s && e) return `${s} — ${e}`;
+    return s || e || '—';
   },
 
   formatDate(d) {
-    const y = d.getFullYear()
-    const m = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${y}-${m}-${day}`
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   },
 
   buildWeekDays() {
-    const { calWeekStart, weekLabels } = this.data
-    const [y, m, d] = calWeekStart.split('-').map(Number)
-    const today = new Date()
-    const todayStr = this.formatDate(today)
-    const days = []
+    const { calWeekStart, weekLabels } = this.data;
+    if (!calWeekStart) return;
+    const [y, m, d] = calWeekStart.split('-').map(Number);
+    const today = new Date();
+    const todayStr = this.formatDate(today);
+    const days = [];
     for (let i = 0; i < 7; i++) {
-      const date = new Date(y, m - 1, d + i)
-      const dateStr = this.formatDate(date)
+      const date = new Date(y, m - 1, d + i);
+      const dateStr = this.formatDate(date);
       days.push({
         key: 'd' + i,
         weekday: weekLabels[i],
-        dateShort: `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`,
+        dateShort: `${String(date.getMonth() + 1).padStart(2, '0')}/${String(
+          date.getDate()
+        ).padStart(2, '0')}`,
         dateStr,
         day: date.getDate(),
-        isToday: dateStr === todayStr
-      })
+        isToday: dateStr === todayStr,
+      });
     }
-    const weekEnd = new Date(y, m - 1, d + 6)
+    const weekEnd = new Date(y, m - 1, d + 6);
     this.setData({
       weekDays: days,
-      calWeekLabel: `${calWeekStart} 至 ${this.formatDate(weekEnd)}`
-    })
+      calWeekLabel: `${calWeekStart} 至 ${this.formatDate(weekEnd)}`,
+    });
   },
 
   prevWeek() {
-    const [y, m, d] = this.data.calWeekStart.split('-').map(Number)
-    const prev = new Date(y, m - 1, d - 7)
+    const [y, m, d] = this.data.calWeekStart.split('-').map(Number);
+    const prev = new Date(y, m - 1, d - 7);
     this.setData({ calWeekStart: this.formatDate(prev) }, () => {
-      this.buildWeekDays()
-      this.buildRows()
-    })
+      this.buildWeekDays();
+      this.buildRowsFromAssignments();
+    });
   },
 
   nextWeek() {
-    const [y, m, d] = this.data.calWeekStart.split('-').map(Number)
-    const next = new Date(y, m - 1, d + 7)
+    const [y, m, d] = this.data.calWeekStart.split('-').map(Number);
+    const next = new Date(y, m - 1, d + 7);
     this.setData({ calWeekStart: this.formatDate(next) }, () => {
-      this.buildWeekDays()
-      this.buildRows()
-    })
+      this.buildWeekDays();
+      this.buildRowsFromAssignments();
+    });
   },
 
-  // 构建时段行 × 7 天单元格
-  // 演示数据：将名单按 day+period 简单分配
-  buildRows() {
-    const { periods, weekDays, names } = this.data
-    const rows = periods.map((p, pi) => {
-      const cells = []
-      for (let d = 0; d < 7; d++) {
-        const dayInfo = weekDays[d] || {}
-        const dayNum = dayInfo.day || (d + 1)
-        // 演示：用 (dayNum + pi) % 3 决定是否有人
-        const hasAssignee = ((dayNum + pi) % 3) !== 0 && names.length > 0
-        const assigneeIdx = (dayNum + pi) % Math.max(names.length, 1)
-        const assignees = []
-        if (hasAssignee) {
-          // 演示：根据时段最大人数决定显示几个
-          const maxShow = Math.min(p.maxPeople || 1, names.length)
-          for (let k = 0; k < maxShow; k++) {
-            const n = names[(assigneeIdx + k) % names.length]
-            if (n) {
-              assignees.push({
-                maskedName: this.maskName(n.name),
-                maskedPhone: this.maskPhone()
-              })
-            }
-          }
-        }
-        cells.push({
-          dateStr: dayInfo.dateStr || '',
+  buildRowsFromAssignments() {
+    const { periods, weekDays, assignments } = this.data;
+    if (!periods.length) {
+      this.buildRows();
+      return;
+    }
+    const byKey = {};
+    (assignments || []).forEach((a) => {
+      const date = a.date ? String(a.date).slice(0, 10) : '';
+      const pid = a.periodId || '';
+      const key = date + '|' + pid;
+      byKey[key] = (a.userNames || []).map((n) => ({
+        maskedName: n,
+        maskedPhone: '',
+      }));
+    });
+
+    const rows = periods.map((p) => {
+      const cells = (weekDays || []).map((day) => {
+        const key = (day.dateStr || '') + '|' + p.id;
+        return {
+          dateStr: day.dateStr || '',
           periodId: p.id,
-          assignees
-        })
-      }
-      return {
-        rowIdx: pi,
-        label: p.label,
-        cells
-      }
-    })
-    this.setData({ rows })
+          assignees: byKey[key] || [],
+        };
+      });
+      return { period: p, cells };
+    });
+    this.setData({ rows });
   },
 
-  // 姓名脱敏：首字 + 同学
+  // 无 API 数据时的空表（兼容旧入口）
+  buildRows() {
+    const { periods, weekDays } = this.data;
+    if (!periods.length) {
+      this.setData({ rows: [] });
+      return;
+    }
+    const rows = periods.map((p) => ({
+      period: p,
+      cells: (weekDays || []).map((day) => ({
+        dateStr: day.dateStr || '',
+        periodId: p.id,
+        assignees: [],
+      })),
+    }));
+    this.setData({ rows });
+  },
+
   maskName(name) {
-    if (!name) return ''
-    return name.charAt(0) + '同学'
+    const s = String(name || '');
+    if (s.length <= 1) return s;
+    if (s.length === 2) return s[0] + '*';
+    return s[0] + '*' + s.slice(-1);
   },
 
-  // 手机号脱敏（演示）
   maskPhone() {
-    const prefixes = ['138', '139', '136', '135', '137', '188', '189']
-    const suffixes = ['1234', '5678', '9012', '3456', '7890', '2468', '1357']
-    const p = prefixes[Math.floor(Math.random() * prefixes.length)]
-    const s = suffixes[Math.floor(Math.random() * suffixes.length)]
-    return `${p}****${s}`
+    return '';
   },
 
-  // 加入者点击"我已确认时间表"
   onConfirm() {
-    if (this.data.confirmed) return
-    wx.showModal({
-      title: '确认时间表',
-      content: '确认后，发布者将看到你的可用时间，并据此安排最终排班。是否继续？',
-      confirmText: '确认时间表',
-      cancelText: '再看看',
-      success: (res) => {
-        if (res.confirm) {
-          const now = new Date()
-          const confirmedAt = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-          this.setData({ confirmed: true, confirmedAt })
-          wx.showToast({ title: '已确认', icon: 'success', duration: 800 })
-          // 跳转到加入者填写可用时间页
-          setTimeout(() => {
-            wx.redirectTo({
-              url: `/pages/joiner-fill/joiner-fill?from=share-confirm&groupId=${this.data.groupInfo.id}`
-            })
-          }, 800)
-        }
-      }
-    })
+    const now = new Date();
+    this.setData({
+      confirmed: true,
+      confirmedAt: this.formatDate(now) + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
+    });
+    wx.showToast({ title: '已确认', icon: 'success' });
   },
 
   onShareAppMessage() {
-    const names = this.data.names.map(n => n.name).join('、')
+    const { taskId, token, task } = this.data;
+    const q = token
+      ? `taskId=${taskId}&token=${token}`
+      : `taskId=${taskId}`;
     return {
-      title: `${this.data.groupInfo.name} · ${this.data.task.title}（${names}）`,
-      path: `/pages/share-preview/share-preview?role=joiner&from=share&names=${encodeURIComponent(names)}`,
-      imageUrl: ''
-    }
-  }
-})
+      title: (task && task.title) || '排班预览',
+      path: `/pages/share-preview/share-preview?${q}`,
+    };
+  },
+});

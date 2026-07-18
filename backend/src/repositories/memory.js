@@ -45,13 +45,15 @@ function createMemoryRepos() {
     inbox: new Map(),
     jobs: new Map(),
     shareTokens: new Map(), // token -> {taskId, expireAt}
+    countdowns: new Map(), // id -> countdown
+    subscriptions: new Map(), // userId -> { templateIds, accepted, updatedAt }
     scheduleProfiles: new Map(), // id -> profile
     groupProfiles: new Map(), // groupId -> profile
     settings: {
       defaultTimeMode: 'section_range',
       defaultProfileId: 'sys_uni_45min_v1',
     },
-    seq: { user: 0, group: 0, task: 0, job: 0, msg: 0, assign: 0 },
+    seq: { user: 0, group: 0, task: 0, job: 0, msg: 0, assign: 0, countdown: 0 },
   };
 
   // 加载众数种子（幂等 upsert）
@@ -396,14 +398,31 @@ function createMemoryRepos() {
     },
     async getByShareToken(token) {
       const info = store.shareTokens.get(token);
-      if (!info) return null;
+      if (!info) {
+        // 兼容：直接挂在 task.shareToken 上（publish 后）
+        for (const t of store.tasks.values()) {
+          if (t.shareToken === token) {
+            if (t.shareTokenExpiresAt && new Date(t.shareTokenExpiresAt).getTime() < Date.now()) {
+              return { expired: true };
+            }
+            return clone(t);
+          }
+        }
+        return null;
+      }
       if (info.expireAt < Date.now()) return { expired: true };
       const t = store.tasks.get(info.taskId);
       return t ? clone(t) : null;
     },
     async createShareToken(taskId, ttlSeconds) {
       const token = crypto.randomBytes(24).toString('hex');
-      store.shareTokens.set(token, { taskId, expireAt: Date.now() + ttlSeconds * 1000 });
+      const expireAt = Date.now() + (ttlSeconds || 604800) * 1000;
+      store.shareTokens.set(token, { taskId, expireAt });
+      const t = store.tasks.get(taskId);
+      if (t) {
+        t.shareToken = token;
+        t.shareTokenExpiresAt = new Date(expireAt).toISOString();
+      }
       return token;
     },
     async listAssignments(taskId, { activeOnly = true } = {}) {
@@ -645,7 +664,73 @@ function createMemoryRepos() {
     },
   };
 
-  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles };
+
+  // ---------- countdowns（截止调度） ----------
+  const countdowns = {
+    async replaceForTask(taskId, items) {
+      // 取消旧 pending
+      for (const [id, c] of store.countdowns.entries()) {
+        if (c.taskId === taskId && c.status === 'pending') {
+          c.status = 'cancelled';
+        }
+      }
+      const created = [];
+      for (const it of items || []) {
+        const id = 'cd_' + ++store.seq.countdown;
+        const row = {
+          id,
+          taskId,
+          type: it.type,
+          triggerAt: it.triggerAt,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        };
+        store.countdowns.set(id, row);
+        created.push(clone(row));
+      }
+      return created;
+    },
+    async listDue(nowIso) {
+      const now = new Date(nowIso || Date.now()).getTime();
+      const list = [];
+      for (const c of store.countdowns.values()) {
+        if (c.status === 'pending' && new Date(c.triggerAt).getTime() <= now) list.push(clone(c));
+      }
+      list.sort((a, b) => (a.triggerAt < b.triggerAt ? -1 : 1));
+      return list;
+    },
+    async markDone(id) {
+      const c = store.countdowns.get(id);
+      if (!c) return null;
+      c.status = 'done';
+      return clone(c);
+    },
+    async listByTask(taskId) {
+      const list = [];
+      for (const c of store.countdowns.values()) if (c.taskId === taskId) list.push(clone(c));
+      return list;
+    },
+  };
+
+  // ---------- subscriptions（订阅授权记录） ----------
+  const subscriptions = {
+    async upsert(userId, { templateIds, accepted }) {
+      const row = {
+        userId,
+        templateIds: templateIds || [],
+        accepted: accepted || [],
+        updatedAt: new Date().toISOString(),
+      };
+      store.subscriptions.set(userId, row);
+      return clone(row);
+    },
+    async get(userId) {
+      const r = store.subscriptions.get(userId);
+      return r ? clone(r) : null;
+    },
+  };
+
+  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles, countdowns, subscriptions };
 }
 
 module.exports = { createMemoryRepos };

@@ -63,9 +63,11 @@ test('E2E：完整排班生命周期数据链一致', async () => {
   const inbox = (await request('GET', '/api/v1/users/me/inbox', { token: t2 })).list;
   assert.ok(inbox.find((m) => m.title === '排班已发布'));
 
-  // 8. H5 公开预览（无需登录，凭 token 只读，姓名可见）
+  // 8. H5 公开预览（无需登录，凭 token 只读，姓名脱敏）
   const preview = await request('GET', `/api/v1/share/tasks/${task.id}?token=${pub.shareToken}`);
-  assert.strictEqual(preview.task.schedule.assignments[0].userNames[0], u2Name);
+  const previewName = preview.task.schedule.assignments[0].userNames[0];
+  assert.ok(previewName.includes('*'), '分享预览姓名应脱敏');
+  assert.notStrictEqual(previewName, u2Name);
   // 过期/错误 token 被拒
   await assert.rejects(() => request('GET', `/api/v1/share/tasks/${task.id}?token=bad`), (e) => e.code === 1601);
 

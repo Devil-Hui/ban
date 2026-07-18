@@ -24,7 +24,20 @@ module.exports = {
   requestTimeoutMs: 10000,
   jobPollIntervalMs: 1000,
   jobPollMaxTimes: 30,
-  subscribeTemplateIds: ['TEMPLATE_ID_TASK_PUBLISHED', 'TEMPLATE_ID_DEADLINE_REMIND'],
+  /**
+   * 订阅消息模板 ID。
+   * - 留空或 TEMPLATE_ID_* 占位：开发期跳过 wx.requestSubscribeMessage
+   * - 生产：填微信公众平台真实 ID，或与后端 WX_TMPL_* 保持一致
+   */
+  subscribeTemplateIds: {
+    taskPublished: '', // e.g. 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'
+    deadlineRemind: '',
+  },
+  // 兼容旧数组读取
+  getSubscribeTmplList() {
+    const m = this.subscribeTemplateIds || {};
+    return [m.taskPublished, m.deadlineRemind].filter(Boolean);
+  },
   share: { title: '你有一份新的排班待确认，快来查看～', imageUrl: '' },
   TIME_MODES: timeConst.TIME_MODES,
   DEFAULT_TASK_TIME_MODE: timeConst.DEFAULT_TASK_TIME_MODE,

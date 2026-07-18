@@ -351,9 +351,31 @@ Page({
   async publishScheme() {
     try {
       await ensureLogin();
-      await tasksApi.publish(this.data.taskId, {});
+      // 发布前请求订阅（有真实模板 ID 时才会弹；否则跳过）
+      try {
+        const notifyApi = require('../../services/notify');
+        await notifyApi.subscribe();
+      } catch (_) {}
+      const pub = await tasksApi.publish(this.data.taskId, {});
       wx.showToast({ title: '已发布', icon: 'success' });
       this.loadTask();
+      // 有 shareToken 时提供分享预览入口
+      if (pub && pub.shareToken) {
+        setTimeout(() => {
+          wx.showModal({
+            title: '发布成功',
+            content: '是否打开分享预览页？',
+            confirmText: '去分享',
+            success: (r) => {
+              if (r.confirm) {
+                wx.navigateTo({
+                  url: `/pages/share-preview/share-preview?taskId=${this.data.taskId}&token=${pub.shareToken}&role=publisher`,
+                });
+              }
+            },
+          });
+        }, 400);
+      }
     } catch (_) {}
   },
 

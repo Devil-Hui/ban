@@ -42,7 +42,11 @@ https://api.example.com
 - 排班发布通知（`TEMPLATE_ID_TASK_PUBLISHED`）
 - 截止提醒（`TEMPLATE_ID_DEADLINE_REMIND`）
 
-把真实 ID 填入 `miniprogram/utils/config.js` 的 `subscribeTemplateIds`。
+把真实 ID 填入：
+- 后端 `.env`：`WX_TMPL_TASK_PUBLISHED`、`WX_TMPL_DEADLINE_REMIND`
+- 小程序 `miniprogram/utils/config.js` → `subscribeTemplateIds.taskPublished / deadlineRemind`
+
+开发期留空即可：前端会跳过 `wx.requestSubscribeMessage`，仅走站内 inbox。
 
 ### 3.2 触发时机（转化率最高原则）
 `wx.requestSubscribeMessage` **必须由用户点击行为触发**，不能在 onLoad 里静默弹。本项目在以下高意图节点调用（见 `services/notify.js` 的 `subscribe`）：

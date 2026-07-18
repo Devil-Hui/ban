@@ -71,11 +71,6 @@ const PREVIEW_TOKEN_EXPIRED = { code: 1602, message: '预览链接已过期，�
 // 消息模块 17xx
 const NOTIFY_SUBSCRIBE_FAILED = { code: 1701, message: '订阅消息授权失败', httpStatus: 400 };
 
-// 支付模块 18xx
-const PAY_ORDER_CREATE_FAILED = { code: 1801, message: '创建支付订单失败', httpStatus: 502 };
-const PAY_ORDER_NOT_FOUND = { code: 1802, message: '支付订单不存在', httpStatus: 404 };
-const PAY_CALLBACK_VERIFY_FAILED = { code: 1803, message: '支付回调验签失败', httpStatus: 400 };
-
 // 异步任务模块 19xx
 const JOB_NOT_FOUND = { code: 1901, message: '异步任务不存在', httpStatus: 404 };
 const JOB_FAILED = { code: 1902, message: '异步任务执行失败', httpStatus: 422 };
@@ -115,9 +110,6 @@ const TABLE = {
   PREVIEW_TOKEN_INVALID,
   PREVIEW_TOKEN_EXPIRED,
   NOTIFY_SUBSCRIBE_FAILED,
-  PAY_ORDER_CREATE_FAILED,
-  PAY_ORDER_NOT_FOUND,
-  PAY_CALLBACK_VERIFY_FAILED,
   JOB_NOT_FOUND,
   JOB_FAILED,
 };

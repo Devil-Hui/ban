@@ -1,19 +1,31 @@
 // services/notify.js — 消息中心与订阅消息
 const { get, post, patch } = require('../utils/request');
+const config = require('../utils/config');
 
 /**
  * 请求一次性订阅消息授权（必须由用户点击触发）。
- * 未配置真实模板 ID（仍为 TEMPLATE_ID_* 占位）时跳过，避免开发期报错打断主链。
+ * 未配置真实模板 ID 时跳过，避免开发期报错打断主链。
  */
 const subscribe = (tmplIds) => {
-  const ids = (tmplIds || []).filter((id) => id && String(id).indexOf('TEMPLATE_ID_') !== 0);
+  let ids = tmplIds;
+  if (!ids || !ids.length) {
+    ids =
+      typeof config.getSubscribeTmplList === 'function'
+        ? config.getSubscribeTmplList()
+        : [];
+  }
+  ids = (ids || []).filter(
+    (id) => id && String(id).indexOf('TEMPLATE_ID_') !== 0 && String(id).trim()
+  );
   if (!ids.length) return Promise.resolve({ accepted: [], skipped: true });
   return new Promise((resolve) => {
     wx.requestSubscribeMessage({
       tmplIds: ids,
       complete: (res) => {
         const accepted = ids.filter((id) => res && res[id] === 'accept');
-        post('/notify/subscribe', { templateIds: ids, accepted }, { silent: true }).catch(() => {});
+        post('/notify/subscribe', { templateIds: ids, accepted }, { silent: true }).catch(
+          () => {}
+        );
         resolve({ accepted, result: res || {} });
       },
     });

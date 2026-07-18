@@ -17,9 +17,20 @@ async function subscribe(ctx) {
   const { templateIds } = required(ctx.body, { templateIds: { type: 'array', label: 'templateIds' } });
   if (!templateIds.length) throw err('NOTIFY_SUBSCRIBE_FAILED', { message: '请至少选择一个订阅模板' });
   // 真实场景：小程序端已在前端调用 wx.requestSubscribeMessage 拿到用户授权，
-  // 此处仅持久化受理结果（accepted 来自客户端回传或默认全收）。
+  // 此处持久化受理结果（accepted 来自客户端回传或默认全收）。
   const accepted = ctx.body.accepted || templateIds;
-  return { accepted, templateIds };
+  const repos = require('../repositories').getRepos();
+  if (repos.subscriptions && repos.subscriptions.upsert) {
+    await repos.subscriptions.upsert(user.userId, { templateIds, accepted });
+  }
+  return {
+    accepted,
+    templateIds,
+    configured: {
+      taskPublished: !!(config.subscribeTemplates && config.subscribeTemplates.taskPublished),
+      deadlineRemind: !!(config.subscribeTemplates && config.subscribeTemplates.deadlineRemind),
+    },
+  };
 }
 
 /** GET /api/v1/users/me/inbox */

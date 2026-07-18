@@ -830,12 +830,16 @@ npm test
 
 ### 第三优先级
 
-- **目标**：截止调度 worker + 真实订阅消息模板 + 分享 H5 预览完善  
-- **原因**：通知与增长闭环  
-- **具体步骤**：
-  1. 扫描 `countdowns` / deadline  
-  2. 配置真实订阅模板 ID  
-  3. 校验 share token 过期与脱敏字段  
+- **目标**：截止调度 worker + 订阅消息模板配置 + 分享预览完善  
+- **状态**：**已完成（2026-07-18）**  
+- **交付**：
+  1. `domain/countdown.js` + `workers/deadline-worker.js` + `npm run worker:deadline`  
+     - 建任务/延长截止写入 `countdowns`；到期 → 站内提醒 / `collecting→reviewing`  
+  2. 订阅：`.env` 的 `WX_TMPL_TASK_PUBLISHED` / `WX_TMPL_DEADLINE_REMIND`；  
+     小程序 `config.subscribeTemplateIds`；`POST /notify/subscribe` 持久化授权  
+  3. 分享：`share_token_expires_at` + 过期校验；预览姓名脱敏；  
+     `pages/share-preview` 接 `GET /share/tasks/:id?token=`  
+- **验证**：`npm test` → **37 pass**（含 countdown-share + flow 脱敏断言）  
 
 ### 哪些任务不要现在做？
 

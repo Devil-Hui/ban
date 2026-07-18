@@ -325,6 +325,7 @@ function createMysqlRepos(pool) {
         finalSchedule: jparse(t.final_schedule),
         previousSchedule: jparse(t.previous_schedule),
         shareToken: t.share_token,
+        shareTokenExpiresAt: t.share_token_expires_at || null,
         generatingJobId: t.generating_job_id,
         version: t.version,
         publishedAt: t.published_at,
@@ -446,11 +447,19 @@ function createMysqlRepos(pool) {
     async getByShareToken(token) {
       const [rows] = await pool.execute('SELECT * FROM tasks WHERE share_token = ?', [token]);
       if (!rows.length) return null;
-      return this.getById(rows[0].id);
+      const row = rows[0];
+      if (row.share_token_expires_at && new Date(row.share_token_expires_at).getTime() < Date.now()) {
+        return { expired: true };
+      }
+      return this.getById(row.id);
     },
     async createShareToken(taskId, ttlSeconds) {
       const token = require('crypto').randomBytes(24).toString('hex');
-      await pool.execute('UPDATE tasks SET share_token = ? WHERE id = ?', [token, taskId]);
+      const ttl = ttlSeconds || 604800;
+      await pool.execute(
+        'UPDATE tasks SET share_token = ?, share_token_expires_at = DATE_ADD(UTC_TIMESTAMP(3), INTERVAL ? SECOND) WHERE id = ?',
+        [token, ttl, taskId]
+      );
       return token;
     },
     async listAssignments(taskId, { activeOnly = true } = {}) {
@@ -823,7 +832,84 @@ function createMysqlRepos(pool) {
     };
   }
 
-  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles };
+
+  // ---------- countdowns ----------
+  const countdowns = {
+    async replaceForTask(taskId, items) {
+      await pool.execute("UPDATE countdowns SET status = 'cancelled', updated_at = NOW() WHERE task_id = ? AND status = 'pending'", [taskId]);
+      const created = [];
+      for (const it of items || []) {
+        // trigger_at 存 ISO 字符串，MySQL 按连接时区解析；统一传 'YYYY-MM-DD HH:mm:ss.sss'
+        const trigger = String(it.triggerAt).replace('T', ' ').replace('Z', '');
+        const [res] = await pool.execute(
+          "INSERT INTO countdowns (task_id, type, trigger_at, status) VALUES (?, ?, ?, 'pending')",
+          [taskId, it.type, trigger]
+        );
+        created.push({ id: res.insertId, taskId, type: it.type, triggerAt: it.triggerAt, status: 'pending' });
+      }
+      return created;
+    },
+    async listDue(nowIso) {
+      const now = String(nowIso || new Date().toISOString()).replace('T', ' ').replace('Z', '');
+      const [rows] = await pool.execute(
+        "SELECT * FROM countdowns WHERE status = 'pending' AND trigger_at <= ? ORDER BY trigger_at ASC LIMIT 200",
+        [now]
+      );
+      return rows.map((c) => ({
+        id: c.id,
+        taskId: c.task_id,
+        type: c.type,
+        triggerAt: c.trigger_at,
+        status: c.status,
+      }));
+    },
+    async markDone(id) {
+      await pool.execute("UPDATE countdowns SET status = 'done', updated_at = NOW() WHERE id = ?", [id]);
+      return { id, status: 'done' };
+    },
+    async listByTask(taskId) {
+      const [rows] = await pool.execute('SELECT * FROM countdowns WHERE task_id = ? ORDER BY trigger_at ASC', [taskId]);
+      return rows.map((c) => ({
+        id: c.id,
+        taskId: c.task_id,
+        type: c.type,
+        triggerAt: c.trigger_at,
+        status: c.status,
+      }));
+    },
+  };
+
+  // ---------- subscriptions（用 app_settings JSON 简易存，或 notify 旁路；此处独立表未建则落 app_settings） ----------
+  const subscriptions = {
+    async upsert(userId, { templateIds, accepted }) {
+      const key = 'subscribe_user_' + userId;
+      const val = JSON.stringify({
+        userId,
+        templateIds: templateIds || [],
+        accepted: accepted || [],
+        updatedAt: new Date().toISOString(),
+      });
+      await pool.execute(
+        `INSERT INTO app_settings (\`k\`, \`v\`) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE \`v\` = VALUES(\`v\`)`,
+        [key, val]
+      );
+      return JSON.parse(val);
+    },
+    async get(userId) {
+      const key = 'subscribe_user_' + userId;
+      const [rows] = await pool.execute('SELECT `v` AS value FROM app_settings WHERE `k` = ?', [key]);
+      if (!rows.length) return null;
+      try {
+        const v = rows[0].value;
+        return typeof v === 'string' ? JSON.parse(v) : v;
+      } catch (_) {
+        return null;
+      }
+    },
+  };
+
+  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles, countdowns, subscriptions };
 }
 
 module.exports = { createMysqlRepos };

@@ -105,6 +105,14 @@ async function create(ctx) {
     dateRangeEnd: extra.dateRangeEnd,
     constraints: extra.constraints,
   });
+  // 截止调度：写入 reminder + deadline countdown（无 deadline 则跳过）
+  if (extra.deadline && repos.countdowns && repos.countdowns.replaceForTask) {
+    const { buildCountdownPlan } = require('../domain/countdown');
+    const plan = buildCountdownPlan(extra.deadline, {
+      reminderHours: config.deadlineReminderHours,
+    });
+    if (plan.length) await repos.countdowns.replaceForTask(task.id, plan);
+  }
   return { task };
 }
 
@@ -341,6 +349,14 @@ async function extendDeadline(ctx) {
   const repos = require('../repositories').getRepos();
   const task = await repos.tasks.extendDeadline(ctx.params.taskId, { deadline });
   if (!task) throw err('TASK_NOT_FOUND');
+  // 重算截止调度（取消旧 pending，写新 reminder+deadline）
+  if (repos.countdowns && repos.countdowns.replaceForTask) {
+    const { buildCountdownPlan } = require('../domain/countdown');
+    const plan = buildCountdownPlan(deadline, {
+      reminderHours: config.deadlineReminderHours,
+    });
+    await repos.countdowns.replaceForTask(task.id, plan);
+  }
   return { task };
 }
 
