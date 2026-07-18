@@ -44,10 +44,10 @@
   └── 未命名绘图.drawio  # 用户原始线框原型
   ```
 - **当前分支或版本状态**：
-  - Git 分支：`master`（另有本地分支 `feat-design-miniprogram-ui-Pcn9qn` 与 master 同点）  
-  - 最近已提交 commit 多为早期 docs：`333ae79` 等  
-  - **大量核心实现目前 untracked（`??`）**：`backend/`、`miniprogram/`、大量 `docs/`、`shared/` **尚未 git commit**  
-  - **git remote：无**（本机 `git remote -v` 为空）  
+  - Git 分支：`master`（另有本地分支 `feat-design-miniprogram-ui-Pcn9qn`）  
+  - **主实现已提交**：`3bbf70b`（2026-07-18，226 files：backend + miniprogram + shared + docs + .gitignore）  
+  - 根目录已有 `.gitignore`（排除 `.env` / `node_modules` / 私有配置）  
+  - **git remote：仍无**（本机未配置远端；未 push）  
   - 不确定：是否另有远端备份
 - **是否有线上部署**：以本地联调为主。设计文档提到 CloudBase/云托管，**未落地为现成部署流水线**。体验版/正式版小程序是否已发：**不确定**。
 - **是否涉及数据库**：**是**。默认库名 `paiban`，`backend/schema.sql` 含 **16 张表**。另有 `DB_MODE=memory` 无库可跑测。
