@@ -17,6 +17,7 @@
 - `.editorconfig`, `.gitignore`: repository hygiene.
 - `tools/verify-workspace.mjs`: deterministic workspace structure check.
 - `.env.example`: non-secret local configuration contract.
+- `tools/init-local-env.mjs`: generates untracked local runtime secrets.
 - `docker-compose.yml`: MySQL, Redis and MinIO local services.
 - `packages/contracts/*`: shared error and pagination contracts.
 - `services/api/src/config/*`: validated environment configuration.
@@ -87,6 +88,7 @@ Create `package.json`:
   "engines": { "node": ">=22 <23", "npm": ">=10 <11" },
   "scripts": {
     "check:workspace": "node tools/verify-workspace.mjs",
+    "env:init": "node tools/init-local-env.mjs",
     "build": "npm run build -w @scheduling/contracts && npm run build -w @scheduling/api",
     "test": "npm run test -w @scheduling/contracts && npm run test -w @scheduling/api",
     "typecheck": "npm run build -w @scheduling/contracts && npm run typecheck -w @scheduling/contracts && npm run typecheck -w @scheduling/api",
@@ -318,6 +320,7 @@ git commit -m "feat(new): add shared API contracts"
 - Create: `.env.example`
 - Create: `docker-compose.yml`
 - Create: `infra/mysql/conf.d/charset.cnf`
+- Create: `tools/init-local-env.mjs`
 - Create: `tools/check-infrastructure.mjs`
 
 - [ ] **Step 1: Write the infrastructure verifier**
@@ -354,19 +357,47 @@ MYSQL_HOST=127.0.0.1
 MYSQL_PORT=3307
 MYSQL_DATABASE=scheduling
 MYSQL_USER=scheduling_app
-MYSQL_PASSWORD=scheduling_app_local
-MYSQL_ROOT_PASSWORD=scheduling_root_local
+MYSQL_PASSWORD=
+MYSQL_ROOT_PASSWORD=
 REDIS_HOST=127.0.0.1
 REDIS_PORT=6380
 MINIO_ENDPOINT=http://127.0.0.1:9000
-MINIO_ACCESS_KEY=minio_local
-MINIO_SECRET_KEY=minio_secret_local
+MINIO_ACCESS_KEY=
+MINIO_SECRET_KEY=
 MINIO_BUCKET=scheduling-local
 WECHAT_MODE=mock
 ADMIN_BOOTSTRAP_USERNAME=superadmin
-ADMIN_BOOTSTRAP_PASSWORD=change-me-before-production
-TOKEN_SIGNING_SECRET=local-only-change-before-production-32bytes
-PHONE_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef
+ADMIN_BOOTSTRAP_PASSWORD=
+TOKEN_SIGNING_SECRET=
+PHONE_ENCRYPTION_KEY=
+```
+
+Create `tools/init-local-env.mjs`:
+
+```js
+import { randomBytes } from 'node:crypto';
+import { readFile, writeFile } from 'node:fs/promises';
+
+const target = new URL('../.env', import.meta.url);
+const template = new URL('../.env.example', import.meta.url);
+const secret = (bytes = 32) => randomBytes(bytes).toString('base64url');
+const replacements = {
+  MYSQL_PASSWORD: secret(24),
+  MYSQL_ROOT_PASSWORD: secret(32),
+  MINIO_ACCESS_KEY: `minio_${randomBytes(8).toString('hex')}`,
+  MINIO_SECRET_KEY: secret(32),
+  ADMIN_BOOTSTRAP_PASSWORD: secret(24),
+  TOKEN_SIGNING_SECRET: secret(48),
+  PHONE_ENCRYPTION_KEY: randomBytes(32).toString('hex'),
+};
+
+let content = await readFile(template, 'utf8');
+for (const [name, value] of Object.entries(replacements)) {
+  content = content.replace(new RegExp(`^${name}=$`, 'm'), `${name}=${value}`);
+}
+
+await writeFile(target, content, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
+console.log('local-env=created path=.env');
 ```
 
 Create `docker-compose.yml`:
@@ -380,8 +411,8 @@ services:
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-scheduling}
       MYSQL_USER: ${MYSQL_USER:-scheduling_app}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-scheduling_app_local}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-scheduling_root_local}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
       TZ: UTC
     ports:
       - "${MYSQL_PORT:-3307}:3306"
@@ -417,8 +448,8 @@ services:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minio_local}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minio_secret_local}
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:?set MINIO_ACCESS_KEY in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?set MINIO_SECRET_KEY in .env}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -448,7 +479,7 @@ explicit_defaults_for_timestamp=ON
 
 - [ ] **Step 4: Validate and start infrastructure**
 
-Run: `docker compose config --quiet`
+Run: `npm run env:init`, then run `docker compose config --quiet`.
 
 Expected: exit 0.
 
@@ -463,7 +494,7 @@ Expected: `infrastructure=healthy`.
 - [ ] **Step 5: Commit infrastructure**
 
 ```bash
-git add new/.env.example new/docker-compose.yml new/infra/mysql/conf.d/charset.cnf new/tools/check-infrastructure.mjs
+git add new/.env.example new/docker-compose.yml new/infra/mysql/conf.d/charset.cnf new/tools/init-local-env.mjs new/tools/check-infrastructure.mjs
 git commit -m "chore(new): add local infrastructure"
 ```
 
@@ -496,7 +527,7 @@ const valid = {
   REDIS_PORT: '6380',
   WECHAT_MODE: 'mock',
   TOKEN_SIGNING_SECRET: '12345678901234567890123456789012',
-  PHONE_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef',
+  PHONE_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
 };
 
 describe('parseEnvironment', () => {
@@ -589,20 +620,32 @@ export default defineConfig({
 Create `services/api/test/setup-env.ts`:
 
 ```ts
-Object.assign(process.env, {
+import { fileURLToPath } from 'node:url';
+
+try {
+  process.loadEnvFile(fileURLToPath(new URL('../../../.env', import.meta.url)));
+} catch {
+  // Unit-only runs can use deterministic test values; integration tests require `npm run env:init`.
+}
+
+const defaults = {
   NODE_ENV: 'test',
   API_PORT: '3000',
   MYSQL_HOST: '127.0.0.1',
   MYSQL_PORT: '3307',
   MYSQL_DATABASE: 'scheduling',
   MYSQL_USER: 'scheduling_app',
-  MYSQL_PASSWORD: 'scheduling_app_local',
+  MYSQL_PASSWORD: 'test-only-password',
   REDIS_HOST: '127.0.0.1',
   REDIS_PORT: '6380',
   WECHAT_MODE: 'mock',
   TOKEN_SIGNING_SECRET: '12345678901234567890123456789012',
-  PHONE_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef',
-});
+  PHONE_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+};
+
+for (const [name, value] of Object.entries(defaults)) {
+  if (!process.env[name]) process.env[name] = value;
+}
 ```
 
 Create `services/api/src/config/env.schema.ts`:
@@ -624,7 +667,7 @@ const schema = z.object({
   REDIS_PORT: port,
   WECHAT_MODE: z.enum(['mock', 'production']),
   TOKEN_SIGNING_SECRET: z.string().min(32),
-  PHONE_ENCRYPTION_KEY: z.string().length(32),
+  PHONE_ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/i),
 });
 
 export type Environment = z.infer<typeof schema>;
@@ -674,21 +717,7 @@ import { sql } from 'kysely';
 import { createDatabase } from '../src/database/database.client.js';
 import { parseEnvironment } from '../src/config/env.schema.js';
 
-const env = parseEnvironment({
-  ...process.env,
-  NODE_ENV: 'test',
-  API_PORT: '3000',
-  MYSQL_HOST: '127.0.0.1',
-  MYSQL_PORT: '3307',
-  MYSQL_DATABASE: 'scheduling',
-  MYSQL_USER: 'scheduling_app',
-  MYSQL_PASSWORD: 'scheduling_app_local',
-  REDIS_HOST: '127.0.0.1',
-  REDIS_PORT: '6380',
-  WECHAT_MODE: 'mock',
-  TOKEN_SIGNING_SECRET: '12345678901234567890123456789012',
-  PHONE_ENCRYPTION_KEY: '0123456789abcdef0123456789abcdef',
-});
+const env = parseEnvironment({ ...process.env, NODE_ENV: 'test' });
 
 const db = createDatabase(env);
 afterAll(() => db.destroy());
@@ -865,7 +894,7 @@ export class DatabaseLifecycle implements OnApplicationShutdown {
 
 - [ ] **Step 4: Run migrations and database tests**
 
-Run: `Copy-Item .env.example .env` on PowerShell, then run `npm run db:migrate`.
+Ensure `.env` exists from Task 3, then run: `npm run db:migrate`.
 
 Expected: `001_foundation status=Success`.
 
@@ -1256,7 +1285,7 @@ Create `docs/operations/local-foundation.md` with these exact operational rules:
 ## Start
 
 1. Start Docker Desktop and wait for `docker info` to succeed.
-2. Copy `.env.example` to `.env` for local use only.
+2. Run `npm run env:init`; it creates a random, Git-ignored `.env` and refuses to overwrite an existing file.
 3. Run `npm ci`.
 4. Run `npm run infra:up` and `node tools/check-infrastructure.mjs`.
 5. Load `.env` into the shell and run `npm run db:migrate`.

@@ -43,3 +43,6 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# 本地 Git worktree（隔离功能开发）
+.worktrees/
