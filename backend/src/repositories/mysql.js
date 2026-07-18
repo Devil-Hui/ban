@@ -773,14 +773,6 @@ function createMysqlRepos(pool) {
       for (const r of rows) map[r.k] = r.v;
       return map;
     },
-    getSettings() {
-      // sync facade used by handlers (memory has sync getSettings)
-      // mysql path is async-only; handler will await getSettingsAsync if present
-      return {
-        defaultTimeMode: 'section_range',
-        defaultProfileId: 'sys_uni_45min_v1',
-      };
-    },
     async updateSettings(patch) {
       for (const k of Object.keys(patch || {})) {
         await pool.execute(

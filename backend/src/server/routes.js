@@ -30,6 +30,11 @@ const ROUTES = [
   { method: 'PUT', path: '/api/v1/groups/:groupId/schedule-profile', handler: scheduleProfiles.putGroupProfile },
   { method: 'POST', path: '/api/v1/groups/:groupId/schedule-profile/import', handler: scheduleProfiles.importGroupProfile },
 
+  // H5 运维（admin JWT）
+  { method: 'GET', path: '/api/v1/admin/overview', handler: scheduleProfiles.getAdminOverview },
+  { method: 'GET', path: '/api/v1/admin/settings', handler: scheduleProfiles.getAdminSettings },
+  { method: 'PUT', path: '/api/v1/admin/settings', handler: scheduleProfiles.putAdminSettings },
+
   // 用户
   { method: 'GET', path: '/api/v1/users/me', handler: users.getMe },
   { method: 'PATCH', path: '/api/v1/users/me', handler: users.updateMe },

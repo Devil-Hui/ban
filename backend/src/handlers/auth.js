@@ -64,7 +64,10 @@ async function h5Login(ctx) {
   if (username !== config.h5.adminUsername || password !== config.h5.adminPassword) {
     throw err('UNAUTHORIZED', { message: '账号或密码错误' });
   }
-  return issueTokens('admin', 'admin');
+  const tokens = issueTokens('admin', 'admin');
+  return Object.assign({}, tokens, {
+    user: { id: 'admin', username, role: 'admin', nickname: '管理员' },
+  });
 }
 
 /** POST /api/v1/auth/refresh */

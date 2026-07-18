@@ -85,6 +85,78 @@ async function putGroupProfile(ctx) {
   return { profile };
 }
 
+/**
+ * GET /api/v1/admin/settings — 平台默认 timeMode / profile（admin）
+ */
+async function getAdminSettings(ctx) {
+  const { requireAdmin } = require('./guard');
+  requireAdmin(ctx);
+  const repos = require('../repositories').getRepos();
+  let settings = { defaultTimeMode: 'section_range', defaultProfileId: 'sys_uni_45min_v1' };
+  try {
+    if (typeof repos.scheduleProfiles.getSettings === 'function') {
+      const s = repos.scheduleProfiles.getSettings();
+      settings = s && typeof s.then === 'function' ? await s : s || settings;
+    }
+  } catch (_) {}
+  const list = await repos.scheduleProfiles.listSystem({ status: 'active' });
+  return { settings, profiles: list };
+}
+
+/**
+ * PUT /api/v1/admin/settings — 更新平台默认（admin）
+ * body: { defaultTimeMode?, defaultProfileId? }
+ */
+async function putAdminSettings(ctx) {
+  const { requireAdmin } = require('./guard');
+  requireAdmin(ctx);
+  const body = ctx.body || {};
+  const patch = {};
+  if (body.defaultTimeMode != null) patch.defaultTimeMode = String(body.defaultTimeMode);
+  if (body.defaultProfileId != null) patch.defaultProfileId = String(body.defaultProfileId);
+  if (!Object.keys(patch).length) {
+    throw err('VALIDATION_ERROR', { message: '无有效字段' });
+  }
+  const repos = require('../repositories').getRepos();
+  if (typeof repos.scheduleProfiles.updateSettings !== 'function') {
+    throw err('INTERNAL_ERROR', { message: '当前仓储不支持 settings 写入' });
+  }
+  const settings = await repos.scheduleProfiles.updateSettings(patch);
+  return { settings };
+}
+
+/**
+ * GET /api/v1/admin/overview — 简易统计（admin）
+ */
+async function getAdminOverview(ctx) {
+  const { requireAdmin } = require('./guard');
+  requireAdmin(ctx);
+  const repos = require('../repositories').getRepos();
+  // 尽量用已有 list；无全局 count 时做轻量扫描
+  let profileCount = 0;
+  try {
+    const list = await repos.scheduleProfiles.listSystem({ status: 'active' });
+    profileCount = (list || []).length;
+  } catch (_) {}
+  let settings = {};
+  try {
+    if (typeof repos.scheduleProfiles.getSettings === 'function') {
+      const s = repos.scheduleProfiles.getSettings();
+      settings = s && typeof s.then === 'function' ? await s : s || {};
+    }
+  } catch (_) {}
+  return {
+    profileCount,
+    settings,
+    notifyMode: require('../handlers/notify').templateCatalog().mode,
+    tips: [
+      '默认 timeMode / profile 影响新建任务',
+      '订阅模板见 /meta/notify-templates',
+      '截止 worker: npm run worker:deadline',
+    ],
+  };
+}
+
 module.exports = {
   getTimeMeta,
   listProfiles,
@@ -92,4 +164,7 @@ module.exports = {
   getGroupProfile,
   importGroupProfile,
   putGroupProfile,
+  getAdminSettings,
+  putAdminSettings,
+  getAdminOverview,
 };

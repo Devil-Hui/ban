@@ -821,12 +821,17 @@ npm test
 
 ### 第二优先级
 
-- **目标**：H5 运维最小可用（登录 + 模板列表/编辑 + 审计只读）  
-- **原因**：双层作息的平台侧需要运营入口  
-- **具体步骤**：
-  1. 新建 `admin-web`（建议 React + Antd）  
-  2. 接 `/auth/h5/login`、`/schedule-profiles`  
-  3. 默认 timeMode / profile 设置页  
+- **目标**：H5 运维最小可用（登录 + 模板列表 + 默认设置）  
+- **状态**：**已完成（2026-07-18）** MVP  
+- **交付**：
+  1. 后端：`requireAdmin`；`GET/PUT /api/v1/admin/settings`、`GET /api/v1/admin/overview`  
+  2. 前端：`admin-web/`（Vite 原生 JS，无 React 依赖）  
+     - 登录（H5_ADMIN_*）  
+     - 平台默认 timeMode / profile 读写  
+     - 系统作息模板只读列表  
+     - 订阅模板状态只读  
+  3. 启动：`cd admin-web && npm i && npm run dev`（代理 `/api` → `:3000`）  
+- **未做（后续）**：模板可视化编辑器、审计日志页、SSE 大屏  
 
 ### 第三优先级
 

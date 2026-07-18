@@ -11,6 +11,15 @@ function requireAuth(ctx) {
   return ctx.user;
 }
 
+/** H5 运维：JWT role=admin */
+function requireAdmin(ctx) {
+  const user = requireAuth(ctx);
+  if (user.role !== 'admin') {
+    throw err('FORBIDDEN', { message: '需要管理员权限' });
+  }
+  return user;
+}
+
 function getRepos() {
   return require('../repositories').getRepos();
 }
@@ -41,4 +50,11 @@ async function requireTaskPublisher(ctx, taskId) {
   return task;
 }
 
-module.exports = { requireAuth, requireGroupMember, requireGroupPublisher, requireTask, requireTaskPublisher };
+module.exports = {
+  requireAuth,
+  requireAdmin,
+  requireGroupMember,
+  requireGroupPublisher,
+  requireTask,
+  requireTaskPublisher,
+};
