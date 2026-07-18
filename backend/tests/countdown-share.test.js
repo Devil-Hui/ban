@@ -160,3 +160,80 @@ describe('notify templates dual-mode', () => {
     assert.ok(saved);
   });
 });
+
+describe('wechat subscribe send dispatch', () => {
+  it('publish enqueues inbox and attempts wx send via injectable sender', async () => {
+    const { setSubscribeSender, clearTokenCache } = require('../src/core/wechat-subscribe');
+    const sent = [];
+    setSubscribeSender(async (opts) => {
+      sent.push(opts);
+      return { ok: true, mocked: true };
+    });
+    clearTokenCache();
+
+    const repos = setup();
+    // 给用户真实形态 openid（非 dev_ 前缀）以便走发送路径
+    const login = await request('POST', '/api/v1/auth/miniprogram/login', {
+      body: { code: 'wx_send_user' },
+    });
+    const token = login.accessToken;
+    const uid = login.user.id;
+    const u = await repos.users.getById(uid);
+    // memory: mutate openid
+    const raw = await repos.users.getById(uid);
+    // patch via store if needed - updateProfile may not set openid; direct map
+    if (raw) {
+      // re-upsert is hard; monkey-patch getById once
+      const orig = repos.users.getById.bind(repos.users);
+      repos.users.getById = async (id) => {
+        const x = await orig(id);
+        if (x && String(x.id) === String(uid)) {
+          return Object.assign({}, x, { openid: 'oREAL_openid_test_user' });
+        }
+        return x;
+      };
+    }
+
+    await request('POST', '/api/v1/notify/subscribe', {
+      token,
+      body: {
+        templateIds: ['mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg'],
+        accepted: ['mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg', 'task_published'],
+        keys: ['task_published'],
+      },
+    });
+
+    const g = await request('POST', '/api/v1/groups', {
+      token,
+      body: { name: '发送测试组' },
+    });
+    const groupId = g.group.id;
+    const t = await request('POST', `/api/v1/groups/${groupId}/tasks`, {
+      token,
+      body: {
+        title: '发送测试任务',
+        timeMode: 'range',
+        customRanges: [{ start: '09:00', end: '10:00', name: '上午' }],
+      },
+    });
+    await request('POST', `/api/v1/tasks/${t.task.id}/publish`, {
+      token,
+      body: {
+        finalSchedule: {
+          schemeName: 'A',
+          assignments: [{ date: '2026-07-20', periodId: 'p1', userNames: ['甲'] }],
+        },
+      },
+    });
+
+    const inbox = await repos.notify.listInbox(uid);
+    assert.ok(inbox.list.some((m) => m.title === '排班已发布' || (m.title && m.title.includes('发布'))));
+    // 发布者自己也是成员，应尝试微信发送
+    assert.ok(sent.length >= 1);
+    assert.equal(sent[0].touser, 'oREAL_openid_test_user');
+    assert.ok(sent[0].templateId);
+    assert.ok(sent[0].data);
+
+    setSubscribeSender(null);
+  });
+});

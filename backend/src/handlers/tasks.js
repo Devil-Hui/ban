@@ -323,17 +323,16 @@ async function publish(ctx) {
     shareToken,
     assignments,
   });
-  // 通知成员（消息中心兜底：订阅消息失败也不丢）
-  const members = await repos.groups.listMembers(task.groupId);
-  for (const m of members) {
-    await repos.notify.enqueue({
-      userId: m.userId,
-      taskId: task.id,
-      templateId: 'task_published',
-      title: '排班已发布',
-      body: '你有一条新排班，请前往查看',
-    });
-  }
+  // 通知成员：站内 inbox 必达 + 微信订阅尽力发送
+  const { notifyGroupMembers } = require('../services/notify-dispatch');
+  await notifyGroupMembers(repos, {
+    groupId: task.groupId,
+    logicalKey: 'task_published',
+    title: '排班已发布',
+    body: `「${task.title || '排班任务'}」已发布，请查看并确认`,
+    taskId: task.id,
+    taskTitle: task.title,
+  });
   return {
     task: updated,
     shareToken,

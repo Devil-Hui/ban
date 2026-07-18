@@ -62,8 +62,24 @@ https://api.example.com
 
 调用后把用户「接受」的模板 ID 上报后端 `POST /notify/subscribe`，便于后续定向推送（后端仅存授权结果，不存敏感信息）。
 
-### 3.3 下发
-后端通过 `subscribeMessage.send` 给用户推送（需用户此前已授权该模板）。注意一次性订阅**每次授权仅能下发 1 条**，长期触达需引导用户多次授权或改用「服务通知」能力。
+### 3.3 下发（服务端）
+
+实现：`backend/src/core/wechat-subscribe.js` + `backend/src/services/notify-dispatch.js`。
+
+流程：
+1. 业务事件（发布 / 截止 worker / 加入）→ **站内 inbox 必写**
+2. 若配置了模板 ID，且用户有**真实 openid**（非 `dev_openid_`），且订阅记录 `accepted` 命中 → 调微信  
+   `POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send`
+3. 需要 `WX_APPID` + `WX_SECRET` 换 `access_token`；本地无密钥时自动 skip，不影响主链
+
+| 环境变量 | 用途 |
+| --- | --- |
+| `WX_APPID` / `WX_SECRET` | 换 access_token + 下发 |
+| `WX_MINI_STATE` | `developer` / `trial` / `formal`（默认 formal） |
+
+注意：一次性订阅用户同意 1 次 ≈ 可成功下发 1 条；失败常见 errcode：`43101` 用户未订阅/次数用尽。
+
+字段 data 使用通用 thing/time/phrase 组合；若与你模板关键词不一致，在公众平台核对后改 `buildWxData` 或下发时传 `extra.wxData`。
 
 ---
 

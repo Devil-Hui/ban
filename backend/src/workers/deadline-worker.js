@@ -1,13 +1,14 @@
 'use strict';
 
 /**
- * 截止调度 worker：扫描 countdowns 到期项 → 站内消息 / 状态推进。
+ * 截止调度 worker：扫描 countdowns 到期项 → 站内消息 / 微信订阅 / 状态推进。
  * 用法：
  *   node scripts/run-deadline-worker.js
  *   或 require 后 processDueCountdowns(repos)
  */
 
 const { actionForCountdown } = require('../domain/countdown');
+const { notifyGroupMembers, notifyUser } = require('../services/notify-dispatch');
 
 /**
  * @param {object} repos getRepos()
@@ -36,17 +37,15 @@ async function processDueCountdowns(repos, opts = {}) {
     }
 
     if (item.type === 'reminder') {
-      const members = await repos.groups.listMembers(task.groupId);
-      for (const m of members) {
-        if (m.status && m.status !== 'active') continue;
-        await repos.notify.enqueue({
-          userId: m.userId,
-          taskId: task.id,
-          templateId: 'deadline_remind',
-          title: '填报即将截止',
-          body: `「${task.title || '排班任务'}」即将截止，请尽快提交空闲时间`,
-        });
-      }
+      await notifyGroupMembers(repos, {
+        groupId: task.groupId,
+        logicalKey: 'deadline_remind',
+        title: '填报即将截止',
+        body: `「${task.title || '排班任务'}」即将截止，请尽快提交空闲时间`,
+        taskId: task.id,
+        taskTitle: task.title,
+        extra: { deadline: task.deadline, statusText: '待提交' },
+      });
       reminders += 1;
     } else if (item.type === 'deadline') {
       const action = actionForCountdown('deadline', task.status);
@@ -61,14 +60,16 @@ async function processDueCountdowns(repos, opts = {}) {
           /* 版本冲突：仍标记 countdown done，避免死循环 */
         }
       }
-      // 通知发布者
       if (task.publisherId) {
-        await repos.notify.enqueue({
+        await notifyUser(repos, {
           userId: task.publisherId,
-          taskId: task.id,
-          templateId: 'deadline_closed',
+          logicalKey: 'deadline_closed',
           title: '收集已截止',
           body: `「${task.title || '排班任务'}」收集已截止，可生成排班方案`,
+          taskId: task.id,
+          groupId: task.groupId,
+          taskTitle: task.title,
+          extra: { statusText: '已截止' },
         });
       }
       closed += 1;

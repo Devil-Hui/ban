@@ -62,24 +62,27 @@ async function join(ctx) {
     roleInGroup: 'member',
     displayName: (ctx.body && ctx.body.displayName) || undefined,
   });
-  // 站内通知：加入者 + 发布者（不依赖微信模板也能看到）
+  // 站内 + 微信订阅（尽力）
   try {
-    await repos.notify.enqueue({
+    const { notifyUser } = require('../services/notify-dispatch');
+    await notifyUser(repos, {
       userId: user.userId,
-      taskId: null,
-      templateId: 'group_joined',
+      logicalKey: 'group_joined',
       title: '已加入分组',
       body: `你已加入「${group.name || '分组'}」`,
+      groupId: group.id,
+      groupName: group.name,
     });
     const members = await repos.groups.listMembers(group.id);
     for (const m of members) {
       if (m.roleInGroup === 'publisher' && String(m.userId) !== String(user.userId)) {
-        await repos.notify.enqueue({
+        await notifyUser(repos, {
           userId: m.userId,
-          taskId: null,
-          templateId: 'group_joined',
+          logicalKey: 'group_joined',
           title: '有新成员加入',
           body: `「${group.name || '分组'}」有新成员加入`,
+          groupId: group.id,
+          groupName: group.name,
         });
       }
     }
