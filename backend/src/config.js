@@ -10,22 +10,36 @@ const fs = require('fs');
 const path = require('path');
 
 // 零依赖读取 .env（仅本地/联调使用；生产由平台注入环境变量）
+// 大厂约定：配置相对「包根目录」解析，不依赖 process.cwd()，避免从 monorepo 根启动读错文件
 function loadDotEnv() {
   try {
-    const envPath = path.resolve(process.cwd(), '.env');
-    if (!fs.existsSync(envPath)) return;
-    const content = fs.readFileSync(envPath, 'utf8');
-    for (const rawLine of content.split('\n')) {
-      const line = rawLine.trim();
-      if (!line || line.startsWith('#')) continue;
-      const eq = line.indexOf('=');
-      if (eq === -1) continue;
-      const key = line.slice(0, eq).trim();
-      let val = line.slice(eq + 1).trim();
-      if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-        val = val.slice(1, -1);
+    const candidates = [
+      path.resolve(__dirname, '../.env'), // backend/.env（包根，优先）
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), 'backend/.env'),
+    ];
+    const seen = new Set();
+    for (const envPath of candidates) {
+      const norm = path.normalize(envPath);
+      if (seen.has(norm) || !fs.existsSync(norm)) continue;
+      seen.add(norm);
+      const content = fs.readFileSync(norm, 'utf8');
+      for (const rawLine of content.split('\n')) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith('#')) continue;
+        const eq = line.indexOf('=');
+        if (eq === -1) continue;
+        const key = line.slice(0, eq).trim();
+        let val = line.slice(eq + 1).trim();
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1);
+        }
+        // 环境变量优先于 .env；多个 .env 候选时先读到的生效
+        if (!(key in process.env)) process.env[key] = val;
       }
-      if (!(key in process.env)) process.env[key] = val;
     }
   } catch (_) {
     /* 忽略 .env 读取失败 */
