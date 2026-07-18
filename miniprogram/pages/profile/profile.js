@@ -173,7 +173,7 @@ Page({
     if (key === 'about') {
       wx.showModal({
         title: '排班协同',
-        content: '主链路联调版。通知支持站内消息；配置微信订阅模板 ID 后可弹系统订阅。',
+        content: '主链路联调版。',
         showCancel: false,
       });
       return;
