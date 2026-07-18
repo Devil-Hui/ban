@@ -1,0 +1,56 @@
+{
+  "$schema_comment": "小程序 / 后端 / H5 共用语义。禁止在页面内散落魔法字符串。",
+  "TIME_MODES": {
+    "SECTION": "section",
+    "RANGE": "range",
+    "SECTION_RANGE": "section_range"
+  },
+  "DEFAULT_TASK_TIME_MODE": "section_range",
+  "TIME_MODE_META": {
+    "section": {
+      "label": "按节次",
+      "labelEn": "By section",
+      "showSectionName": true,
+      "showTimeRange": false,
+      "editor": "section_checkbox",
+      "description": "只展示第N节；时间来自作息表快照，填报按节次点选"
+    },
+    "range": {
+      "label": "按时间段",
+      "labelEn": "By time range",
+      "showSectionName": false,
+      "showTimeRange": true,
+      "editor": "range_list",
+      "description": "仅 start-end；适合值班/轮岗/无课表场景"
+    },
+    "section_range": {
+      "label": "节次+时间段",
+      "labelEn": "Section + time",
+      "showSectionName": true,
+      "showTimeRange": true,
+      "editor": "section_with_time",
+      "description": "同时展示第N节与起止时间；校内排班最常用"
+    }
+  },
+  "SLOT_KIND": {
+    "SECTION": "section",
+    "RANGE": "range",
+    "HYBRID": "hybrid"
+  },
+  "PROFILE_SCOPE": {
+    "SYSTEM": "system",
+    "GROUP": "group"
+  },
+  "HARDCODE_POLICY": {
+    "allowed": [
+      "TIME_MODES 枚举键名",
+      "默认 mode 常量名",
+      "种子模板 id（可被 H5 覆盖/归档）"
+    ],
+    "forbidden": [
+      "页面内写死 morning/afternoon/night",
+      "页面内写死 08:00-08:45 列表",
+      "业务 if(mode==='section') 散落（应读 TIME_MODE_META）"
+    ]
+  }
+}

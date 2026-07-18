@@ -1,0 +1,151 @@
+<!-- pages/members/members.wxml —— 成员管理 -->
+<view class="page-mb">
+  <!-- 成员卡 -->
+  <view class="mb-hero">
+    <view class="hero-row">
+      <view class="avatar avatar-lg hero-avatar">{{member.initial}}</view>
+      <view class="hero-info">
+        <view class="hero-name">{{member.displayName}}</view>
+        <view class="hero-meta">
+          <view class="tag {{member.status === 'active' ? 'tag-success' : member.status === 'kicked' ? 'tag-danger' : 'tag-neutral'}}">
+            {{member.statusLabel}}
+          </view>
+          <text wx:if="{{member.role === 'publisher'}}" class="hero-pub">发布者</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="hero-stats">
+      <view class="hs-cell">
+        <view class="hs-num">{{member.submittedCount}}</view>
+        <view class="hs-label">已提交</view>
+      </view>
+      <view class="hs-divider"></view>
+      <view class="hs-cell">
+        <view class="hs-num">{{member.assignedCount}}</view>
+        <view class="hs-label">已排班</view>
+      </view>
+      <view class="hs-divider"></view>
+      <view class="hs-cell">
+        <view class="hs-num">{{member.joinedDays}}</view>
+        <view class="hs-label">加入天数</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 基本信息（脱敏） -->
+  <view class="section-head">
+    <text class="section-title">基本信息</text>
+    <text class="section-tip">已脱敏</text>
+  </view>
+  <view class="info-card">
+    <view class="info-row">
+      <view class="ir-label">显示名</view>
+      <view class="ir-value">{{member.displayName}}</view>
+    </view>
+    <view class="info-row" wx:if="{{member.className}}">
+      <view class="ir-label">班级</view>
+      <view class="ir-value">{{member.className}}</view>
+    </view>
+    <view class="info-row">
+      <view class="ir-label">手机号</view>
+      <view class="ir-value">{{member.phoneMasked || '未提供'}}</view>
+      <view wx:if="{{member.phoneMasked}}" class="ir-action" bindtap="viewFullPhone">查看完整</view>
+    </view>
+    <view class="info-row">
+      <view class="ir-label">加入时间</view>
+      <view class="ir-value">{{member.joinedAt}}</view>
+    </view>
+    <view class="info-row" wx:if="{{member.status === 'kicked'}}">
+      <view class="ir-label">踢出原因</view>
+      <view class="ir-value text-danger">{{member.kickedReason}}</view>
+    </view>
+  </view>
+
+  <!-- 提交历史 -->
+  <view class="section-head">
+    <text class="section-title">提交历史</text>
+  </view>
+  <view class="history-card">
+    <view wx:for="{{history}}" wx:key="id" class="history-row">
+      <view class="hr-dot {{item.valid ? 'hr-dot-valid' : 'hr-dot-invalid'}}"></view>
+      <view class="hr-body">
+        <view class="hr-title">{{item.taskTitle}}</view>
+        <view class="hr-meta">
+          <text>{{item.time}}</text>
+          <text class="dot-sep">·</text>
+          <text>{{item.slotsCount}} 个时段</text>
+          <text wx:if="{{!item.valid}}" class="hr-invalid">已失效</text>
+        </view>
+      </view>
+      <view class="hr-status hr-status-{{item.statusClass}}">{{item.statusLabel}}</view>
+    </view>
+  </view>
+
+  <!-- 审计历史 -->
+  <view wx:if="{{auditLogs.length > 0}}" class="section-head">
+    <text class="section-title">操作记录</text>
+  </view>
+  <view wx:if="{{auditLogs.length > 0}}" class="audit-card">
+    <view wx:for="{{auditLogs}}" wx:key="id" class="audit-row">
+      <view class="ar-icon ar-icon-{{item.iconClass}}">{{item.icon}}</view>
+      <view class="ar-body">
+        <view class="ar-action">{{item.action}}</view>
+        <view class="ar-time">{{item.time}} · 由 {{item.operator}}</view>
+      </view>
+      <view wx:if="{{item.reason}}" class="ar-reason">{{item.reason}}</view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view wx:if="{{member.role !== 'publisher' && member.status === 'active'}}" class="bottom-bar">
+    <view class="btn btn-outline" bindtap="reopenSubmit">重开提交</view>
+    <view class="btn btn-danger btn-block" bindtap="showKickSheet">踢出分组</view>
+  </view>
+  <view wx:elif="{{member.status === 'kicked' && member.isBlacklisted}}" class="bottom-bar">
+    <view class="btn btn-primary btn-block" bindtap="unblacklist">解除黑名单</view>
+  </view>
+  <view wx:elif="{{member.status === 'kicked'}}" class="bottom-bar">
+    <view class="btn btn-outline btn-block">该成员已被踢出，可重新加入</view>
+  </view>
+</view>
+
+<!-- 踢出弹层 -->
+<view wx:if="{{kickSheet}}" class="kick-mask" bindtap="closeKickSheet">
+  <view class="kick-sheet" catchtap="">
+    <view class="ks-handle"></view>
+    <view class="ks-head">
+      <view class="ks-title">踢出「{{member.displayName}}」</view>
+      <view class="ks-close" bindtap="closeKickSheet">✕</view>
+    </view>
+    <view class="ks-warn">
+      <view class="kw-icon">!</view>
+      <view class="kw-text">踢出后该成员的所有未结束任务的提交将标记为失效，历史数据保留以备审计</view>
+    </view>
+
+    <view class="ks-section-title">踢出原因（必填）</view>
+    <textarea
+      class="ks-textarea"
+      placeholder="如：长期不配合排班工作"
+      value="{{kickReason}}"
+      bindinput="onKickReasonInput"
+      maxlength="100"
+    />
+
+    <view class="ks-section-title">附加选项</view>
+    <view class="ks-options">
+      <view class="ks-opt" bindtap="toggleBlacklist">
+        <view class="ks-opt-body">
+          <view class="ks-opt-title">加入黑名单</view>
+          <view class="ks-opt-desc">勾选后该成员无法通过邀请码重新加入</view>
+        </view>
+        <switch checked="{{willBlacklist}}" color="#E88B8B" bindchange="onBlacklistChange" />
+      </view>
+    </view>
+
+    <view class="ks-actions">
+      <view class="btn btn-outline" bindtap="closeKickSheet">取消</view>
+      <view class="btn btn-danger btn-block" bindtap="confirmKick">确认踢出</view>
+    </view>
+  </view>
+</view>

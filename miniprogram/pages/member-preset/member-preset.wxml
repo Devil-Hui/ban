@@ -1,0 +1,55 @@
+<!-- pages/member-preset/member-preset.wxml —— 人员预设页（仅预设人名） -->
+<view class="page-mp">
+  <!-- 步骤指示器 -->
+  <view class="steps">
+    <view class="step-item st-done">
+      <view class="st-dot">✓</view>
+      <view class="st-text">样式</view>
+    </view>
+    <view class="step-line st-line-done"></view>
+    <view class="step-item st-done">
+      <view class="st-dot">✓</view>
+      <view class="st-text">规则</view>
+    </view>
+    <view class="step-line st-line-done"></view>
+    <view class="step-item st-current">
+      <view class="st-dot">3</view>
+      <view class="st-text">人员</view>
+    </view>
+    <view class="step-line"></view>
+    <view class="step-item">
+      <view class="st-dot">4</view>
+      <view class="st-text">发布</view>
+    </view>
+  </view>
+
+  <!-- 添加预设人员 -->
+  <view class="card">
+    <view class="card-title">预设人员名单</view>
+    <view class="card-desc">仅输入参与排班的人员姓名，选定后可分享给成员确认时间表</view>
+
+    <view class="add-row">
+      <input class="add-input" placeholder="输入姓名" value="{{newName}}" bindinput="onNameInput" confirm-type="done" bindconfirm="addMember" />
+      <view class="add-btn" bindtap="addMember">＋ 添加</view>
+    </view>
+
+    <view wx:if="{{presetList.length > 0}}" class="preset-list">
+      <view wx:for="{{presetList}}" wx:key="id" class="preset-item">
+        <view class="pi-avatar">{{item.initial}}</view>
+        <view class="pi-name">{{item.name}}</view>
+        <view class="pi-del" bindtap="removeMember" data-id="{{item.id}}">×</view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-tip">
+      <view class="et-icon">👥</view>
+      <view class="et-text">还没有预设人员，添加后可分享给成员</view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-bar">
+    <view class="btn btn-outline" bindtap="onSaveDraft">保存草稿</view>
+    <view class="btn btn-primary" bindtap="onShare">分享给成员确认</view>
+  </view>
+</view>

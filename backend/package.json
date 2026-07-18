@@ -1,0 +1,27 @@
+{
+  "name": "scheduling-miniprogram-backend",
+  "version": "1.0.0",
+  "description": "排班小程序后端 API（RESTful，支持小程序/H5 双端，CloudBase 云函数或本地 Express 运行）",
+  "main": "src/server/cloud-function.js",
+  "scripts": {
+    "start": "node src/server/express.js",
+    "dev": "NODE_ENV=development DB_MODE=memory node src/server/express.js",
+    "dev:mysql": "NODE_ENV=development DB_MODE=mysql node src/server/express.js",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f mysql",
+    "db:ps": "docker compose ps",
+    "db:init": "node scripts/db-init.js",
+    "db:seed": "node scripts/db-seed-profiles.js",
+    "db:reset": "docker compose down -v && docker compose up -d && node scripts/wait-mysql.js && node scripts/db-init.js && node scripts/db-seed-profiles.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "mysql2": "^3.22.5"
+  },
+  "license": "MIT"
+}

@@ -149,16 +149,16 @@ VALUES (T001, U04, '[{"date":"2026-10-01","period_id":"p1"},...]', 'manual', tru
 1. 截止时间到 → 任务进入 reviewing
 2. 小明进入任务详情 → 看到提交进度 5/6
 3. 点击【生成排班方案】
-4. 云函数运行：随机抽取 → 返回 3 套方案
+4. 提交生成任务（schedule_jobs）→ 轮询进度 → 云函数异步计算返回 3 套候选方案
 5. 小明预览方案 2，点击某时段【手动调整】→ 把小强拖到 10月1日早班
 6. 点击【正式发布】
 
 **数据库变化**：
 ```sql
--- 云函数写入
-UPDATE tasks SET final_schemes='[方案1,方案2,方案3...]', status='reviewing' WHERE id=T001;
+-- 异步生成任务完成，写回候选方案
+UPDATE tasks SET candidate_schedules='[方案1,方案2,方案3...]', generating_job_id=NULL, status='reviewing' WHERE id=T001;
 -- 小明确认后
-UPDATE tasks SET status='published', final_schemes='[选定的方案]', share_token='uuid-xxx', published_at=NOW();
+UPDATE tasks SET status='published', final_schedule='[选定的方案]', share_token='uuid-xxx', published_at=NOW();
 -- 快照
 INSERT INTO user_assignments (task_id, user_id, date, period_id, ...) VALUES ...;
 -- 查收状态
@@ -190,7 +190,7 @@ INSERT INTO audit_logs (operator_id, target_type, target_id, action, reason) VAL
 2. 后端查到 (G01, U05) 存在且 status='kicked'，未被拉黑
 3. 允许重新加入：
 ```sql
-UPDATE group_members SET status='active', kicked_at=NULL, kicked_reason=NULL WHERE group_id=G01 AND user_id=U05;
+UPDATE group_members SET status='active', kicked_at=NULL, kicked_reason=NULL, left_at=NULL WHERE group_id=G01 AND user_id=U05;
 ```
 
 **预期效果**：
@@ -206,15 +206,15 @@ UPDATE group_members SET status='active', kicked_at=NULL, kicked_reason=NULL WHE
 
 **踢人时勾选了"加入黑名单"**：
 ```sql
-UPDATE group_members SET status='kicked', is_blacklisted=true WHERE group_id=G01 AND user_id=U11;
+UPDATE group_members SET status='kicked', is_blacklisted=1 WHERE group_id=G01 AND user_id=U11;
 ```
 
 **再试加入**：
 1. 小钱输入邀请码"X9K2M"
-2. 查到 status='kicked' AND is_blacklisted=true
+2. 查到 status='kicked' AND is_blacklisted=1
 3. 返回："您已被踢出，需联系发布者解除黑名单"
 
-**预期效果**：小钱不能重新加入。只有发布者手动解除黑名单后（is_blacklisted=false），小钱才能再入。
+**预期效果**：小钱不能重新加入。只有发布者手动解除黑名单后（is_blacklisted=0），小钱才能再入。
 
 ---
 
@@ -231,7 +231,7 @@ UPDATE group_members SET status='left', left_at=NOW() WHERE group_id=G02 AND use
 2. 查到 (G02, U09) 存在且 status='left'
 3. 允许重新加入：
 ```sql
-UPDATE group_members SET status='active', left_at=NULL WHERE group_id=G02 AND user_id=U09;
+UPDATE group_members SET status='active', left_at=NULL, kicked_at=NULL WHERE group_id=G02 AND user_id=U09;
 ```
 
 **预期效果**：小华无缝回到 G02，历史标记若有效可继续使用。
@@ -252,11 +252,11 @@ INSERT INTO notify_queue ... -- 通知 U03
 1. 收到通知 → 进入任务详情 → 异议管理 → 看到小红的申请
 2. 点击【接受异议，调整方案】
 ```sql
-UPDATE tasks SET status='adjusting', previous_schemes=final_schemes WHERE id=T001;
+UPDATE tasks SET status='adjusting', previous_schedule=final_schedule WHERE id=T001;
 ```
 3. 小明把小红换下，换上小强 → 点击【重新发布】
 ```sql
-UPDATE tasks SET status='published', final_schemes='[新方案]', share_token='new-uuid-xxx', published_at=NOW();
+UPDATE tasks SET status='published', final_schedule='[新方案]', share_token='new-uuid-xxx', published_at=NOW();
 UPDATE task_receipts SET receipt_status='pending', receipt_time=NULL WHERE task_id=T001; -- 全员重置
 UPDATE task_receipts SET resolved=true, resolved_at=NOW() WHERE task_id=T001 AND user_id=U04; -- 归档异议
 INSERT INTO notify_queue ... -- "排班已更新，请重新查收"
@@ -266,7 +266,7 @@ INSERT INTO notify_queue ... -- "排班已更新，请重新查收"
 - 所有人的查收状态重置为 pending，需要重新确认
 - 旧分享链接失效（share_token 已刷新），新链接生效
 - 小红那条异议被标记为 resolved=true
-- 上一版方案保存在 previous_schemes 中可回溯
+- 上一版方案保存在 previous_schedule 中可回溯
 
 ---
 

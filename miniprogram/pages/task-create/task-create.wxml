@@ -1,0 +1,242 @@
+<!-- pages/task-create/task-create.wxml —— 新建排班任务（对齐逻辑链：mode + 基础模板 + 日期 + 约束） -->
+<view class="page-tc">
+  <view class="tc-hero">
+    <view class="hero-icon">＋</view>
+    <view class="hero-body">
+      <view class="hero-title">新建排班任务</view>
+      <view class="hero-desc">选模式与作息模板 → 定日期 → 发布收集</view>
+    </view>
+    <view class="hero-group">
+      <text class="hg-label">所属分组</text>
+      <text class="hg-name">{{groupName}}</text>
+    </view>
+  </view>
+
+  <view class="stepper">
+    <view wx:for="{{steps}}" wx:key="key" class="step {{step >= index + 1 ? 'step-done' : ''}} {{step === index + 1 ? 'step-current' : ''}}">
+      <view class="step-num">{{index + 1}}</view>
+      <view class="step-label">{{item.label}}</view>
+    </view>
+  </view>
+
+  <!-- 1 基础 -->
+  <view class="section-card">
+    <view class="section-head">
+      <view class="sh-num">1</view>
+      <view class="sh-title">基础信息</view>
+      <view class="sh-optional">必填</view>
+    </view>
+    <view class="section-body">
+      <view class="field">
+        <view class="field-label">任务标题 <text class="req">*</text></view>
+        <input class="input" placeholder="如：国庆假期值班" value="{{title}}" bindinput="onTitleInput" maxlength="30" />
+        <view class="field-hint">{{title.length}}/30 字</view>
+      </view>
+      <view class="field">
+        <view class="field-label">任务描述 <text class="opt">选填</text></view>
+        <textarea class="textarea" placeholder="补充说明，如值班地点、注意事项等" value="{{description}}" bindinput="onDescInput" maxlength="200" />
+        <view class="field-hint">{{description.length}}/200 字</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 2 日期 -->
+  <view class="section-card">
+    <view class="section-head">
+      <view class="sh-num">2</view>
+      <view class="sh-title">日期范围</view>
+    </view>
+    <view class="section-body">
+      <view class="field-row">
+        <view class="field-cell">
+          <view class="field-label">开始日期</view>
+          <picker mode="date" value="{{dateStart}}" bindchange="onDateStart">
+            <view class="picker-value">{{dateStart || '请选择'}}</view>
+          </picker>
+        </view>
+        <view class="field-cell">
+          <view class="field-label">结束日期</view>
+          <picker mode="date" value="{{dateEnd}}" bindchange="onDateEnd">
+            <view class="picker-value">{{dateEnd || '请选择'}}</view>
+          </picker>
+        </view>
+      </view>
+      <view class="field">
+        <view class="field-label">循环规则</view>
+        <view class="cycle-row">
+          <view
+            wx:for="{{cycleRules}}"
+            wx:key="key"
+            class="cycle-chip {{cycleRule === item.key ? 'cycle-active' : ''}}"
+            bindtap="pickCycle"
+            data-key="{{item.key}}"
+          >{{item.label}}</view>
+        </view>
+        <view wx:if="{{cycleRule === 'custom'}}" class="custom-cycle">
+          <view class="cc-title">选择循环周次</view>
+          <view class="cc-weeks">
+            <view
+              wx:for="{{allWeeks}}"
+              wx:key="value"
+              class="cc-week {{customWeeks[item.value] ? 'cc-week-active' : ''}}"
+              bindtap="toggleCustomWeek"
+              data-value="{{item.value}}"
+            >{{item.label}}</view>
+          </view>
+          <view wx:if="{{customWeeksLabel}}" class="cc-summary">已选：{{customWeeksLabel}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 3 时段：mode + 基础模板（逻辑链核心） -->
+  <view class="section-card">
+    <view class="section-head">
+      <view class="sh-num">3</view>
+      <view class="sh-title">时段配置</view>
+      <view wx:if="{{allowEditRanges}}" class="sh-action" bindtap="addPeriod">＋ 添加</view>
+    </view>
+    <view class="section-body">
+      <view class="period-tip">
+        <view class="tip-icon">ⓘ</view>
+        <text>先选展示方式，再选基础作息模板（众数种子，可改）。任务将保存时段快照，改模板不影响历史任务。</text>
+      </view>
+
+      <view class="field">
+        <view class="field-label">展示方式</view>
+        <picker mode="selector" range="{{modeOptions}}" range-key="name" value="{{modeIndex}}" bindchange="onModeChange">
+          <view class="picker-value picker-block">{{timeModeLabel}} · {{modeOptions[modeIndex].desc}}</view>
+        </picker>
+      </view>
+
+      <view class="field">
+        <view class="field-label">基础作息模板</view>
+        <picker mode="selector" range="{{profileOptions}}" range-key="name" value="{{profileIndex}}" bindchange="onProfileChange">
+          <view class="picker-value picker-block">
+            {{profileOptions[profileIndex].name || '加载模板…'}}
+            <text wx:if="{{profileOptions[profileIndex]}}">（{{periods.length}} 段）</text>
+          </view>
+        </picker>
+        <view class="field-hint" wx:if="{{profileOptions[profileIndex].description}}">{{profileOptions[profileIndex].description}}</view>
+      </view>
+
+      <!-- 预览：按 mode 显示节次名 / 时间 -->
+      <scroll-view scroll-x class="period-preview-scroll" enable-flex>
+        <view class="period-chip-preview" wx:for="{{periods}}" wx:key="id">
+          <view class="pcp-name" wx:if="{{showSectionName}}">{{item.name}}</view>
+          <view class="pcp-time" wx:if="{{showTimeRange && item.start}}">{{item.start}}-{{item.end}}</view>
+          <view class="pcp-name" wx:if="{{!showSectionName && !showTimeRange}}">{{item.label || item.name}}</view>
+        </view>
+      </scroll-view>
+
+      <!-- range 模式可微调起止 -->
+      <block wx:if="{{allowEditRanges}}">
+        <view wx:for="{{periods}}" wx:key="id" class="period-row">
+          <view class="period-row-head">
+            <text class="period-row-label">时段 {{index + 1}}</text>
+            <view wx:if="{{periods.length > 1}}" class="period-row-del" bindtap="delPeriod" data-index="{{index}}">删除</view>
+          </view>
+          <view class="period-row-body">
+            <picker mode="time" value="{{item.start}}" bindchange="onPeriodStart" data-index="{{index}}">
+              <view class="time-picker">{{item.start}}</view>
+            </picker>
+            <text class="time-sep">—</text>
+            <picker mode="time" value="{{item.end}}" bindchange="onPeriodEnd" data-index="{{index}}">
+              <view class="time-picker">{{item.end}}</view>
+            </picker>
+            <view class="period-preview period-chip period-chip-active">{{item.start}}-{{item.end}}</view>
+          </view>
+        </view>
+      </block>
+
+      <view wx:else class="period-readonly-hint">
+        节次类模板由基础作息生成；如需自由改钟点，请切换为「按时间段」。
+      </view>
+    </view>
+  </view>
+
+  <!-- 4 约束 -->
+  <view class="section-card">
+    <view class="section-head">
+      <view class="sh-num">4</view>
+      <view class="sh-title">约束与截止</view>
+    </view>
+    <view class="section-body">
+      <view class="field">
+        <view class="field-label">每时段最少人数</view>
+        <view class="counter">
+          <view class="counter-btn" bindtap="decMinPeople">−</view>
+          <view class="counter-value">{{minPeople}}</view>
+          <view class="counter-btn counter-btn-plus" bindtap="incMinPeople">＋</view>
+          <view class="counter-unit">人 / 时段</view>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">每人每周最大次数 <text class="opt">选填</text></view>
+        <view class="counter">
+          <view class="counter-btn {{maxPerWeek === null ? 'disabled' : ''}}" bindtap="decMaxWeek">−</view>
+          <view class="counter-value">{{maxPerWeek === null ? '不限' : maxPerWeek}}</view>
+          <view class="counter-btn counter-btn-plus {{maxPerWeek === null ? 'disabled' : ''}}" bindtap="incMaxWeek">＋</view>
+          <view class="counter-unit">次 / 周</view>
+          <view class="counter-clear" bindtap="clearMaxWeek">{{maxPerWeek === null ? '设置' : '不限'}}</view>
+        </view>
+      </view>
+
+      <view class="field">
+        <view class="field-label">截止时间 <text class="req">*</text></view>
+        <view class="deadline-chips">
+          <view
+            wx:for="{{deadlineOptions}}"
+            wx:key="key"
+            class="dl-chip {{deadlineType === item.key ? 'dl-active' : ''}}"
+            bindtap="pickDeadline"
+            data-key="{{item.key}}"
+          >{{item.label}}</view>
+        </view>
+        <picker wx:if="{{deadlineType === 'custom'}}" mode="date" value="{{deadlineDate}}" bindchange="onDeadlineDate">
+          <view class="picker-value picker-block">{{deadlineDate || '请选择截止日期'}}</view>
+        </picker>
+        <picker wx:if="{{deadlineType === 'custom'}}" mode="time" value="{{deadlineTime}}" bindchange="onDeadlineTime">
+          <view class="picker-value picker-block">{{deadlineTime || '请选择截止时间'}}</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <!-- 摘要 -->
+  <view class="summary-card">
+    <view class="sc-title">任务摘要</view>
+    <view class="sc-row">
+      <text class="sc-label">分组</text>
+      <text class="sc-value">{{groupName}}</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">模式</text>
+      <text class="sc-value">{{timeModeLabel}}</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">日期</text>
+      <text class="sc-value">{{dateStart}} — {{dateEnd}}</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">时段</text>
+      <text class="sc-value">{{periods.length}} 个 · {{periodsSummary}}</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">约束</text>
+      <text class="sc-value">每时段 ≥ {{minPeople}} 人{{maxPerWeek !== null ? ' · 每周 ≤ ' + maxPerWeek + ' 次' : ''}}</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">截止</text>
+      <text class="sc-value">{{deadlineLabel}}</text>
+    </view>
+  </view>
+
+  <view class="bottom-bar">
+    <view class="btn btn-outline" bindtap="saveDraft">保存草稿</view>
+    <view class="btn btn-primary btn-block {{submitting ? 'btn-disabled' : ''}}" bindtap="onPublish">
+      {{submitting ? '提交中…' : '立即发布'}}
+    </view>
+  </view>
+</view>

@@ -1,0 +1,44 @@
+# 依赖
+node_modules/
+miniprogram_npm/
+**/node_modules/
+
+# 环境变量与密钥（永远不要提交）
+.env
+.env.*
+!.env.example
+**/.env
+!**/.env.example
+
+# 日志与调试
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# 系统 / IDE
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 本地 AI / 工具会话（可含机器路径；skills 可选择性提交）
+.workbuddy/
+.codebuddy/
+.claude/settings.local.json
+.claude/settings.json
+
+# 微信开发者工具本地缓存（若生成）
+miniprogram/.tea/
+miniprogram/project.private.config.json
+
+# 测试 / 覆盖率
+coverage/
+.nyc_output/
+
+# 临时文件
+*.tmp
+*.temp
+.cache/

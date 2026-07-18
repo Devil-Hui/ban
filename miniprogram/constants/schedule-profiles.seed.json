@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "generatedAt": "2026-07-18",
+  "methodology": "综合多所高校教务处公开作息表的众数归纳，非国家标准。各校可导入后在 H5/分组内修改。",
+  "sources": [
+    {
+      "name": "中国药科大学江宁校区上课时间",
+      "url": "https://jwc.cpu.edu.cn/868/list.htm",
+      "notes": "45分钟制 1–11 节，第1节 08:00–08:45"
+    },
+    {
+      "name": "中南大学作息相关公开信息",
+      "url": "https://www.csu.edu.cn/info/1050/1215.htm",
+      "notes": "第1节 08:00–08:45，含课间操间隔"
+    },
+    {
+      "name": "厦门大学公开课表时间",
+      "url": "https://spa.xmu.edu.cn/info/1258/3412.htm",
+      "notes": "45分钟；上午大课间约 9:40–10:10"
+    },
+    {
+      "name": "上海交通大学相关通知中的节次时间",
+      "url": "https://sais.sjtu.edu.cn/yjs_tzgg/382.html",
+      "notes": "第1节 08:00–08:45 模式"
+    },
+    {
+      "name": "中国矿业大学作息时间",
+      "url": "https://www.cumt.edu.cn/ggfw/zxsj.htm",
+      "notes": "50分钟制代表：08:00–08:50"
+    },
+    {
+      "name": "北京大学教务公开课表结构（50分钟、至12节）",
+      "url": "https://dean.pku.edu.cn/web/notice_details.php?id=672",
+      "notes": "50分钟大节配对常见"
+    }
+  ],
+  "profiles": [
+    {
+      "id": "sys_uni_45min_v1",
+      "name": "高校标准·45分钟（众数）",
+      "scope": "system",
+      "status": "active",
+      "isDefault": true,
+      "locale": "zh-CN",
+      "tags": ["university", "45min", "majority"],
+      "description": "第1节 08:00 起、每节45分钟、节间约10分钟、上午大课间；综合多校公开表众数，适合大多数本科排课/实验室值班。",
+      "slots": [
+        { "id": "p1", "name": "第1节", "sectionIndex": 1, "start": "08:00", "end": "08:45", "kind": "hybrid" },
+        { "id": "p2", "name": "第2节", "sectionIndex": 2, "start": "08:55", "end": "09:40", "kind": "hybrid" },
+        { "id": "p3", "name": "第3节", "sectionIndex": 3, "start": "10:00", "end": "10:45", "kind": "hybrid" },
+        { "id": "p4", "name": "第4节", "sectionIndex": 4, "start": "10:55", "end": "11:40", "kind": "hybrid" },
+        { "id": "p5", "name": "第5节", "sectionIndex": 5, "start": "14:00", "end": "14:45", "kind": "hybrid" },
+        { "id": "p6", "name": "第6节", "sectionIndex": 6, "start": "14:55", "end": "15:40", "kind": "hybrid" },
+        { "id": "p7", "name": "第7节", "sectionIndex": 7, "start": "16:00", "end": "16:45", "kind": "hybrid" },
+        { "id": "p8", "name": "第8节", "sectionIndex": 8, "start": "16:55", "end": "17:40", "kind": "hybrid" },
+        { "id": "p9", "name": "第9节", "sectionIndex": 9, "start": "19:00", "end": "19:45", "kind": "hybrid" },
+        { "id": "p10", "name": "第10节", "sectionIndex": 10, "start": "19:55", "end": "20:40", "kind": "hybrid" },
+        { "id": "p11", "name": "第11节", "sectionIndex": 11, "start": "20:50", "end": "21:35", "kind": "hybrid" }
+      ]
+    },
+    {
+      "id": "sys_uni_50min_v1",
+      "name": "高校标准·50分钟",
+      "scope": "system",
+      "status": "active",
+      "isDefault": false,
+      "locale": "zh-CN",
+      "tags": ["university", "50min"],
+      "description": "参考矿大等50分钟制：第1节 08:00–08:50，上午大课间约30分钟。",
+      "slots": [
+        { "id": "p1", "name": "第1节", "sectionIndex": 1, "start": "08:00", "end": "08:50", "kind": "hybrid" },
+        { "id": "p2", "name": "第2节", "sectionIndex": 2, "start": "08:55", "end": "09:45", "kind": "hybrid" },
+        { "id": "p3", "name": "第3节", "sectionIndex": 3, "start": "10:15", "end": "11:05", "kind": "hybrid" },
+        { "id": "p4", "name": "第4节", "sectionIndex": 4, "start": "11:10", "end": "12:00", "kind": "hybrid" },
+        { "id": "p5", "name": "第5节", "sectionIndex": 5, "start": "14:00", "end": "14:50", "kind": "hybrid" },
+        { "id": "p6", "name": "第6节", "sectionIndex": 6, "start": "14:55", "end": "15:45", "kind": "hybrid" },
+        { "id": "p7", "name": "第7节", "sectionIndex": 7, "start": "16:15", "end": "17:05", "kind": "hybrid" },
+        { "id": "p8", "name": "第8节", "sectionIndex": 8, "start": "17:10", "end": "18:00", "kind": "hybrid" },
+        { "id": "p9", "name": "第9节", "sectionIndex": 9, "start": "19:00", "end": "19:50", "kind": "hybrid" },
+        { "id": "p10", "name": "第10节", "sectionIndex": 10, "start": "19:55", "end": "20:45", "kind": "hybrid" }
+      ]
+    },
+    {
+      "id": "sys_uni_double_period_v1",
+      "name": "高校·大节（两小节合并）",
+      "scope": "system",
+      "status": "active",
+      "isDefault": false,
+      "locale": "zh-CN",
+      "tags": ["university", "double-period"],
+      "description": "1-2、3-4 合并为大节，适合连堂课/实验块排班。",
+      "slots": [
+        { "id": "d1", "name": "第1-2节", "sectionIndex": 1, "start": "08:00", "end": "09:40", "kind": "hybrid" },
+        { "id": "d2", "name": "第3-4节", "sectionIndex": 3, "start": "10:00", "end": "11:40", "kind": "hybrid" },
+        { "id": "d3", "name": "第5-6节", "sectionIndex": 5, "start": "14:00", "end": "15:40", "kind": "hybrid" },
+        { "id": "d4", "name": "第7-8节", "sectionIndex": 7, "start": "16:00", "end": "17:40", "kind": "hybrid" },
+        { "id": "d5", "name": "第9-10节", "sectionIndex": 9, "start": "19:00", "end": "20:40", "kind": "hybrid" }
+      ]
+    },
+    {
+      "id": "sys_duty_2h_v1",
+      "name": "值班·2小时段",
+      "scope": "system",
+      "status": "active",
+      "isDefault": false,
+      "locale": "zh-CN",
+      "tags": ["duty", "range", "2h"],
+      "description": "无课表场景：门店/社团/志愿者 2 小时一块（纯时间段 mode=range）。",
+      "slots": [
+        { "id": "t1", "name": "08:00-10:00", "start": "08:00", "end": "10:00", "kind": "range" },
+        { "id": "t2", "name": "10:00-12:00", "start": "10:00", "end": "12:00", "kind": "range" },
+        { "id": "t3", "name": "12:00-14:00", "start": "12:00", "end": "14:00", "kind": "range" },
+        { "id": "t4", "name": "14:00-16:00", "start": "14:00", "end": "16:00", "kind": "range" },
+        { "id": "t5", "name": "16:00-18:00", "start": "16:00", "end": "18:00", "kind": "range" },
+        { "id": "t6", "name": "18:00-20:00", "start": "18:00", "end": "20:00", "kind": "range" },
+        { "id": "t7", "name": "20:00-22:00", "start": "20:00", "end": "22:00", "kind": "range" }
+      ]
+    },
+    {
+      "id": "sys_half_day_v1",
+      "name": "半天块·上/下/晚",
+      "scope": "system",
+      "status": "active",
+      "isDefault": false,
+      "locale": "zh-CN",
+      "tags": ["duty", "coarse"],
+      "description": "粗粒度三块，适合值日生/楼层巡逻。",
+      "slots": [
+        { "id": "am", "name": "上午", "start": "08:00", "end": "12:00", "kind": "range" },
+        { "id": "pm", "name": "下午", "start": "14:00", "end": "18:00", "kind": "range" },
+        { "id": "eve", "name": "晚上", "start": "18:00", "end": "22:00", "kind": "range" }
+      ]
+    }
+  ]
+}

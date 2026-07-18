@@ -1,0 +1,516 @@
+/* pages/cal-edit-time/cal-edit-time.wxss —— 时间段日历编辑页 */
+.page-cet {
+  min-height: 100vh;
+  padding: var(--s-md);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 200rpx);
+  box-sizing: border-box;
+  background: var(--c-bg);
+}
+
+/* 设置卡 */
+.setup-card {
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  padding: 24rpx;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 24rpx;
+}
+.setup-title {
+  font-size: var(--f-md);
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 16rpx;
+}
+.setup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--c-border);
+}
+.setup-row:last-of-type { border-bottom: none; }
+.sr-label {
+  font-size: var(--f-sm);
+  color: var(--c-text-2);
+}
+.sr-hint {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+  line-height: 1.5;
+  margin-top: 4rpx;
+  margin-bottom: 8rpx;
+}
+.sr-value {
+  font-size: var(--f-sm);
+  color: var(--c-primary-dark);
+  background: var(--c-primary-lighter);
+  padding: 8rpx 20rpx;
+  border-radius: var(--r-sm);
+  font-family: monospace;
+}
+.interval-chips {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+}
+.ic-chip {
+  font-size: 22rpx;
+  color: var(--c-text-2);
+  background: var(--c-bg);
+  padding: 8rpx 16rpx;
+  border-radius: var(--r-pill);
+  border: 1rpx solid var(--c-border);
+}
+.ic-active {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  border-color: var(--c-primary-dark);
+}
+.setup-action {
+  margin-top: 16rpx;
+}
+.ga-btn {
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  background: linear-gradient(135deg, var(--c-primary), var(--c-primary-dark));
+  color: var(--c-text-inv);
+  border-radius: var(--r-pill);
+  font-size: var(--f-sm);
+  font-weight: 600;
+  box-shadow: 0 4rpx 12rpx rgba(126, 200, 227, 0.35);
+}
+
+/* 周历区 */
+.cal-wrap {
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  padding: 20rpx;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16rpx;
+}
+.cal-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+.ci-title {
+  font-size: var(--f-sm);
+  font-weight: 600;
+  color: var(--c-text);
+}
+.ci-meta {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+}
+
+/* 横向滚动表格 */
+.cal-scroll {
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+.cal-table {
+  display: inline-block;
+  min-width: 100%;
+}
+.cal-header {
+  display: flex;
+  border-bottom: 2rpx solid var(--c-border);
+}
+.ch-cell {
+  flex-shrink: 0;
+  border-right: 1rpx solid var(--c-border);
+  padding: 12rpx 0;
+  text-align: center;
+  box-sizing: border-box;
+}
+.ch-time {
+  width: 140rpx;
+  font-size: 22rpx;
+  color: var(--c-text-3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.ch-day {
+  width: 100rpx;
+}
+.ch-today {
+  background: var(--c-primary-lighter);
+  border-radius: 12rpx 12rpx 0 0;
+}
+.chd-weekday {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+}
+.chd-date {
+  font-size: 20rpx;
+  color: var(--c-text-2);
+  margin-top: 2rpx;
+}
+
+/* 时段行 */
+.cal-row {
+  display: flex;
+  border-bottom: 1rpx solid var(--c-border);
+}
+.cal-row:last-child { border-bottom: none; }
+.ct-start {
+  font-size: 22rpx;
+  color: var(--c-text);
+  font-weight: 500;
+}
+.ct-end {
+  font-size: 18rpx;
+  color: var(--c-text-3);
+  margin-top: 2rpx;
+}
+
+/* 格子 —— 三态明显区分：可选未选 / 已选 / 不可选 */
+.cal-cell {
+  width: 100rpx;
+  height: 80rpx;
+  border-right: 1rpx solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: all .12s;
+  position: relative;
+}
+/* 可选未选：浅色背景 + 虚线边框，提示可点击 */
+.cell-gray {
+  background: var(--c-card);
+  border-top: 2rpx dashed var(--c-divider);
+  border-bottom: 2rpx dashed var(--c-divider);
+}
+.cell-gray:active {
+  background: var(--c-primary-lightest);
+  transform: scale(0.94);
+}
+/* 已选：主色实底 + 实线边框 + 阴影 */
+.cell-active {
+  background: var(--c-primary);
+  border: 2rpx solid var(--c-primary-dark);
+  box-shadow: 0 2rpx 8rpx rgba(126, 200, 227, 0.45);
+}
+.cell-check {
+  color: var(--c-text-inv);
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--c-border);
+}
+.tb-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+.tb-icon {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+.tb-clear { background: rgba(232, 139, 139, 0.15); color: #C77; }
+.tb-fill { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
+.tb-swipe { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
+.tb-random { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
+.tb-label {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+}
+
+.swipe-tip {
+  margin-top: 12rpx;
+  font-size: 20rpx;
+  color: var(--c-text-3);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 80rpx 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+.es-icon {
+  font-size: 96rpx;
+  opacity: 0.5;
+}
+.es-title {
+  font-size: var(--f-sm);
+  color: var(--c-text-2);
+}
+.es-desc {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+}
+
+/* 底部操作 */
+.bottom-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx var(--s-md) calc(env(safe-area-inset-bottom) + 24rpx);
+  background: var(--c-card);
+  box-shadow: 0 -2rpx 16rpx rgba(126, 200, 227, 0.10);
+  z-index: 50;
+}
+
+/* 下滑说明弹层 */
+.mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+.guide-sheet {
+  width: 100%;
+  background: var(--c-card);
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 32rpx 32rpx calc(env(safe-area-inset-bottom) + 32rpx);
+  animation: slideUp 0.25s ease;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.gs-title {
+  font-size: var(--f-md);
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 24rpx;
+  text-align: center;
+}
+.gs-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+.gs-num {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.gs-text {
+  flex: 1;
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  line-height: 1.6;
+  padding-top: 6rpx;
+}
+.gs-btn {
+  margin-top: 24rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  border-radius: var(--r-pill);
+  font-size: var(--f-sm);
+  font-weight: 600;
+}
+
+/* —— 增强参数样式 —— */
+.setup-row-block {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12rpx;
+}
+.setup-row-block .sr-label {
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  font-weight: 500;
+}
+
+/* 计数器 */
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  background: var(--c-primary-lightest);
+  border-radius: var(--r-pill);
+  padding: 6rpx 8rpx;
+  width: 100%;
+}
+.counter-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: var(--c-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  color: var(--c-primary-dark);
+  font-weight: 600;
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+}
+.counter-btn-plus { color: var(--c-primary); }
+.counter-btn.disabled {
+  opacity: 0.4;
+  color: var(--c-text-3);
+  background: var(--c-divider);
+  border-color: var(--c-divider);
+  pointer-events: none;
+  box-shadow: none;
+}
+.counter-value {
+  flex: 1;
+  text-align: center;
+  font-size: var(--f-sub);
+  font-weight: 700;
+  color: var(--c-text);
+  min-width: 80rpx;
+}
+.counter-unit {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+  flex-shrink: 0;
+}
+.counter-clear {
+  font-size: 22rpx;
+  color: var(--c-primary-dark);
+  background: var(--c-card);
+  padding: 8rpx 18rpx;
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+
+/* 排班周期 */
+.cycle-row {
+  display: flex;
+  gap: 8rpx;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.cycle-chip {
+  flex: 1;
+  min-width: 120rpx;
+  text-align: center;
+  padding: 14rpx 16rpx;
+  background: var(--c-primary-lightest);
+  border: 2rpx solid var(--c-border);
+  border-radius: var(--r-md);
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  transition: all 0.15s;
+}
+.cycle-active {
+  background: var(--c-primary);
+  border-color: var(--c-primary-dark);
+  color: var(--c-text-inv);
+  font-weight: 600;
+}
+
+/* 日期范围 */
+.date-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  width: 100%;
+}
+.date-picker {
+  flex: 1;
+  text-align: center;
+  padding: 14rpx 16rpx;
+  background: var(--c-primary-lightest);
+  border: 1rpx solid var(--c-border);
+  border-radius: var(--r-md);
+  font-size: var(--f-cap);
+  color: var(--c-text);
+  font-family: monospace;
+}
+.date-sep {
+  color: var(--c-text-3);
+  font-size: var(--f-cap);
+}
+
+/* 摘要预览条 */
+.summary-bar {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, rgba(126, 200, 227, 0.12), rgba(91, 175, 218, 0.18));
+  border-radius: var(--r-lg);
+  padding: 16rpx 24rpx;
+  margin-bottom: 16rpx;
+  border-left: 6rpx solid var(--c-primary);
+}
+.sb-cell {
+  flex: 1;
+  text-align: center;
+}
+.sb-num {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--c-primary-dark);
+  line-height: 1;
+}
+.sb-label {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+  margin-top: 4rpx;
+}
+.sb-divider {
+  width: 1rpx;
+  height: 40rpx;
+  background: rgba(126, 200, 227, 0.3);
+}
+
+/* 不可选（周末关闭时）：斜线纹理 + 灰色 + 不可点击 */
+.ch-cell-hidden, .cell-hidden {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--c-bg) 0,
+    var(--c-bg) 8rpx,
+    var(--c-divider) 8rpx,
+    var(--c-divider) 12rpx
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+.cell-hidden::after {
+  content: '×';
+  position: absolute;
+  font-size: 32rpx;
+  color: var(--c-text-3);
+  font-weight: 300;
+}
+
+/* 工具栏反选按钮 */
+.tb-invert {
+  background: linear-gradient(135deg, #B8DDE9, #7EC8E3);
+  color: var(--c-text-inv);
+}
+

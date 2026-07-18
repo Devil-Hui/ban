@@ -1,0 +1,131 @@
+<!-- pages/schedule-rules/schedule-rules.wxml —— 排班规则页（规则化处理） -->
+<view class="page-sr">
+  <!-- 步骤指示器 -->
+  <view class="steps">
+    <view class="step-item st-done">
+      <view class="st-dot">✓</view>
+      <view class="st-text">基础</view>
+    </view>
+    <view class="step-line st-line-done"></view>
+    <view class="step-item st-current">
+      <view class="st-dot">2</view>
+      <view class="st-text">规则</view>
+    </view>
+    <view class="step-line"></view>
+    <view class="step-item">
+      <view class="st-dot">3</view>
+      <view class="st-text">人员</view>
+    </view>
+    <view class="step-line"></view>
+    <view class="step-item">
+      <view class="st-dot">4</view>
+      <view class="st-text">发布</view>
+    </view>
+  </view>
+
+  <!-- 基础参数回顾 -->
+  <view class="card">
+    <view class="card-title">基础参数（来自上一步）</view>
+    <view class="summary-grid">
+      <view class="sg-cell">
+        <view class="sg-label">时段范围</view>
+        <view class="sg-value">{{startTime}} - {{endTime}}</view>
+      </view>
+      <view class="sg-cell">
+        <view class="sg-label">间隔</view>
+        <view class="sg-value">{{interval}} 分钟</view>
+      </view>
+      <view class="sg-cell">
+        <view class="sg-label">每时段最少</view>
+        <view class="sg-value">{{minPeople}} 人</view>
+      </view>
+      <view class="sg-cell">
+        <view class="sg-label">持续周数</view>
+        <view class="sg-value">{{durationWeeks}} 周</view>
+      </view>
+      <view class="sg-cell">
+        <view class="sg-label">每周最大次数</view>
+        <view class="sg-value">{{maxPerWeek ? maxPerWeek + ' 次' : '不限'}}</view>
+      </view>
+      <view class="sg-cell">
+        <view class="sg-label">连续值班</view>
+        <view class="sg-value">{{allowContinuous ? '允许' : '禁止'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 每个时段最大人数 -->
+  <view class="card">
+    <view class="card-title">每个时段最大人数</view>
+    <view class="card-desc">设置每个时段最多可安排的人数，可统一设置或逐个调整</view>
+
+    <!-- 统一设置 -->
+    <view class="uniform-row">
+      <view class="ur-label">统一设置为</view>
+      <view class="counter">
+        <view class="counter-btn" bindtap="decMaxPerPeriod">−</view>
+        <view class="counter-value">{{maxPerPeriod}}</view>
+        <view class="counter-btn counter-btn-plus" bindtap="incMaxPerPeriod">＋</view>
+        <view class="counter-unit">人/时段</view>
+      </view>
+    </view>
+
+    <!-- 逐个时段列表 -->
+    <view class="period-rules">
+      <view wx:for="{{periods}}" wx:key="id" class="period-rule">
+        <view class="pr-label">{{item.label}}</view>
+        <view class="pr-counter">
+          <view class="counter-btn-sm" bindtap="decPeriodMax" data-idx="{{index}}">−</view>
+          <view class="counter-value-sm">{{item.maxPeople}}</view>
+          <view class="counter-btn-sm counter-btn-plus-sm" bindtap="incPeriodMax" data-idx="{{index}}">＋</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 排班优先级 -->
+  <view class="card">
+    <view class="card-title">排班优先级</view>
+    <view class="card-desc">选择人员分配的优先策略</view>
+    <view class="priority-list">
+      <view
+        wx:for="{{priorityOptions}}"
+        wx:key="key"
+        class="priority-item {{priorityMode === item.key ? 'priority-active' : ''}}"
+        bindtap="pickPriority"
+        data-key="{{item.key}}"
+      >
+        <view class="pi-radio {{priorityMode === item.key ? 'pi-radio-on' : ''}}"></view>
+        <view class="pi-body">
+          <view class="pi-label">{{item.label}}</view>
+          <view class="pi-desc">{{item.desc}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 其他规则 -->
+  <view class="card">
+    <view class="card-title">其他规则</view>
+    <view class="switch-row">
+      <view class="swr-body">
+        <view class="swr-label">允许成员自行换班</view>
+        <view class="swr-desc">成员可在公示后互相协商换班</view>
+      </view>
+      <switch checked="{{allowSwap}}" color="#7EC8E3" bindchange="toggleSwap" />
+    </view>
+    <view class="switch-row">
+      <view class="swr-body">
+        <view class="swr-label">自动填充空缺</view>
+        <view class="swr-desc">当某时段人数不足时，自动从可用人员中补位</view>
+      </view>
+      <switch checked="{{autoFill}}" color="#7EC8E3" bindchange="toggleAutoFill" />
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-bar">
+    <view class="btn btn-outline" bindtap="onPrev">上一步</view>
+    <view class="btn btn-primary" bindtap="onNext">下一步 · 设置人员</view>
+  </view>
+</view>

@@ -1,0 +1,265 @@
+<!-- pages/calendar-manage/calendar-manage.wxml —— 个人日历管理 -->
+<view class="page-cal">
+  <!-- Hero -->
+  <view class="cal-hero">
+    <view class="hero-top">
+      <view class="hero-title">我的日历</view>
+      <view class="hero-sub">维护忙闲时段，标记空闲时可一键导入</view>
+    </view>
+    <view class="hero-stats">
+      <view class="hs-cell">
+        <view class="hs-num">{{calendars.length}}</view>
+        <view class="hs-label">日历数</view>
+      </view>
+      <view class="hs-divider"></view>
+      <view class="hs-cell">
+        <view class="hs-num">{{totalSlots}}</view>
+        <view class="hs-label">忙时时段</view>
+      </view>
+      <view class="hs-divider"></view>
+      <view class="hs-cell">
+        <view class="hs-num">{{aiCount}}</view>
+        <view class="hs-label">AI 识别</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 新建日历入口（两种方式） -->
+  <view class="create-row">
+    <view class="create-card create-manual" bindtap="createManual">
+      <view class="cc-icon">✎</view>
+      <view class="cc-body">
+        <view class="cc-title">手动新建</view>
+        <view class="cc-desc">逐时段填写忙闲</view>
+      </view>
+      <view class="cc-arrow">›</view>
+    </view>
+    <view class="create-card create-ai" bindtap="createByAI">
+      <view class="cc-icon cc-icon-ai">✦</view>
+      <view class="cc-body">
+        <view class="cc-title">拍照识别<text class="cc-tag">AI</text></view>
+        <view class="cc-desc">上传课表图片自动识别</view>
+      </view>
+      <view class="cc-arrow">›</view>
+    </view>
+  </view>
+
+  <!-- 日历列表 -->
+  <view class="section-head">
+    <text class="section-title">全部日历</text>
+    <text class="section-tip">长按可管理</text>
+  </view>
+
+  <view wx:if="{{calendars.length}}" class="cal-list">
+    <view wx:for="{{calendars}}" wx:key="id" class="cal-card {{item.active ? 'cal-card-active' : ''}}" bindtap="openCalendar" data-id="{{item.id}}" bindlongpress="showCalMenu" data-id="{{item.id}}">
+      <view class="cal-card-head">
+        <view class="cal-icon cal-icon-{{item.source === 'ai_vision' ? 'ai' : 'manual'}}">
+          {{item.source === 'ai_vision' ? '✦' : '✎'}}
+        </view>
+        <view class="cal-info">
+          <view class="cal-name">
+            {{item.name}}
+            <text wx:if="{{item.active}}" class="cal-active-tag">默认</text>
+          </view>
+          <view class="cal-meta">
+            <text>{{item.cycleLabel}}</text>
+            <text class="dot-sep">·</text>
+            <text>{{item.slotsCount}} 时段</text>
+            <text class="dot-sep">·</text>
+            <text>{{item.updatedAt}}</text>
+          </view>
+        </view>
+        <view class="cal-arrow">›</view>
+      </view>
+
+      <view wx:if="{{item.source === 'ai_vision' && item.confidence}}" class="cal-ai-row">
+        <text class="ai-badge">AI</text>
+        <text class="ai-text">识别置信度 {{item.confidence}}%</text>
+        <text wx:if="{{item.confidence < 85}}" class="ai-warn">建议复核</text>
+      </view>
+
+      <view class="cal-preview">
+        <view wx:for="{{item.previewSlots}}" wx:for-item="slot" wx:key="key" class="preview-chip">
+          <text class="pc-day">{{slot.day}}</text>
+          <text class="pc-time">{{slot.time}}</text>
+        </view>
+        <view wx:if="{{item.slotsCount > 4}}" class="preview-more">+{{item.slotsCount - 4}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:else class="empty-state">
+    <view class="empty-icon">◷</view>
+    <view class="empty-title">还没有个人日历</view>
+    <view class="empty-desc">创建一个日历，标记空闲时可一键导入</view>
+    <view class="btn btn-primary" bindtap="createManual">立即创建</view>
+  </view>
+
+  <!-- 使用提示 -->
+  <view class="tip-card">
+    <view class="tip-title">使用提示</view>
+    <view class="tip-line">
+      <text class="tip-num">1</text>
+      <text>日历用于记录你的「忙碌」时段，如上课、工作。</text>
+    </view>
+    <view class="tip-line">
+      <text class="tip-num">2</text>
+      <text>在排班任务标记空闲时，可导入日历自动反向标记。</text>
+    </view>
+    <view class="tip-line">
+      <text class="tip-num">3</text>
+      <text>AI 识别仅支持清晰课表图片，识别后可手动修正。</text>
+    </view>
+  </view>
+
+  <!-- 底部说明 -->
+  <view class="footer-note">
+    日历数据仅你自己可见，不会展示给其他成员
+  </view>
+
+  <!-- 新建/编辑日历弹层 -->
+  <view wx:if="{{editSheet}}" class="mask" bindtap="closeEditSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-title">{{editingCalendar.id ? '编辑日历' : '新建日历'}}</text>
+        <view class="sheet-close" bindtap="closeEditSheet">✕</view>
+      </view>
+      <view class="sheet-body">
+        <view class="sheet-section">
+          <view class="ss-label">日历名称</view>
+          <input class="ss-input" placeholder="如 2026秋季课表" placeholder-class="ph" bindinput="onNameInput" value="{{editingCalendar.name}}" maxlength="20" />
+        </view>
+
+        <view class="sheet-section">
+          <view class="ss-label">循环规则</view>
+          <view class="cycle-chips">
+            <view wx:for="{{cycleOptions}}" wx:key="value" class="cycle-chip {{editingCalendar.cycle === item.value ? 'cycle-active' : ''}}" bindtap="selectCycle" data-value="{{item.value}}">
+              {{item.label}}
+            </view>
+          </view>
+        </view>
+
+        <view class="sheet-section">
+          <view class="ss-label">时段设置</view>
+          <view class="slots-tip">点击网格快速切换 · 或下方自定义时段</view>
+          <view class="slots-grid">
+            <view wx:for="{{daysOptions}}" wx:key="value" class="slots-grid-day">
+              <view class="sgd-label">{{item.label}}</view>
+              <view class="sgd-cells">
+                <view wx:for="{{periodSlots}}" wx:for-item="p" wx:key="id" class="sgd-cell {{editingCalendar.slotMap[item.value + '_' + p.id] ? 'sgd-cell-active' : ''}}" bindtap="toggleSlot" data-day="{{item.value}}" data-period="{{p.id}}">
+                  {{p.label}}
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 自定义时段 -->
+        <view class="sheet-section">
+          <view class="ss-label">自定义时段</view>
+          <view class="custom-row">
+            <picker mode="selector" range="{{daysOptions}}" range-key="label" value="{{customDayIdx}}" bindchange="onCustomDayChange">
+              <view class="custom-day">{{daysOptions[customDayIdx].label}}</view>
+            </picker>
+            <picker mode="time" value="{{customStart}}" bindchange="onCustomStartChange">
+              <view class="custom-time">{{customStart}}</view>
+            </picker>
+            <text class="custom-sep">—</text>
+            <picker mode="time" value="{{customEnd}}" bindchange="onCustomEndChange">
+              <view class="custom-time">{{customEnd}}</view>
+            </picker>
+            <view class="btn btn-sm btn-primary custom-add" bindtap="addCustomSlot">添加</view>
+          </view>
+
+          <!-- 已添加自定义时段列表 -->
+          <view wx:if="{{customSlots.length > 0}}" class="custom-list">
+            <view wx:for="{{customSlots}}" wx:key="key" class="custom-slot-item">
+              <text class="csi-day">{{item.dayLabel}}</text>
+              <text class="csi-time">{{item.start}}—{{item.end}}</text>
+              <view class="csi-del" bindtap="removeCustomSlot" data-key="{{item.key}}">×</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="sheet-warn sheet-warn-neutral">
+          <text class="sw-icon">i</text>
+          <text>被选中的格子表示该时段「忙碌」，未选中默认「空闲」。</text>
+        </view>
+      </view>
+      <view class="sheet-foot">
+        <view wx:if="{{editingCalendar.id}}" class="btn btn-block btn-danger" bindtap="deleteCalendar">删除日历</view>
+        <view class="btn btn-block btn-primary" bindtap="saveCalendar">{{editingCalendar.id ? '保存修改' : '创建日历'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- AI 识别弹层 -->
+  <view wx:if="{{aiSheet}}" class="mask" bindtap="closeAISheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <text class="sheet-title">AI 课表识别</text>
+        <view class="sheet-close" bindtap="closeAISheet">✕</view>
+      </view>
+      <view class="sheet-body">
+        <view class="ai-upload" bindtap="chooseImage">
+          <block wx:if="{{aiImage}}">
+            <image src="{{aiImage}}" mode="aspectFit" class="ai-preview" />
+            <view class="ai-reupload">重新上传</view>
+          </block>
+          <block wx:else>
+            <view class="ai-upload-icon">📷</view>
+            <view class="ai-upload-text">点击上传课表图片</view>
+            <view class="ai-upload-tip">支持 JPG/PNG，建议清晰度 1080P 以上</view>
+          </block>
+        </view>
+
+        <view wx:if="{{aiRecognizing}}" class="ai-progress">
+          <view class="ai-progress-bar"><view class="ai-progress-inner"></view></view>
+          <view class="ai-progress-text">正在识别课表内容…</view>
+        </view>
+
+        <view wx:if="{{aiRecognized && aiResult.length}}" class="ai-result">
+          <view class="ai-result-head">
+            <text class="ai-result-title">识别结果</text>
+            <text class="ai-result-confidence">置信度 {{aiConfidence}}%</text>
+          </view>
+          <view wx:for="{{aiResult}}" wx:key="key" class="ai-result-row">
+            <view class="arr-day">{{item.day}}</view>
+            <view class="arr-cells">
+              <view wx:for="{{item.periods}}" wx:for-item="p" wx:key="key" class="arr-chip">
+                <text class="arr-time">{{p.time}}</text>
+                <text wx:if="{{p.label}}" class="arr-label">{{p.label}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <view wx:if="{{aiRecognized && aiResult.length}}" class="sheet-section">
+          <view class="ss-label">日历名称</view>
+          <input class="ss-input" placeholder="如 2026秋季课表" placeholder-class="ph" bindinput="onNameInput" value="{{editingCalendar.name}}" maxlength="20" />
+        </view>
+
+        <view wx:if="{{aiRecognized && aiConfidence < 85}}" class="sheet-warn">
+          <text class="sw-icon">!</text>
+          <text>识别置信度较低，建议创建后手动校准时段。</text>
+        </view>
+      </view>
+      <view class="sheet-foot">
+        <view class="btn btn-block btn-outline" bindtap="closeAISheet">取消</view>
+        <view class="btn btn-block btn-primary {{aiRecognized ? '' : 'btn-disabled'}}" bindtap="confirmAICreate">{{aiRecognized ? '创建日历' : '请先上传图片'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 长按菜单 -->
+  <view wx:if="{{menuSheet}}" class="mask" bindtap="closeMenu">
+    <view class="action-sheet" catchtap="noop">
+      <view class="as-title">{{menuCalendar.name}}</view>
+      <view class="as-item" bindtap="setDefault" data-id="{{menuCalendar.id}}" wx:if="{{!menuCalendar.active}}">设为默认日历</view>
+      <view class="as-item" bindtap="editFromMenu" data-id="{{menuCalendar.id}}">编辑日历</view>
+      <view class="as-item as-danger" bindtap="deleteFromMenu" data-id="{{menuCalendar.id}}">删除日历</view>
+      <view class="as-cancel" bindtap="closeMenu">取消</view>
+    </view>
+  </view>
+</view>

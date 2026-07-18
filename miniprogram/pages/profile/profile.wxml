@@ -1,0 +1,119 @@
+<!-- pages/profile/profile.wxml —— 个人中心 -->
+<view class="page-profile page-with-tab">
+  <view class="status-bar" style="height: {{statusBarHeight}}px"></view>
+
+  <!-- 用户卡 -->
+  <view class="profile-hero">
+    <view class="hero-bg"></view>
+    <view class="hero-content">
+      <view class="hero-avatar avatar avatar-lg">{{user.initial}}</view>
+      <view class="hero-info">
+        <view class="hero-name">{{user.nickname}}</view>
+        <view class="hero-meta">
+          <text>已加入 {{user.groupsCount}} 个分组</text>
+          <text class="dot-sep">·</text>
+          <text>参与 {{user.tasksCount}} 个任务</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 数据概览 -->
+  <view class="overview-card">
+    <view class="overview-cell">
+      <view class="overview-num">{{stats.publishCount}}</view>
+      <view class="overview-label">已发布</view>
+    </view>
+    <view class="overview-divider"></view>
+    <view class="overview-cell">
+      <view class="overview-num">{{stats.participateCount}}</view>
+      <view class="overview-label">已参与</view>
+    </view>
+    <view class="overview-divider"></view>
+    <view class="overview-cell">
+      <view class="overview-num">{{stats.hoursTotal}}h</view>
+      <view class="overview-label">累计时长</view>
+    </view>
+  </view>
+
+  <!-- 我的分组 -->
+  <view class="section-head">
+    <text class="section-title">我的分组</text>
+    <text class="section-action" bindtap="goJoin">管理</text>
+  </view>
+  <view class="group-list">
+    <view
+      wx:for="{{groups}}"
+      wx:key="id"
+      class="group-item"
+      bindtap="enterGroup"
+      data-id="{{item.id}}"
+    >
+      <view class="group-item-icon" style="background: {{item.themeBg}}; color: {{item.themeColor}}">{{item.abbr}}</view>
+      <view class="group-item-body">
+        <view class="group-item-name">{{item.name}}</view>
+        <view class="group-item-meta">
+          <text class="tag {{item.role === 'publisher' ? 'tag-brand' : 'tag-neutral'}}">
+            {{item.role === 'publisher' ? '发布者' : '成员'}}
+          </text>
+          <text class="group-item-count">{{item.memberCount}} 位成员</text>
+        </view>
+      </view>
+      <text class="group-item-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="section-head">
+    <text class="section-title">协同工具</text>
+  </view>
+  <view class="menu-card">
+    <view
+      wx:for="{{toolsMenu}}"
+      wx:key="key"
+      class="menu-item"
+      bindtap="onMenuTap"
+      data-key="{{item.key}}"
+    >
+      <view class="menu-icon menu-icon-{{item.iconClass}}">{{item.icon}}</view>
+      <view class="menu-body">
+        <view class="menu-title">{{item.title}}</view>
+        <view class="menu-desc">{{item.desc}}</view>
+      </view>
+      <view wx:if="{{item.badge}}" class="menu-badge">{{item.badge}}</view>
+      <text class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <view class="section-head">
+    <text class="section-title">设置</text>
+  </view>
+  <view class="menu-card">
+    <view
+      wx:for="{{settingsMenu}}"
+      wx:key="key"
+      class="menu-item"
+      bindtap="onMenuTap"
+      data-key="{{item.key}}"
+    >
+      <view class="menu-icon menu-icon-{{item.iconClass}}">{{item.icon}}</view>
+      <view class="menu-body">
+        <view class="menu-title">{{item.title}}</view>
+        <view class="menu-desc">{{item.desc}}</view>
+      </view>
+      <view wx:if="{{item.toggle}}" class="menu-switch">
+        <switch checked="{{item.checked}}" color="#7EC8E3" bindchange="onSwitchChange" data-key="{{item.key}}" />
+      </view>
+      <text wx:else class="menu-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-block">
+    <view class="version-name">排班协同</view>
+    <view class="version-tag">v4.0 · 设计预览版</view>
+    <view class="version-desc">由协同团队打造 · 微信小程序原生实现</view>
+  </view>
+
+  <view class="bottom-spacer"></view>
+</view>

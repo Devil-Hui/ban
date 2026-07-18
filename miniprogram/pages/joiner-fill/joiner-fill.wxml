@@ -1,0 +1,111 @@
+<!-- pages/joiner-fill/joiner-fill.wxml —— 加入者填充页 -->
+<view class="page-jf">
+  <!-- 任务信息 -->
+  <view class="task-hero">
+    <view class="hero-icon">{{styleIcon}}</view>
+    <view class="hero-body">
+      <view class="hero-title">{{taskTitle}}</view>
+      <view class="hero-meta">
+        <text>{{publisherName}} 发布</text>
+        <text class="dot-sep">·</text>
+        <text>{{styleLabel}}</text>
+      </view>
+    </view>
+    <view class="hero-deadline">
+      <view class="hd-label">截止</view>
+      <view class="hd-time">{{deadline}}</view>
+    </view>
+  </view>
+
+  <!-- 提示卡 -->
+  <view class="tip-bar">
+    <view class="tip-ico">i</view>
+    <view class="tip-text">
+      在<text class="hl">高亮区域</text>内勾选你的可用时间，灰色区域为不可选。可滑动选择连续时段。
+    </view>
+  </view>
+
+  <!-- 周历 -->
+  <view class="cal-card">
+    <!-- 周切换器 -->
+    <view class="week-nav">
+      <view class="wn-arrow" bindtap="prevWeek">‹</view>
+      <view class="wn-label">{{calWeekLabel}}</view>
+      <view class="wn-arrow" bindtap="nextWeek">›</view>
+    </view>
+
+    <view class="cal-headrow">
+      <view class="cal-weekname" wx:for="{{weekDays}}" wx:key="key">
+        <view class="cw-day {{item.isToday ? 'cw-today' : ''}}">{{item.weekday}}</view>
+        <view class="cw-date">{{item.dateShort}}</view>
+      </view>
+    </view>
+
+    <scroll-view scroll-x class="cal-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="cal-table">
+        <!-- 左侧标签列 -->
+        <view class="row-label-col">
+          <view wx:for="{{rows}}" wx:key="rowIdx" class="row-label">{{item.start}}</view>
+        </view>
+        <!-- 7 天单元格 -->
+        <view wx:for="{{rows}}" wx:key="rowIdx" class="cal-row">
+          <view
+            wx:for="{{item.cells}}"
+            wx:for-item="cell"
+            wx:for-index="dIdx"
+            wx:key="dIdx"
+            class="cell {{cell.available ? '' : 'cell-disabled'}} {{cell.selected ? 'cell-selected' : ''}}"
+            data-row="{{item.rowIdx}}"
+            data-day="{{dIdx}}"
+            bindtap="onCellTap"
+          >
+            <view wx:if="{{cell.selected}}" class="cell-check">✓</view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 图例 -->
+  <view class="legend-row">
+    <view class="lg-item"><view class="lg-swatch lg-avail"></view>可选区域</view>
+    <view class="lg-item"><view class="lg-swatch lg-sel"></view>已选</view>
+    <view class="lg-item"><view class="lg-swatch lg-dis"></view>不可选</view>
+  </view>
+
+  <!-- 已选统计 -->
+  <view class="summary-card">
+    <view class="sc-row">
+      <text class="sc-label">已选时段</text>
+      <text class="sc-value">{{selectedCount}} 个</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">发布者可选总数</text>
+      <text class="sc-value">{{totalAvailable}} 个</text>
+    </view>
+    <view class="sc-row">
+      <text class="sc-label">提交状态</text>
+      <text class="sc-value sc-{{statusKey}}">{{statusLabel}}</text>
+    </view>
+  </view>
+
+  <!-- 二次验证编辑提示 -->
+  <view wx:if="{{hasSubmitted}}" class="edit-notice">
+    <view class="en-ico">⏵</view>
+    <view class="en-body">
+      <view class="en-title">已提交，可二次编辑</view>
+      <view class="en-desc">收集阶段内可修改或删除；发布者发布公示后无法更改</view>
+    </view>
+    <view class="en-del" bindtap="onDeleteSubmit">删除</view>
+  </view>
+
+  <!-- 底部 -->
+  <view class="bottom-bar">
+    <view wx:if="{{hasSubmitted}}" class="btn btn-outline" bindtap="onSaveEdit">保存修改</view>
+    <view class="btn btn-primary" bindtap="onSubmit">
+      {{hasSubmitted ? '更新提交' : '提交排班'}}
+    </view>
+  </view>
+
+  <view class="bottom-spacer"></view>
+</view>

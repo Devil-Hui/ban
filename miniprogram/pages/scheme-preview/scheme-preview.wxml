@@ -1,0 +1,209 @@
+<!-- pages/scheme-preview/scheme-preview.wxml —— 方案预览 -->
+<view class="page-sp">
+  <!-- 顶部状态 -->
+  <view class="sp-hero">
+    <view class="hero-row">
+      <view>
+        <view class="hero-title">{{task.title}}</view>
+        <view class="hero-meta">{{task.groupName}} · 共 {{schemes.length}} 套方案</view>
+      </view>
+      <view class="hero-mode">
+        <view class="mode-icon">✦</view>
+        <text>{{mode === 'adjust' ? '调整模式' : '智能生成'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 方案切换 -->
+  <view class="scheme-switcher">
+    <view
+      wx:for="{{schemes}}"
+      wx:key="id"
+      class="ss-card {{currentScheme === index ? 'ss-active' : ''}}"
+      bindtap="switchScheme"
+      data-index="{{index}}"
+    >
+      <view class="ss-num">{{item.label}}</view>
+      <view class="ss-stats">
+        <view class="ss-stat">
+          <text class="ss-stat-num">{{item.totalAssignments}}</text>
+          <text class="ss-stat-label">总人次</text>
+        </view>
+        <view class="ss-stat">
+          <text class="ss-stat-num">{{item.maxPerPerson}}</text>
+          <text class="ss-stat-label">最多/人</text>
+        </view>
+        <view class="ss-stat">
+          <text class="ss-stat-num">{{item.score}}</text>
+          <text class="ss-stat-label">均衡分</text>
+        </view>
+      </view>
+      <view wx:if="{{currentScheme === index}}" class="ss-check">✓</view>
+    </view>
+  </view>
+
+  <!-- 当前方案概览 -->
+  <view class="current-scheme-card">
+    <view class="csc-head">
+      <view class="csc-title">{{currentSchemeData.label}} · 详情</view>
+      <view class="csc-actions">
+        <view class="csc-action" bindtap="regenerate">↻ 重新生成</view>
+      </view>
+    </view>
+    <view class="csc-row">
+      <view class="csc-cell">
+        <view class="csc-label">总人次</view>
+        <view class="csc-value">{{currentSchemeData.totalAssignments}}</view>
+      </view>
+      <view class="csc-divider"></view>
+      <view class="csc-cell">
+        <view class="csc-label">参与人数</view>
+        <view class="csc-value">{{currentSchemeData.uniquePeople}}</view>
+      </view>
+      <view class="csc-divider"></view>
+      <view class="csc-cell">
+        <view class="csc-label">人均次数</view>
+        <view class="csc-value">{{currentSchemeData.avgPerPerson}}</view>
+      </view>
+      <view class="csc-divider"></view>
+      <view class="csc-cell">
+        <view class="csc-label">覆盖率</view>
+        <view class="csc-value">{{currentSchemeData.coverage}}%</view>
+      </view>
+    </view>
+
+    <!-- 不均衡警告 -->
+    <view wx:if="{{warnings.length > 0}}" class="warnings">
+      <view wx:for="{{warnings}}" wx:key="id" class="warn-row">
+        <view class="warn-icon">!</view>
+        <view class="warn-text">{{item.text}}</view>
+        <view class="warn-action">{{item.action}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 人员负荷图 -->
+  <view class="section-head">
+    <text class="section-title">人员负荷</text>
+    <text class="section-action">按次数排序</text>
+  </view>
+  <view class="load-card">
+    <view wx:for="{{loadData}}" wx:key="id" class="load-row">
+      <view class="load-avatar avatar avatar-sm">{{item.initial}}</view>
+      <view class="load-body">
+        <view class="load-head">
+          <text class="load-name">{{item.name}}</text>
+          <text class="load-count">{{item.count}} 次</text>
+        </view>
+        <view class="load-bar">
+          <view class="load-fill" style="width: {{item.percent}}%"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 排班表（按周横向展示：周一切换器 + 周一到周日表头 + 时段行×7天） -->
+  <view class="section-head">
+    <text class="section-title">排班详情（按周）</text>
+    <view class="section-tip">
+      <view class="tip-dot"></view>
+      <text>点击格子可手动调整人选</text>
+    </view>
+  </view>
+
+  <view class="week-cal-card">
+    <!-- 周切换器 -->
+    <view class="week-nav">
+      <view class="wn-arrow" bindtap="prevWeek">‹</view>
+      <view class="wn-label">{{calWeekLabel}}</view>
+      <view class="wn-arrow" bindtap="nextWeek">›</view>
+    </view>
+
+    <!-- 周表头：周一到周日 -->
+    <view class="cal-headrow">
+      <view class="cal-weekname" wx:for="{{weekDays}}" wx:key="key">
+        <view class="cw-day {{item.isToday ? 'cw-today' : ''}}">{{item.weekday}}</view>
+        <view class="cw-date">{{item.dateShort}}</view>
+      </view>
+    </view>
+
+    <!-- 时段行 × 7 天单元格 -->
+    <scroll-view scroll-x class="cal-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="cal-table">
+        <!-- 左侧时段标签列 -->
+        <view class="row-label-col">
+          <view wx:for="{{rows}}" wx:key="rowIdx" class="row-label">
+            <view class="rl-time">{{item.start}}</view>
+            <view class="rl-time-end">{{item.end}}</view>
+          </view>
+        </view>
+        <!-- 7 天单元格 -->
+        <view wx:for="{{rows}}" wx:key="rowIdx" class="cal-row">
+          <view
+            wx:for="{{item.cells}}"
+            wx:for-item="cell"
+            wx:for-index="dIdx"
+            wx:key="dIdx"
+            class="sp-cell {{cell.members.length > 0 ? 'sp-cell-filled' : ''}} {{cell.urgent ? 'sp-cell-urgent' : ''}}"
+            bindtap="adjustCell"
+            data-date="{{cell.dateStr}}"
+            data-period="{{cell.periodId}}"
+          >
+            <view wx:if="{{cell.members.length > 0}}" class="spc-members">
+              <view wx:for="{{cell.members}}" wx:for-item="m" wx:key="id" class="spc-avatar avatar avatar-sm">{{m.initial}}</view>
+            </view>
+            <view wx:else class="spc-empty">＋</view>
+            <view wx:if="{{cell.members.length > 0}}" class="spc-count">{{cell.members.length}}人</view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="wc-tip">横向为周一到周日 · 时段按创建时原貌显示 · 点击格子调整人选</view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view class="bottom-bar">
+    <view class="btn btn-outline" bindtap="goBack">返回修改</view>
+    <view class="btn btn-primary btn-block {{publishing ? 'btn-disabled' : ''}}" bindtap="confirmScheme">{{publishing ? '发布中…' : '确认此方案并发布'}}</view>
+  </view>
+</view>
+
+<!-- 调整人选弹层 -->
+<view wx:if="{{adjustSheet}}" class="adjust-mask" bindtap="closeAdjust">
+  <view class="adjust-sheet" catchtap="">
+    <view class="as-handle"></view>
+    <view class="as-head">
+      <view>
+        <view class="as-title">{{adjustData.dateLabel}} · {{adjustData.periodLabel}}</view>
+        <view class="as-sub">最少 {{adjustData.minPeople}} 人 · 当前 {{adjustData.currentCount}} 人</view>
+      </view>
+      <view class="as-close" bindtap="closeAdjust">✕</view>
+    </view>
+
+    <view class="as-section-title">可值班的人（勾选分配）</view>
+    <view class="as-list">
+      <view
+        wx:for="{{adjustData.candidates}}"
+        wx:key="id"
+        class="as-row {{item.selected ? 'as-row-selected' : ''}}"
+        bindtap="toggleCandidate"
+        data-id="{{item.id}}"
+      >
+        <view class="avatar avatar-sm">{{item.initial}}</view>
+        <view class="as-body">
+          <view class="as-name">{{item.name}}</view>
+          <view class="as-meta">本周已排 {{item.weekCount}} 次 · 标记空闲</view>
+        </view>
+        <view class="as-check {{item.selected ? 'as-check-on' : ''}}">
+          {{item.selected ? '✓' : ''}}
+        </view>
+      </view>
+    </view>
+
+    <view class="as-actions">
+      <view class="btn btn-outline" bindtap="closeAdjust">取消</view>
+      <view class="btn btn-primary btn-block" bindtap="saveAdjust">保存</view>
+    </view>
+  </view>
+</view>

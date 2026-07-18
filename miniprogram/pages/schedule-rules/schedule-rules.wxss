@@ -1,0 +1,311 @@
+/* pages/schedule-rules/schedule-rules.wxss —— 排班规则页 */
+.page-sr {
+  min-height: 100vh;
+  padding: var(--s-md);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 200rpx);
+  box-sizing: border-box;
+  background: var(--c-bg);
+}
+
+/* 步骤指示器 */
+.steps {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 8rpx 24rpx;
+}
+.step-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+}
+.st-dot {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  background: var(--c-bg);
+  border: 2rpx solid var(--c-border);
+  color: var(--c-text-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+.st-text {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+}
+.st-done .st-dot {
+  background: var(--c-primary);
+  border-color: var(--c-primary-dark);
+  color: var(--c-text-inv);
+}
+.st-current .st-dot {
+  background: var(--c-primary-lighter);
+  border-color: var(--c-primary);
+  color: var(--c-primary-dark);
+}
+.st-current .st-text { color: var(--c-primary-dark); font-weight: 600; }
+.step-line {
+  flex: 1;
+  height: 4rpx;
+  background: var(--c-border);
+  margin: 0 8rpx;
+  margin-bottom: 20rpx;
+}
+.st-line-done { background: var(--c-primary); }
+
+/* 卡片 */
+.card {
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  padding: 24rpx;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 16rpx;
+}
+.card-title {
+  font-size: var(--f-md);
+  font-weight: 600;
+  color: var(--c-text);
+  margin-bottom: 8rpx;
+}
+.card-desc {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+  line-height: 1.5;
+  margin-bottom: 16rpx;
+}
+
+/* 基础参数回顾网格 */
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+}
+.sg-cell {
+  background: var(--c-bg);
+  border-radius: var(--r-sm);
+  padding: 12rpx 16rpx;
+}
+.sg-label {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+}
+.sg-value {
+  font-size: 26rpx;
+  color: var(--c-text);
+  font-weight: 600;
+  margin-top: 4rpx;
+}
+
+/* 统一设置行 */
+.uniform-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  margin-bottom: 16rpx;
+  border-bottom: 1rpx dashed var(--c-divider);
+}
+.ur-label {
+  font-size: var(--f-sm);
+  color: var(--c-text-2);
+}
+
+/* 计数器 */
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.counter-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 50%;
+  background: var(--c-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  color: var(--c-text-2);
+  border: 1rpx solid var(--c-border);
+}
+.counter-btn-plus {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  border-color: var(--c-primary);
+}
+.counter-value {
+  min-width: 56rpx;
+  text-align: center;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--c-text);
+}
+.counter-unit {
+  font-size: 22rpx;
+  color: var(--c-text-3);
+}
+
+/* 时段规则列表 */
+.period-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.period-rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 16rpx;
+  background: var(--c-bg);
+  border-radius: var(--r-sm);
+}
+.pr-label {
+  font-size: var(--f-sm);
+  color: var(--c-text);
+  font-weight: 500;
+  font-family: monospace;
+}
+.pr-counter {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.counter-btn-sm {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  background: var(--c-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: var(--c-text-2);
+  border: 1rpx solid var(--c-border);
+}
+.counter-btn-plus-sm {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  border-color: var(--c-primary);
+}
+.counter-value-sm {
+  min-width: 40rpx;
+  text-align: center;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+/* 优先级列表 —— 选中/未选中明显区分 */
+.priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+.priority-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  padding: 16rpx;
+  background: var(--c-bg);
+  border-radius: var(--r-md);
+  border: 2rpx dashed var(--c-border);
+  transition: all .15s;
+}
+.priority-active {
+  border: 2rpx solid var(--c-primary);
+  background: var(--c-primary-lighter);
+  box-shadow: 0 4rpx 12rpx rgba(126, 200, 227, 0.18);
+}
+.pi-radio {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  border: 2rpx solid var(--c-border);
+  flex-shrink: 0;
+  margin-top: 2rpx;
+  position: relative;
+  background: var(--c-card);
+}
+.pi-radio-on {
+  border-color: var(--c-primary);
+  background: var(--c-primary);
+}
+.pi-radio-on::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-text-inv);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+.pi-body { flex: 1; }
+.pi-label {
+  font-size: var(--f-sm);
+  color: var(--c-text);
+  font-weight: 600;
+}
+.priority-active .pi-label { color: var(--c-primary-dark); }
+.pi-desc {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+  margin-top: 4rpx;
+  line-height: 1.4;
+}
+
+/* 开关行 */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--c-divider);
+}
+.switch-row:last-child { border-bottom: none; }
+.swr-body { flex: 1; }
+.swr-label {
+  font-size: var(--f-sm);
+  color: var(--c-text);
+  font-weight: 500;
+}
+.swr-desc {
+  font-size: 20rpx;
+  color: var(--c-text-3);
+  margin-top: 4rpx;
+  line-height: 1.4;
+}
+
+/* 底部 */
+.bottom-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  gap: 12rpx;
+  padding: 16rpx var(--s-md) calc(env(safe-area-inset-bottom) + 24rpx);
+  background: var(--c-card);
+  box-shadow: 0 -2rpx 16rpx rgba(126, 200, 227, 0.10);
+  z-index: 50;
+}
+.btn {
+  flex: 1;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: var(--r-md);
+  font-size: var(--f-sm);
+  font-weight: 600;
+}
+.btn-outline {
+  background: var(--c-bg);
+  color: var(--c-text);
+  border: 2rpx solid var(--c-border);
+}
+.btn-primary {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+}

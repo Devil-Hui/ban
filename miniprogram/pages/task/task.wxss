@@ -1,0 +1,279 @@
+/* pages/task/task.wxss —— 任务页样式 */
+
+.page-task {
+  min-height: 100vh;
+  /* TabBar 页面底部需留足 TabBar 高度 + safe-area */
+  padding: 0 var(--s-md) calc(env(safe-area-inset-bottom) + 180rpx);
+  box-sizing: border-box;
+  background:
+    radial-gradient(60% 30% at 100% 0%, rgba(126, 200, 227, 0.10) 0%, transparent 60%),
+    var(--c-bg);
+}
+
+.task-header {
+  padding: 24rpx 8rpx 0;
+}
+
+.task-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+.page-title {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: var(--c-text);
+  letter-spacing: 0.5rpx;
+}
+.page-subtitle {
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  margin-top: 6rpx;
+}
+.task-sort {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: var(--c-card);
+  padding: 12rpx 20rpx;
+  border-radius: var(--r-pill);
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  box-shadow: var(--shadow-card);
+}
+.sort-arrow { font-size: var(--f-body); color: var(--c-primary); }
+
+/* —— 分段控制 —— */
+.seg {
+  display: flex;
+  background: var(--c-card);
+  border-radius: var(--r-pill);
+  padding: 6rpx;
+  margin-top: 24rpx;
+  box-shadow: var(--shadow-card);
+}
+.seg-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 64rpx;
+  border-radius: var(--r-pill);
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  font-weight: 500;
+  transition: all .2s;
+}
+.seg-active {
+  background: linear-gradient(135deg, #2B6DE5 0%, #2B6DE5 100%);
+  color: var(--c-text-inv);
+  box-shadow: 0 4rpx 12rpx rgba(126, 200, 227, 0.35);
+}
+.seg-count {
+  font-size: 20rpx;
+  padding: 2rpx 8rpx;
+  background: var(--c-divider);
+  border-radius: var(--r-pill);
+  line-height: 1.3;
+}
+.seg-active .seg-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* —— 状态筛选 —— */
+.filter-row {
+  margin: 20rpx -8rpx 0;
+  white-space: nowrap;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 56rpx;
+  padding: 0 24rpx;
+  margin: 0 8rpx;
+  background: var(--c-card);
+  border-radius: var(--r-pill);
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  box-shadow: var(--shadow-card);
+  transition: all .15s;
+}
+.filter-active {
+  background: var(--c-primary-lighter);
+  color: var(--c-primary-dark);
+  font-weight: 600;
+}
+
+/* —— 任务卡片 —— */
+.task-list {
+  margin-top: 20rpx;
+}
+.task-card {
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 18rpx;
+  overflow: hidden;
+  transition: transform .15s, box-shadow .2s;
+}
+.task-card:active {
+  transform: scale(0.98);
+  box-shadow: var(--shadow-elevated);
+}
+
+.task-card-bar {
+  height: 6rpx;
+  background: var(--c-primary);
+}
+.task-bar-collecting { background: linear-gradient(90deg, #8FB4F2 0%, #2B6DE5 100%); }
+.task-bar-reviewing { background: linear-gradient(90deg, #F2B962 0%, #E8A247 100%); }
+.task-bar-published { background: linear-gradient(90deg, #8FD9A8 0%, #6BC785 100%); }
+.task-bar-adjusting { background: linear-gradient(90deg, #E88B8B 0%, #D26B6B 100%); }
+.task-bar-draft { background: var(--c-divider); }
+.task-bar-archived { background: var(--c-text-3); }
+
+.task-card-body {
+  padding: 24rpx;
+}
+
+.task-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.task-card-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.task-card-title {
+  font-size: var(--f-sub);
+  font-weight: 600;
+  color: var(--c-text);
+  display: block;
+  margin-bottom: 8rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.task-card-group {
+  font-size: var(--f-tiny);
+  color: var(--c-text-3);
+  background: var(--c-primary-lightest);
+  padding: 6rpx 14rpx;
+  border-radius: var(--r-pill);
+  flex-shrink: 0;
+}
+
+/* —— 信息行 —— */
+.task-card-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  margin: 20rpx 0;
+  padding: 20rpx 0;
+  border-top: 1rpx solid var(--c-divider);
+  border-bottom: 1rpx solid var(--c-divider);
+}
+.meta-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.meta-label {
+  font-size: var(--f-tiny);
+  color: var(--c-text-3);
+}
+.meta-value {
+  font-size: var(--f-cap);
+  color: var(--c-text);
+  font-weight: 500;
+}
+
+/* —— 进度 —— */
+.task-card-progress {
+  margin-top: 4rpx;
+}
+.progress-bar {
+  height: 8rpx;
+  background: var(--c-divider);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-primary-light) 0%, var(--c-primary) 100%);
+  border-radius: var(--r-pill);
+  transition: width .3s;
+}
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10rpx;
+  font-size: var(--f-tiny);
+  color: var(--c-text-2);
+}
+.progress-deadline { color: var(--c-text-3); }
+
+/* —— 操作按钮 —— */
+.task-card-actions {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 20rpx;
+}
+.action-btn {
+  flex: 1;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+  font-size: var(--f-cap);
+  font-weight: 500;
+  transition: all .15s;
+}
+.action-btn:active { transform: scale(0.97); }
+.action-primary {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+}
+.action-ghost {
+  background: var(--c-primary-lighter);
+  color: var(--c-primary-dark);
+}
+.action-outline {
+  background: transparent;
+  border: 1rpx solid var(--c-border);
+  color: var(--c-text-2);
+}
+.action-danger {
+  background: rgba(232, 139, 139, 0.12);
+  color: var(--c-danger);
+}
+
+/* —— 空状态 —— */
+.empty-card {
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: 80rpx 40rpx;
+  text-align: center;
+  margin-top: 32rpx;
+}
+.empty-card .empty-icon {
+  margin: 0 auto 24rpx;
+}
+.empty-card .empty-title {
+  font-size: var(--f-sub);
+  color: var(--c-text);
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+.empty-card .empty-desc {
+  font-size: var(--f-cap);
+  color: var(--c-text-3);
+  line-height: 1.6;
+}
+
+.bottom-spacer { height: 100rpx; }

@@ -1,0 +1,16 @@
+.task-card {
+  background: var(--c-card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 26rpx 28rpx;
+}
+.task-card:active { background: #FAFBFC; }
+.task-top { display: flex; align-items: center; justify-content: space-between; }
+.task-title { font-size: 30rpx; font-weight: 600; color: var(--c-text); flex: 1; margin-right: 16rpx; }
+.task-sub { margin-top: 12rpx; }
+.task-foot { display: flex; align-items: center; margin-top: 18rpx; }
+.progress {
+  flex: 1; height: 10rpx; border-radius: 6rpx;
+  background: var(--c-primary-soft); margin-right: 16rpx; overflow: hidden;
+}
+.progress-bar { height: 100%; background: var(--c-primary); border-radius: 6rpx; }

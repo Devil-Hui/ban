@@ -1,0 +1,228 @@
+<!-- pages/schedule/schedule.wxml —— 日程页：可视化月历 + 今日概览 -->
+<view class="page-schedule page-with-tab">
+  <view class="status-bar" style="height: {{statusBarHeight}}px"></view>
+
+  <!-- 分组筛选（加入者仅看自己所在分组） -->
+  <scroll-view scroll-x class="group-filter" enhanced show-scrollbar="{{false}}">
+    <view
+      wx:for="{{groupList}}"
+      wx:key="id"
+      class="gf-chip {{currentGroupId === item.id ? 'gf-active' : ''}} {{item.role === 'publisher' ? 'gf-pub' : ''}}"
+      bindtap="switchGroup"
+      data-id="{{item.id}}"
+    >
+      <text class="gf-name">{{item.name}}</text>
+      <text class="gf-role">{{item.role === 'publisher' ? '发布' : '加入'}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 月份概览统计（可视化，替代文字） -->
+  <view class="month-stat">
+    <view class="ms-month">
+      <view class="ms-year">{{currentYear}}</view>
+      <view class="ms-num">{{currentMonth}}</view>
+      <view class="ms-unit">月</view>
+    </view>
+    <view class="ms-stats">
+      <view class="ms-stat">
+        <view class="ms-stat-num ms-stat-brand">{{monthStat.total}}</view>
+        <view class="ms-stat-label">总排班</view>
+      </view>
+      <view class="ms-stat">
+        <view class="ms-stat-num">{{monthStat.mine}}</view>
+        <view class="ms-stat-label">我的</view>
+      </view>
+      <view class="ms-stat">
+        <view class="ms-stat-num ms-stat-warn">{{monthStat.pending}}</view>
+        <view class="ms-stat-label">待查收</view>
+      </view>
+    </view>
+    <view class="ms-nav">
+      <view class="ms-arrow" bindtap="prevMonth">‹</view>
+      <view class="ms-arrow" bindtap="nextMonth">›</view>
+    </view>
+  </view>
+
+  <view class="cal-tip-hint">← 左右滑动切换月份 · 颜色越深排班越多</view>
+
+  <!-- 日历卡片（左右滑动切换月份） -->
+  <view
+    class="cal-card"
+    bindtouchstart="onTouchStart"
+    bindtouchend="onTouchEnd"
+  >
+    <!-- 星期表头 -->
+    <view class="cal-weekrow">
+      <view class="cal-weekday">一</view>
+      <view class="cal-weekday">二</view>
+      <view class="cal-weekday">三</view>
+      <view class="cal-weekday">四</view>
+      <view class="cal-weekday">五</view>
+      <view class="cal-weekday cal-weekday-end">六</view>
+      <view class="cal-weekday cal-weekday-end">日</view>
+    </view>
+
+    <!-- 7×6 热力日历网格 -->
+    <view class="cal-grid">
+      <view
+        wx:for="{{calendar}}"
+        wx:key="key"
+        class="cal-cell heat-{{item.heatLevel}} {{item.inMonth ? '' : 'cal-cell-out'}} {{item.isToday ? 'cal-cell-today' : ''}} {{item.selected ? 'cal-cell-selected' : ''}}"
+        bindtap="onDayTap"
+        data-date="{{item.dateStr}}"
+      >
+        <view class="cal-day {{item.isToday ? 'cal-day-today' : ''}}">{{item.day}}</view>
+        <view wx:if="{{item.count > 0}}" class="cal-count">{{item.count}}</view>
+        <view wx:elif="{{item.inMonth && item.dotCount > 0}}" class="cal-dots">
+          <view wx:for="{{item.dotCount}}" wx:key="*this" class="cal-dot"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 热力图例 -->
+    <view class="heat-legend">
+      <text class="hl-text">少</text>
+      <view class="hl-swatch heat-0"></view>
+      <view class="hl-swatch heat-1"></view>
+      <view class="hl-swatch heat-2"></view>
+      <view class="hl-swatch heat-3"></view>
+      <text class="hl-text">多</text>
+    </view>
+  </view>
+
+  <!-- 今日概览卡（可视化） -->
+  <view wx:if="{{todayCard}}" class="today-card">
+    <view class="tc-head">
+      <view class="tc-title">今日</view>
+      <view class="tc-date">{{todayCard.dateLabel}}</view>
+    </view>
+    <view class="tc-body">
+      <view class="tc-stat">
+        <view class="tc-stat-num">{{todayCard.count}}</view>
+        <view class="tc-stat-label">个时段</view>
+      </view>
+      <view class="tc-stat">
+        <view class="tc-stat-num">{{todayCard.people}}</view>
+        <view class="tc-stat-label">人参与</view>
+      </view>
+      <view class="tc-stat">
+        <view class="tc-stat-num tc-stat-warn" wx:if="{{todayCard.pending > 0}}">{{todayCard.pending}}</view>
+        <view class="tc-stat-num tc-stat-ok" wx:else>0</view>
+        <view class="tc-stat-label">待处理</view>
+      </view>
+    </view>
+    <view wx:if="{{todayCard.count > 0}}" class="tc-cta" bindtap="viewTodayDetail">查看详情 ›</view>
+  </view>
+
+  <!-- 正在排班：基于当前时间显示当前值班人和即将值班人 -->
+  <view class="section-head">
+    <text class="section-title">正在排班</text>
+    <text class="section-count">{{activeTasks.length}}</text>
+  </view>
+
+  <view wx:for="{{activeTasks}}" wx:key="id" class="duty-card" bindtap="goTaskDetail" data-id="{{item.id}}">
+    <!-- 任务标题（发布者创建时的名称）+ 备注 -->
+    <view class="dc-head">
+      <view class="dc-title">{{item.title}}</view>
+      <view class="dc-meta">{{item.groupName}}</view>
+      <view wx:if="{{item.remark}}" class="dc-remark">{{item.remark}}</view>
+    </view>
+
+    <!-- 当前值班：姓名 + 手机号 -->
+    <view class="dc-row dc-row-current">
+      <view class="dcr-label">
+        <view class="dcr-dot"></view>
+        <text>正在</text>
+        <text class="dcr-period" wx:if="{{item.currentMember}}">{{item.periods[item.currentPeriodIdx].label}}</text>
+      </view>
+      <view wx:if="{{item.currentMember}}" class="dcr-body">
+        <view class="dcr-name">{{item.currentMember.name}}</view>
+        <view class="dcr-phone">{{item.currentMember.phone}}</view>
+      </view>
+      <view wx:else class="dcr-empty">当前无值班</view>
+    </view>
+
+    <!-- 即将值班：姓名 + 手机号 -->
+    <view wx:if="{{item.nextMember}}" class="dc-row dc-row-next">
+      <view class="dcr-label">
+        <view class="dcr-dot dcr-dot-next"></view>
+        <text>即将</text>
+        <text class="dcr-period">{{item.periods[item.nextPeriodIdx].label}}</text>
+      </view>
+      <view class="dcr-body">
+        <view class="dcr-name dcr-name-next">{{item.nextMember.name}}</view>
+        <view class="dcr-phone">{{item.nextMember.phone}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{activeTasks.length === 0}}" class="empty-inline">
+    <text class="empty-icon-sm">∅</text>
+    <text>当前没有正在排班的任务</text>
+  </view>
+
+  <!-- 即将排班（紧凑卡） -->
+  <view class="section-head">
+    <text class="section-title">即将排班</text>
+    <text class="section-count">{{upcomingTasks.length}}</text>
+  </view>
+
+  <view wx:for="{{upcomingTasks}}" wx:key="id" class="upcoming-card" bindtap="goReceipt" data-id="{{item.id}}">
+    <view class="uc-date">
+      <view class="uc-day">{{item.day}}</view>
+      <view class="uc-mon">{{item.monthLabel}}</view>
+    </view>
+    <view class="uc-body">
+      <view class="uc-title">{{item.title}}</view>
+      <view class="uc-meta">{{item.groupName}} · {{item.periodsCount}} 时段</view>
+    </view>
+    <view class="uc-dots">
+      <view wx:for="{{item.periodsCount}}" wx:for-item="n" wx:key="*this" class="uc-dot {{n <= 3 ? 'uc-dot-active' : ''}}"></view>
+    </view>
+  </view>
+
+  <!-- 详情卡（弹层 - 增强可视化） -->
+  <view wx:if="{{selectedDay}}" class="day-detail-mask" bindtap="closeDayDetail">
+    <view class="day-detail-sheet" catchtap="">
+      <view class="sheet-handle"></view>
+      <view class="sheet-head">
+        <view>
+          <view class="sheet-title">{{selectedDay.dateLabel}}</view>
+          <view class="sheet-sub">{{selectedDay.summary}}</view>
+        </view>
+        <view class="sheet-close" bindtap="closeDayDetail">✕</view>
+      </view>
+
+      <!-- 时段列表（每时段一个小卡，更可视化） -->
+      <view wx:for="{{selectedDay.items}}" wx:key="id" class="schedule-item">
+        <view class="si-period">
+          <view class="si-period-label">{{item.periodLabel}}</view>
+          <view class="si-period-state si-state-{{item.stateClass}}">{{item.stateLabel}}</view>
+        </view>
+        <view class="si-main">
+          <view class="si-group">{{item.groupName}}</view>
+          <view class="si-people">
+            <view wx:for="{{item.members}}" wx:for-item="m" wx:key="id" class="si-member">
+              <view class="avatar avatar-sm avatar-color-{{m.colorIdx}}">{{m.initial}}</view>
+              <view class="si-member-info">
+                <view class="si-member-name">{{m.name}}</view>
+                <view class="si-member-phone" wx:if="{{m.phone}}">{{m.phone}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+        <view wx:if="{{item.canObject}}" class="si-action" catchtap="onObject" data-id="{{item.id}}">异议</view>
+      </view>
+
+      <view wx:if="{{selectedDay.items.length === 0}}" class="ds-empty">
+        <view class="ds-empty-ico">∅</view>
+        <view class="ds-empty-text">当天暂无排班</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-spacer"></view>
+</view>
+
+<!-- 仅发布者可见的浮动按钮 -->
+<view wx:if="{{isPublisher}}" class="fab" bindtap="goCreateTask">＋</view>

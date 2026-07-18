@@ -1,0 +1,146 @@
+<!-- pages/publisher-review/publisher-review.wxml —— 发布者查看加入者填写信息 -->
+<view class="page-pr">
+  <!-- 顶部统计 -->
+  <view class="stat-hero">
+    <view class="stat-item">
+      <view class="stat-num">{{submittedCount}}</view>
+      <view class="stat-label">已提交</view>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <view class="stat-num stat-num-warn">{{notSubmittedCount}}</view>
+      <view class="stat-label">未提交</view>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <view class="stat-num">{{totalMembers}}</view>
+      <view class="stat-label">总人数</view>
+    </view>
+  </view>
+
+  <!-- 步骤指示器 -->
+  <view class="steps">
+    <view class="step-item st-done"><view class="st-dot">✓</view><view class="st-text">样式</view></view>
+    <view class="step-line st-line-done"></view>
+    <view class="step-item st-done"><view class="st-dot">✓</view><view class="st-text">人员</view></view>
+    <view class="step-line st-line-done"></view>
+    <view class="step-item st-current"><view class="st-dot">3</view><view class="st-text">收集</view></view>
+    <view class="step-line"></view>
+    <view class="step-item"><view class="st-dot">4</view><view class="st-text">发布</view></view>
+  </view>
+
+  <!-- 未提交人员 -->
+  <view wx:if="{{notSubmittedList.length > 0}}" class="card">
+    <view class="card-title">
+      未提交排班 <text class="card-badge">{{notSubmittedList.length}}</text>
+    </view>
+    <view class="ns-list">
+      <view wx:for="{{notSubmittedList}}" wx:key="id" class="ns-item">
+        <view class="pi-avatar">{{item.initial}}</view>
+        <view class="ns-name">{{item.name}}</view>
+        <view class="ns-cta" bindtap="onRemind" data-id="{{item.id}}">催提</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 收集进度日历 -->
+  <view class="card">
+    <view class="card-title">
+      收集进度日历
+      <text class="card-badge card-badge-soft">{{submittedCount}}/{{totalMembers}}</text>
+    </view>
+    <view class="card-desc">每个格子显示该时段已填写人数，点击查看详情</view>
+
+    <!-- 周切换器 -->
+    <view class="week-nav">
+      <view class="wn-arrow" bindtap="prevWeek">‹</view>
+      <view class="wn-label">{{calWeekLabel}}</view>
+      <view class="wn-arrow" bindtap="nextWeek">›</view>
+    </view>
+
+    <view class="cal-headrow">
+      <view class="cal-weekname" wx:for="{{weekDays}}" wx:key="key">
+        <view class="cw-day {{item.isToday ? 'cw-today' : ''}}">{{item.weekday}}</view>
+        <view class="cw-date">{{item.dateShort}}</view>
+      </view>
+    </view>
+
+    <scroll-view scroll-x class="cal-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="cal-table">
+        <view class="row-label-col">
+          <view wx:for="{{rows}}" wx:key="rowIdx" class="row-label">{{item.start}}</view>
+        </view>
+        <view wx:for="{{rows}}" wx:key="rowIdx" class="cal-row">
+          <view
+            wx:for="{{item.cells}}"
+            wx:for-item="cell"
+            wx:for-index="dIdx"
+            wx:key="dIdx"
+            class="cell heat-{{cell.heatLevel}}"
+            data-row="{{item.rowIdx}}"
+            data-day="{{dIdx}}"
+            bindtap="onCellTap"
+          >
+            <view class="cell-num">{{cell.count}}</view>
+            <view wx:if="{{cell.count > 0}}" class="cell-avatars">
+              <view wx:for="{{cell.topAvatars}}" wx:for-item="a" wx:key="*this" class="ca-dot">{{a}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 热力图例 -->
+    <view class="heat-legend">
+      <text class="hl-label">少</text>
+      <view class="hl-swatch heat-0"></view>
+      <view class="hl-swatch heat-1"></view>
+      <view class="hl-swatch heat-2"></view>
+      <view class="hl-swatch heat-3"></view>
+      <text class="hl-label">多</text>
+    </view>
+  </view>
+
+  <!-- 已提交人员列表 -->
+  <view class="card">
+    <view class="card-title">已提交成员 <text class="card-badge card-badge-soft">{{submittedList.length}}</text></view>
+    <view class="sub-list">
+      <view wx:for="{{submittedList}}" wx:key="id" class="sub-item" bindtap="onViewMember" data-id="{{item.id}}">
+        <view class="pi-avatar">{{item.initial}}</view>
+        <view class="sub-body">
+          <view class="sub-name">{{item.name}}</view>
+          <view class="sub-meta">{{item.cellCount}} 个时段 · {{item.submitTime}}</view>
+        </view>
+        <view class="sub-arrow">›</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部 -->
+  <view class="bottom-bar">
+    <view class="btn btn-outline" bindtap="onBackToEdit">返回修改</view>
+    <view class="btn btn-primary" bindtap="onGenerate">生成排班方案</view>
+  </view>
+
+  <view class="bottom-spacer"></view>
+</view>
+
+<!-- 单元格详情弹层 -->
+<view wx:if="{{cellDetail}}" class="detail-mask" bindtap="closeCellDetail">
+  <view class="detail-sheet" catchtap="">
+    <view class="sheet-handle"></view>
+    <view class="ds-head">
+      <view>
+        <view class="ds-title">{{cellDetail.timeLabel}}</view>
+        <view class="ds-sub">{{cellDetail.dayLabel}} · {{cellDetail.count}} 人可用</view>
+      </view>
+      <view class="ds-close" bindtap="closeCellDetail">✕</view>
+    </view>
+    <view class="ds-members">
+      <view wx:for="{{cellDetail.members}}" wx:key="id" class="ds-member">
+        <view class="pi-avatar">{{item.initial}}</view>
+        <view class="dsm-name">{{item.name}}</view>
+      </view>
+    </view>
+  </view>
+</view>

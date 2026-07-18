@@ -1,0 +1,131 @@
+<!-- pages/public-result/public-result.wxml —— 公示结果页 -->
+<view class="page-pb">
+  <!-- 公示 Hero -->
+  <view class="pb-hero">
+    <view class="pb-status">
+      <view class="pb-status-dot"></view>
+      <text>已发布公示</text>
+    </view>
+    <view class="pb-title">{{taskTitle}}</view>
+    <view class="pb-meta">
+      <text>{{publisherName}} 发布</text>
+      <text class="dot-sep">·</text>
+      <text>{{publishTime}}</text>
+      <text class="dot-sep">·</text>
+      <text>{{styleLabel}}</text>
+    </view>
+    <view wx:if="{{isPublisher}}" class="pb-notice">
+      其他成员仅可查看，无法修改
+    </view>
+    <view wx:else class="pb-notice pb-notice-member">
+      此为公示结果，仅可查看
+    </view>
+  </view>
+
+  <!-- 周历表 -->
+  <view class="card">
+    <view class="card-title">
+      排班日历表 <text class="card-badge card-badge-soft">{{assignedCount}} 项</text>
+    </view>
+
+    <!-- 周切换器 -->
+    <view class="week-nav">
+      <view class="wn-arrow" bindtap="prevWeek">‹</view>
+      <view class="wn-label">{{calWeekLabel}}</view>
+      <view class="wn-arrow" bindtap="nextWeek">›</view>
+    </view>
+
+    <view class="cal-headrow">
+      <view class="cal-weekname" wx:for="{{weekDays}}" wx:key="key">
+        <view class="cw-day {{item.isToday ? 'cw-today' : ''}}">{{item.weekday}}</view>
+        <view class="cw-date">{{item.dateShort}}</view>
+      </view>
+    </view>
+
+    <scroll-view scroll-x class="cal-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="cal-table">
+        <view class="row-label-col">
+          <view wx:for="{{rows}}" wx:key="rowIdx" class="row-label">{{item.start}}</view>
+        </view>
+        <view wx:for="{{rows}}" wx:key="rowIdx" class="cal-row">
+          <view
+            wx:for="{{item.cells}}"
+            wx:for-item="cell"
+            wx:for-index="dIdx"
+            wx:key="dIdx"
+            class="pcell {{cell.assigned ? 'pcell-assigned' : ''}} {{cell.locked ? 'pcell-locked' : ''}} {{cell.assigned ? 'risk-' + cell.riskLevel : ''}}"
+            data-row="{{item.rowIdx}}"
+            data-day="{{dIdx}}"
+            bindtap="onCellTap"
+          >
+            <view wx:if="{{cell.assigned}}" class="pcell-name">{{cell.memberName}}</view>
+            <view wx:elif="{{cell.locked}}" class="pcell-lock">·</view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <!-- 风险图例 -->
+    <view class="risk-legend">
+      <view class="rl-item"><view class="rl-dot rl-risk"></view>风险时段（限 1 人）</view>
+      <view class="rl-item"><view class="rl-dot rl-normal"></view>正常时段</view>
+    </view>
+  </view>
+
+  <!-- 个人排班概览 -->
+  <view class="card">
+    <view class="card-title">个人排班概览</view>
+    <view class="person-list">
+      <view wx:for="{{personSummary}}" wx:key="id" class="person-item">
+        <view class="pi-avatar">{{item.initial}}</view>
+        <view class="pp-body">
+          <view class="pp-name">{{item.name}}</view>
+          <view class="pp-meta">{{item.count}} 个时段</view>
+        </view>
+        <view class="pp-bar">
+          <view class="pp-fill" style="width: {{item.percent}}%"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部 -->
+  <view wx:if="{{isPublisher}}" class="bottom-bar">
+    <view class="btn btn-outline" bindtap="onEdit">编辑方案</view>
+    <view class="btn btn-primary" bindtap="onShareLink">复制公示链接</view>
+  </view>
+
+  <view class="bottom-spacer"></view>
+</view>
+
+<!-- 单元格详情 -->
+<view wx:if="{{cellDetail}}" class="detail-mask" bindtap="closeCellDetail">
+  <view class="detail-sheet" catchtap="">
+    <view class="sheet-handle"></view>
+    <view class="ds-head">
+      <view>
+        <view class="ds-title">{{cellDetail.timeLabel}}</view>
+        <view class="ds-sub">{{cellDetail.dayLabel}}</view>
+      </view>
+      <view class="ds-close" bindtap="closeCellDetail">✕</view>
+    </view>
+    <view wx:if="{{cellDetail.assigned}}" class="ds-info">
+      <view class="dsi-row">
+        <text class="dsi-label">值班人</text>
+        <text class="dsi-value">{{cellDetail.memberName}}</text>
+      </view>
+      <view class="dsi-row">
+        <text class="dsi-label">时段类型</text>
+        <text class="dsi-value">{{cellDetail.riskLabel}}</text>
+      </view>
+      <view class="dsi-row">
+        <text class="dsi-label">联系方式</text>
+        <text class="dsi-value">{{cellDetail.phone}}</text>
+      </view>
+    </view>
+    <view wx:else class="ds-empty">
+      <view class="ds-empty-ico">∅</view>
+      <view class="ds-empty-text">该时段无人值班</view>
+    </view>
+  </view>
+</view>

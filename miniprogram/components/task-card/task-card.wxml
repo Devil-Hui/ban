@@ -1,0 +1,13 @@
+<view class="task-card" bindtap="onTap">
+  <view class="task-top">
+    <view class="task-title ellipsis">{{task.title}}</view>
+    <view class="tag tag-{{_statusCls}}">{{_statusText}}</view>
+  </view>
+  <view class="task-sub text-2 small">截止：{{task.deadlineText || '—'}}</view>
+  <view class="task-foot" wx:if="{{task.memberCount}}">
+    <view class="progress">
+      <view class="progress-bar" style="width: {{progressPercent}}%"></view>
+    </view>
+    <text class="text-2 tiny">已填报 {{task.responseCount || 0}}/{{task.memberCount}}</text>
+  </view>
+</view>

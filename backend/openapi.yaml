@@ -1,0 +1,609 @@
+openapi: 3.0.3
+info:
+  title: 排班小程序后端 API
+  description: |
+    排班小程序（微信小程序 + H5 运维端）后端接口规范。
+    - 风格：RESTful，资源名复数、小写+连字符，方法语义化（GET/POST/PUT/PATCH/DELETE）
+    - 版本：路径前缀 /api/v1
+    - 鉴权：小程序端 wx.login + openid 签发 JWT；H5 端账号密码签发 JWT（请求头 Authorization: Bearer <token>）
+    - 端差异：通过请求头 X-Client-Type: miniprogram|h5 区分；支付/分享/订阅逻辑见各接口说明
+    - 响应统一包络：{ code, message, data, requestId, timestamp }，code=0 表示成功
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+    description: 生产环境
+  - url: https://staging-api.example.com
+    description: 预发环境
+  - url: http://localhost:3000
+    description: 本地开发（DB_MODE=memory 无需数据库）
+tags:
+  - name: auth
+    description: 鉴权（小程序/H5 双端登录与刷新）
+  - name: users
+    description: 用户与个人日程（课表）
+  - name: groups
+    description: 分组与成员管理
+  - name: tasks
+    description: 排班任务与方案生成/发布
+  - name: responses
+    description: 空闲时间标记
+  - name: receipts
+    description: 异议回执
+  - name: preview
+    description: H5 分享预览（公开只读）
+  - name: notify
+    description: 消息中心与订阅
+  - name: payments
+    description: 支付（小程序/ H5）
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        code: { type: integer, description: 业务码，0 为成功 }
+        message: { type: string, description: 提示信息 }
+        data: { description: 业务数据，结构随接口变化，失败时为 null }
+        requestId: { type: string, description: 请求追踪 ID }
+        timestamp: { type: integer, description: 毫秒时间戳 }
+      required: [code, message, requestId, timestamp]
+    ErrorEnvelope:
+      type: object
+      properties:
+        code: { type: integer, description: 业务错误码 }
+        message: { type: string }
+        data: { nullable: true, description: 扩展信息（如字段级错误） }
+        requestId: { type: string }
+        timestamp: { type: integer }
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        nickname: { type: string }
+        avatarUrl: { type: string }
+        phone: { type: string, description: 脱敏手机号，如 138****1234 }
+        isBanned: { type: integer, description: 0 正常 1 封禁 }
+    Group:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        inviteCode: { type: string, description: 6 位邀请码，加入分组用 }
+        mode: { type: string, enum: [timeline, shift, custom] }
+        cycleRule: { type: string, enum: [weekly, odd_weekly, even_weekly, custom] }
+        templateStyle: { type: integer, description: 样式 1/2/3 }
+        periods: { type: array, description: "班次定义 [{id,name,start,end}]" }
+        status: { type: string }
+        roleInGroup: { type: string, description: 仅列表场景返回 publisher|member }
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        groupId: { type: string }
+        publisherId: { type: string }
+        title: { type: string }
+        status: { type: string, enum: [collecting, reviewing, adjusting, published, archived] }
+        deadline: { type: string, nullable: true, description: 截止时间（UTC ISO8601） }
+        finalSchedule: { type: object, nullable: true, description: "已发布方案 {schemeName, assignments[]}" }
+        shareToken: { type: string, nullable: true }
+    Job:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [scheme_generate, calendar_ocr] }
+        status: { type: string, enum: [pending, running, success, failed] }
+        progress: { type: integer }
+        result: { nullable: true }
+    Message:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        isRead: { type: integer }
+        createdAt: { type: string }
+    Order:
+      type: object
+      properties:
+        id: { type: string }
+        amount: { type: number }
+        channel: { type: string, enum: [wechat_mini, wechat_h5] }
+        status: { type: string, enum: [pending, paid, closed] }
+        prepayId: { type: string }
+        mwebUrl: { type: string, nullable: true, description: H5 支付跳转地址 }
+    LoginResult:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, description: accessToken 有效期（秒） }
+paths:
+  /api/v1/auth/miniprogram/login:
+    post:
+      tags: [auth]
+      summary: 小程序登录（wx.login code 换 token）
+      description: 小程序端调用 wx.login 获取 code，提交服务端换取 openid 并签发 JWT。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string, description: wx.login 返回的临时登录凭证 }
+                nickname: { type: string, description: 可选，微信昵称 }
+                avatarUrl: { type: string, description: 可选，头像地址 }
+            example: { code: "081abc", nickname: "小明" }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { allOf: [ { $ref: '#/components/schemas/Envelope' } ], properties: { data: { $ref: '#/components/schemas/LoginResult' } } }
+  /api/v1/auth/h5/login:
+    post:
+      tags: [auth]
+      summary: H5 运维端登录（账号密码）
+      description: H5 后台使用账号密码登录，签发带 admin 角色的 JWT。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string }
+            example: { username: "admin", password: "admin123" }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { allOf: [ { $ref: '#/components/schemas/Envelope' } ], properties: { data: { $ref: '#/components/schemas/LoginResult' } } }
+  /api/v1/auth/refresh:
+    post:
+      tags: [auth]
+      summary: 刷新 accessToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties: { refreshToken: { type: string } }
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { allOf: [ { $ref: '#/components/schemas/Envelope' } ], properties: { data: { $ref: '#/components/schemas/LoginResult' } } }
+  /api/v1/users/me:
+    get:
+      tags: [users]
+      summary: 获取当前用户信息
+      security: [bearerAuth]
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema: { allOf: [ { $ref: '#/components/schemas/Envelope' } ], properties: { data: { type: object, properties: { user: { $ref: '#/components/schemas/User' } } } } }
+    patch:
+      tags: [users]
+      summary: 更新当前用户资料
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nickname: { type: string, maxLength: 32 }
+                avatarUrl: { type: string, maxLength: 255 }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/users/me/calendar:
+    get:
+      tags: [users]
+      summary: 获取个人日程（课表）
+      security: [bearerAuth]
+      responses:
+        '200': { description: 成功 }
+        '404': { description: 未设置，错误码 1102 }
+    put:
+      tags: [users]
+      summary: 新建或更新个人日程（课表）
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [semesterName, slots]
+              properties:
+                semesterName: { type: string }
+                cycleRule: { type: string, enum: [weekly, odd_weekly, even_weekly, custom], default: weekly }
+                slots: { type: array, description: "时间段定义，默认 []" }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/users/me/calendar/ocr:
+    post:
+      tags: [users]
+      summary: 课表 OCR 识别（异步）
+      description: 上传课表图片，创建 calendar_ocr 异步任务，返回 jobId 供轮询。
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [imageUrl]
+              properties: { imageUrl: { type: string, description: '图片地址（云存储或临时URL）' } }
+      responses:
+        '200': { description: "成功，返回 { jobId, status }" }
+  /api/v1/groups:
+    post:
+      tags: [groups]
+      summary: 创建分组（创建者自动成为发布者）
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 40 }
+                mode: { type: string, enum: [timeline, shift, custom], default: shift }
+                cycleRule: { type: string, enum: [weekly, odd_weekly, even_weekly, custom], default: weekly }
+                templateStyle: { type: integer, default: 1, minimum: 1, maximum: 3 }
+                periods: { type: array, default: [] }
+      responses:
+        '200': { description: 成功 }
+    get:
+      tags: [groups]
+      summary: 获取我加入的分组列表
+      security: [bearerAuth]
+      responses:
+        '200': { description: 成功 }
+  /api/v1/groups/join:
+    post:
+      tags: [groups]
+      summary: 通过邀请码加入分组
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inviteCode]
+              properties: { inviteCode: { type: string, description: '6 位邀请码（不区分大小写）' } }
+      responses:
+        '200': { description: 成功 }
+        '409': { description: 已在该分组（1203）/ 被封禁（1205） }
+        '400': { description: 邀请码无效（1202） }
+  /api/v1/groups/{groupId}:
+    get:
+      tags: [groups]
+      summary: 分组详情
+      security: [bearerAuth]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/groups/{groupId}/members:
+    get:
+      tags: [groups]
+      summary: 分组成员列表
+      security: [bearerAuth]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/groups/{groupId}/members/{userId}:
+    delete:
+      tags: [groups]
+      summary: 发布者移除成员（踢人）
+      security: [bearerAuth]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+        - { name: userId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+        '403': { description: 非发布者（1204）/ 非活跃成员（4030） }
+  /api/v1/groups/{groupId}/members/leave:
+    post:
+      tags: [groups]
+      summary: 自己退出分组
+      security: [bearerAuth]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+        '409': { description: 存在进行中任务无法退出（1206） }
+  /api/v1/groups/{groupId}/tasks:
+    post:
+      tags: [tasks]
+      summary: 在分组下创建排班任务（仅发布者）
+      security: [bearerAuth]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, maxLength: 60 }
+                mode: { type: string, enum: [timeline, shift, custom], default: shift }
+                periods: { type: array, default: [] }
+                deadline: { type: string, nullable: true, description: '截止时间 UTC，默认 null' }
+                dateRangeStart: { type: string, nullable: true }
+                dateRangeEnd: { type: string, nullable: true }
+                constraints: { type: object, description: '排班约束，默认 {slotMinPeople:1,...}' }
+      responses:
+        '200': { description: 成功 }
+    get:
+      tags: [tasks]
+      summary: 分组下的任务列表
+      security: [bearerAuth]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { type: string } }
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200': { description: "成功，返回 { list, total, page, pageSize }" }
+  /api/v1/tasks/{taskId}:
+    get:
+      tags: [tasks]
+      summary: 任务详情
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/tasks/{taskId}/scheme-jobs:
+    post:
+      tags: [tasks]
+      summary: 触发方案生成（异步）
+      description: 校验有效空闲数后创建 scheme_generate 任务，返回 jobId。
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: "成功，返回 { jobId, status }" }
+        '422': { description: 有效空闲不足（1306） }
+  /api/v1/jobs/{jobId}:
+    get:
+      tags: [tasks]
+      summary: 异步任务进度查询
+      security: [bearerAuth]
+      parameters:
+        - { name: jobId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功，返回 Job }
+  /api/v1/tasks/{taskId}/publish:
+    post:
+      tags: [tasks]
+      summary: 发布排班方案（仅发布者）
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [finalSchedule]
+              properties:
+                finalSchedule:
+                  type: object
+                  description: "最终方案 { schemeName, assignments:[{date,periodId,periodName,userIds[],userNames[]}] }"
+                candidateSchedules: { type: array, nullable: true, description: 候选方案，可选 }
+      responses:
+        '200': { description: "成功，返回 { task, shareToken, previewUrl }" }
+  /api/v1/tasks/{taskId}/deadline/extend:
+    post:
+      tags: [tasks]
+      summary: 延长收集截止时间
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [deadline]
+              properties: { deadline: { type: string, description: '新的截止时间 UTC' } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/tasks/{taskId}/cancel:
+    post:
+      tags: [tasks]
+      summary: 取消任务（归档）
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/tasks/{taskId}/adjust:
+    post:
+      tags: [tasks]
+      summary: 异议处理后重新发布
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [finalSchedule]
+              properties: { finalSchedule: { type: object } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/tasks/{taskId}/responses/me:
+    put:
+      tags: [responses]
+      summary: 提交我的空闲时间（仅收集中）
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [availableSlots]
+              properties: { availableSlots: { type: array, description: '空闲时段，如 ["2026-07-10|p1"]' } }
+      responses:
+        '200': { description: 成功 }
+        '409': { description: 非收集中（1401） }
+    get:
+      tags: [responses]
+      summary: 查看我的空闲时间
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/tasks/{taskId}/receipts/me/objection:
+    post:
+      tags: [receipts]
+      summary: 提交对排班的异议
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [objectionReason]
+              properties: { objectionReason: { type: string, maxLength: 200 } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/tasks/{taskId}/receipts/me:
+    get:
+      tags: [receipts]
+      summary: 查看我的回执
+      security: [bearerAuth]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/share/tasks/{taskId}:
+    get:
+      tags: [preview]
+      summary: H5 分享预览（公开只读，无需登录）
+      description: 非小程序用户凭 share_token 查看脱敏排班（姓名可见、手机号脱敏）。小程序端改用 onShareAppMessage 打开内页。
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+        - { name: token, in: query, required: true, schema: { type: string, description: '分享 token，7 天有效' } }
+      responses:
+        '200': { description: 成功 }
+        '403': { description: token 无效（1601） }
+        '410': { description: token 过期（1602） }
+  /api/v1/notify/subscribe:
+    post:
+      tags: [notify]
+      summary: 订阅消息授权记录
+      description: 小程序端在前端调用 wx.requestSubscribeMessage 后回传受理结果；H5 端无此能力，走消息中心轮询。
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [templateIds]
+              properties:
+                templateIds: { type: array, items: { type: string } }
+                accepted: { type: array, items: { type: string }, description: '客户端回传的已授权模板' }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/users/me/inbox:
+    get:
+      tags: [notify]
+      summary: 消息中心列表（红点兜底）
+      security: [bearerAuth]
+      parameters:
+        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
+        - { name: pageSize, in: query, required: false, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200': { description: "成功，返回 { list, total, page, pageSize, unread }" }
+  /api/v1/users/me/inbox/{messageId}:
+    patch:
+      tags: [notify]
+      summary: 标记消息已读
+      security: [bearerAuth]
+      parameters:
+        - { name: messageId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/payments/orders:
+    post:
+      tags: [payments]
+      summary: 创建支付订单
+      description: "小程序端返回 prepayId（客户端调 wx.requestPayment）；H5 端（X-Client-Type: h5）返回 mwebUrl 跳转支付。"
+      security: [bearerAuth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { type: number, minimum: 0.01 }
+                channel: { type: string, enum: [wechat_mini, wechat_h5], description: '不传则由 X-Client-Type 推断' }
+      responses:
+        '200': { description: 成功 }
+  /api/v1/payments/notify:
+    post:
+      tags: [payments]
+      summary: 微信支付结果回调（无登录态）
+      description: 微信服务器回调，验签后更新订单状态。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outTradeNo]
+              properties: { outTradeNo: { type: string } }
+      responses:
+        '200': { description: "成功，返回 { received: true }" }
+  /api/v1/payments/orders/{orderId}:
+    get:
+      tags: [payments]
+      summary: 支付订单详情（仅本人）
+      security: [bearerAuth]
+      parameters:
+        - { name: orderId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 成功 }
+        '403': { description: 非本人订单（4030） }

@@ -1,0 +1,350 @@
+/* ==========================================================================
+   排班协同 v4 全局设计系统
+   风格：单色系雾霾蓝 · 淡色简约 · 弥散投影 · 紧凑模块化
+   参考：Vercel / Linear / Stripe / 飞书日历
+   ========================================================================== */
+
+page {
+  /* —— 主色板（产品蓝，更高对比、更清晰） —— */
+  --c-primary: #2B6DE5;
+  --c-primary-dark: #1F56C7;
+  --c-primary-darker: #1844A0;
+  --c-primary-light: #8FB4F2;
+  --c-primary-lighter: #EAF1FF;
+  --c-primary-lightest: #F5F8FF;
+
+  /* —— 中性色 —— */
+  --c-bg: #F7F8FA;
+  --c-card: #FFFFFF;
+  --c-card-2: #FAFBFC;
+  --c-border: #EEF0F3;
+  --c-divider: #F0F2F5;
+
+  /* —— 文字 —— */
+  --c-text: #1F2329;
+  --c-text-2: #646A73;
+  --c-text-3: #8F959E;
+  --c-text-inv: #FFFFFF;
+  --f-lg: 36rpx;
+
+  /* —— 状态色（与主色协调的低饱和） —— */
+  --c-success: #6BC785;
+  --c-warning: #F2B962;
+  --c-danger: #E88B8B;
+  --c-info: #7EC8E3;
+
+  /* —— 投影（弥散投影） —— */
+  --shadow-card: 0 2rpx 12rpx rgba(31, 35, 41, 0.04);
+  --shadow-elevated: 0 6rpx 20rpx rgba(31, 35, 41, 0.06);
+  --shadow-tab: 0 -1rpx 8rpx rgba(31, 35, 41, 0.04);
+  --shadow-fab: 0 8rpx 24rpx rgba(43, 109, 229, 0.28);
+
+  /* —— 圆角 —— */
+  --r-sm: 8rpx;
+  --r-md: 12rpx;
+  --r-lg: 16rpx;
+  --r-xl: 24rpx;
+  --r-pill: 999rpx;
+
+  /* —— 间距 —— */
+  --s-xs: 8rpx;
+  --s-sm: 16rpx;
+  --s-md: 24rpx;
+  --s-lg: 32rpx;
+  --s-xl: 48rpx;
+
+  /* —— 字号 —— */
+  --f-display: 40rpx;
+  --f-title: 32rpx;
+  --f-sub: 28rpx;
+  --f-body: 26rpx;
+  --f-cap: 24rpx;
+  --f-tiny: 22rpx;
+
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Segoe UI", sans-serif;
+  font-size: var(--f-body);
+  line-height: 1.55;
+}
+
+/* —— 通用工具类 —— */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; align-items: center; justify-content: space-between; }
+.flex-start { display: flex; align-items: center; justify-content: flex-start; }
+.flex-end { display: flex; align-items: center; justify-content: flex-end; }
+.flex-1 { flex: 1; }
+
+.gap-xs { gap: var(--s-xs); }
+.gap-sm { gap: var(--s-sm); }
+.gap-md { gap: var(--s-md); }
+.gap-lg { gap: var(--s-lg); }
+
+.text-primary { color: var(--c-text); }
+.text-secondary { color: var(--c-text-2); }
+.text-tertiary { color: var(--c-text-3); }
+.text-brand { color: var(--c-primary-dark); }
+.text-success { color: var(--c-success); }
+.text-warning { color: var(--c-warning); }
+.text-danger { color: var(--c-danger); }
+
+.f-tiny { font-size: var(--f-tiny); }
+.f-cap { font-size: var(--f-cap); }
+.f-body { font-size: var(--f-body); }
+.f-sub { font-size: var(--f-sub); }
+.f-title { font-size: var(--f-title); }
+.f-display { font-size: var(--f-display); }
+
+.fw-medium { font-weight: 500; }
+.fw-semibold { font-weight: 600; }
+.fw-bold { font-weight: 700; }
+
+/* —— 卡片基础（模化组件 #1） —— */
+.card {
+  background: var(--c-card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--s-md);
+  margin-bottom: var(--s-sm);
+}
+
+.card-tight {
+  background: var(--c-card);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--s-sm) var(--s-md);
+  margin-bottom: var(--s-sm);
+}
+
+.card-flat {
+  background: var(--c-primary-lighter);
+  border-radius: var(--r-md);
+  padding: var(--s-md);
+  margin-bottom: var(--s-sm);
+}
+
+/* —— 标签 / 徽章 —— */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 36rpx;
+  padding: 0 16rpx;
+  border-radius: var(--r-pill);
+  font-size: var(--f-tiny);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.tag-brand { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
+.tag-success { background: rgba(107, 199, 133, 0.12); color: var(--c-success); }
+.tag-warning { background: rgba(242, 185, 98, 0.14); color: var(--c-warning); }
+.tag-danger { background: rgba(232, 139, 139, 0.12); color: var(--c-danger); }
+.tag-neutral { background: var(--c-divider); color: var(--c-text-2); }
+
+/* —— 按钮 —— */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  padding: 0 32rpx;
+  border-radius: var(--r-md);
+  font-size: var(--f-body);
+  font-weight: 500;
+  border: none;
+  transition: opacity .2s, transform .2s;
+}
+.btn::after { border: none; }
+.btn:active { transform: scale(0.98); opacity: .88; }
+
+.btn-primary { background: var(--c-primary); color: var(--c-text-inv); }
+.btn-primary-dark { background: var(--c-primary-dark); color: var(--c-text-inv); }
+.btn-ghost { background: var(--c-primary-lighter); color: var(--c-primary-dark); }
+.btn-outline { background: transparent; border: 1rpx solid var(--c-border); color: var(--c-text-2); }
+.btn-text { background: transparent; color: var(--c-primary-dark); padding: 0; height: auto; }
+.btn-danger { background: rgba(232, 139, 139, 0.12); color: var(--c-danger); }
+.btn-block { width: 100%; }
+.btn-sm { height: 56rpx; padding: 0 20rpx; font-size: var(--f-cap); border-radius: var(--r-sm); }
+.btn-lg { height: 96rpx; font-size: var(--f-sub); border-radius: var(--r-lg); }
+
+/* —— 分割线 —— */
+.divider {
+  height: 1rpx;
+  background: var(--c-divider);
+  margin: var(--s-sm) 0;
+}
+
+.divider-text {
+  display: flex;
+  align-items: center;
+  gap: var(--s-sm);
+  color: var(--c-text-3);
+  font-size: var(--f-tiny);
+  margin: var(--s-md) 0;
+}
+.divider-text::before, .divider-text::after {
+  content: '';
+  flex: 1;
+  height: 1rpx;
+  background: var(--c-divider);
+}
+
+/* —— 页面容器 —— */
+.page {
+  min-height: 100vh;
+  padding: var(--s-md);
+  box-sizing: border-box;
+}
+
+.page-section {
+  margin-bottom: var(--s-lg);
+}
+
+/* —— 页面标题区 —— */
+.page-header {
+  padding: var(--s-md) 0 var(--s-sm);
+}
+.page-header-title {
+  font-size: var(--f-title);
+  font-weight: 600;
+  color: var(--c-text);
+}
+.page-header-sub {
+  font-size: var(--f-cap);
+  color: var(--c-text-2);
+  margin-top: 6rpx;
+}
+
+/* —— 列表行 —— */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-sm) 0;
+}
+.row + .row { border-top: 1rpx solid var(--c-divider); }
+
+/* —— 头像 —— */
+.avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: var(--c-primary-lighter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-primary-dark);
+  font-weight: 600;
+  font-size: var(--f-cap);
+  flex-shrink: 0;
+}
+.avatar-sm { width: 48rpx; height: 48rpx; font-size: var(--f-tiny); }
+.avatar-lg { width: 96rpx; height: 96rpx; font-size: var(--f-sub); }
+
+/* —— 状态点 —— */
+.dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.dot-success { background: var(--c-success); }
+.dot-warning { background: var(--c-warning); }
+.dot-danger { background: var(--c-danger); }
+.dot-brand { background: var(--c-primary); }
+.dot-neutral { background: var(--c-text-3); }
+
+/* —— 空状态 —— */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 80rpx var(--s-md);
+  text-align: center;
+}
+.empty-icon {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  background: var(--c-primary-lighter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: var(--s-md);
+  color: var(--c-primary);
+  font-size: 48rpx;
+}
+.empty-title {
+  font-size: var(--f-sub);
+  color: var(--c-text);
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+.empty-desc {
+  font-size: var(--f-cap);
+  color: var(--c-text-3);
+}
+
+/* —— 输入框 —— */
+.input {
+  background: var(--c-primary-lightest);
+  border: 1rpx solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 20rpx 24rpx;
+  font-size: var(--f-body);
+  color: var(--c-text);
+  width: 100%;
+  box-sizing: border-box;
+}
+.input:focus { border-color: var(--c-primary); }
+
+/* —— 时间段标签（替代早班/晚班） —— */
+.period-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 40rpx;
+  padding: 0 16rpx;
+  border-radius: var(--r-sm);
+  background: var(--c-primary-lighter);
+  color: var(--c-primary-dark);
+  font-size: var(--f-cap);
+  font-weight: 500;
+  letter-spacing: 0.4rpx;
+}
+.period-chip-active {
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+}
+
+/* —— 浮动操作按钮（避开原生 tabBar） —— */
+.fab {
+  position: fixed;
+  right: 28rpx;
+  bottom: calc(140rpx + env(safe-area-inset-bottom));
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: var(--c-text-inv);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(43, 109, 229, 0.28);
+  font-size: 44rpx;
+  z-index: 100;
+}
+
+/* —— 模拟手机外壳（仅设计稿展示，不影响真机） —— */
+.status-bar-spacer { height: 24rpx; }
+
+
+/* ===== 底部安全区：避免内容被自定义 tabBar / 原生 tabBar 遮挡 ===== */
+.page-with-tab {
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+}
+.safe-bottom {
+  height: calc(120rpx + env(safe-area-inset-bottom));
+}

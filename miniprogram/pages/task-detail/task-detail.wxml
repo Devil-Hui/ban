@@ -1,0 +1,217 @@
+<!-- pages/task-detail/task-detail.wxml —— 任务详情 -->
+<view class="page-td">
+  <!-- 状态 Hero -->
+  <view class="td-hero td-hero-{{task.stateClass}}">
+    <view class="hero-status-row">
+      <view class="tag tag-{{task.tagClass}}">{{task.stateLabel}}</view>
+      <view class="hero-role">我的角色：{{task.roleLabel}}</view>
+    </view>
+    <view class="hero-title">{{task.title}}</view>
+    <view class="hero-meta">
+      <text>{{task.groupName}}</text>
+      <text class="dot-sep">·</text>
+      <text>{{task.dateRange}}</text>
+    </view>
+  </view>
+
+  <!-- 状态时间线 -->
+  <view class="timeline-card">
+    <view class="tc-title">任务进度</view>
+    <view class="timeline">
+      <view
+        wx:for="{{timeline}}"
+        wx:key="key"
+        class="tl-node {{item.done ? 'tl-done' : ''}} {{item.current ? 'tl-current' : ''}}"
+      >
+        <view class="tl-dot">
+          <view wx:if="{{item.done}}" class="tl-check">✓</view>
+          <text wx:else>{{index + 1}}</text>
+        </view>
+        <view class="tl-body">
+          <view class="tl-label">{{item.label}}</view>
+          <view wx:if="{{item.time}}" class="tl-time">{{item.time}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 信息卡 -->
+  <view class="info-card">
+    <view class="info-row">
+      <view class="ir-label">日期范围</view>
+      <view class="ir-value">{{task.dateRange}}</view>
+    </view>
+    <view class="info-row">
+      <view class="ir-label">时段配置</view>
+      <view class="ir-value">{{task.periodsCount}} 个 · {{task.timeModeLabel}}</view>
+    </view>
+    <view class="info-row">
+      <view class="ir-label">约束</view>
+      <view class="ir-value">每时段 ≥ {{task.minPeople}} 人{{task.maxPerWeek ? ' · 每周 ≤ ' + task.maxPerWeek + ' 次' : ''}}</view>
+    </view>
+    <view class="info-row">
+      <view class="ir-label">截止时间</view>
+      <view class="ir-value {{task.deadlineUrgent ? 'text-warning' : ''}}">{{task.deadline}}</view>
+    </view>
+  </view>
+
+  <!-- 时段列表 -->
+  <view class="section-head">
+    <text class="section-title">时段详情</text>
+    <text class="section-count">{{periods.length}} 个</text>
+  </view>
+  <view class="period-list">
+    <view wx:for="{{periods}}" wx:key="id" class="period-item">
+      <view class="period-time">
+        <view class="pt-num">{{index + 1}}</view>
+        <view class="pt-label">时段</view>
+      </view>
+      <view class="period-info">
+        <view class="pi-time">{{item.label || (item.start + ' — ' + item.end)}}</view>
+        <view class="pi-meta">
+          <text wx:if="{{item.name && item.start}}">{{item.name}}</text>
+          <text wx:if="{{item.assignedCount != null}}"> {{item.assignedCount}}/{{item.minPeople}} 人</text>
+          <text wx:if="{{item.urgent}}" class="pi-urgent">人数不足</text>
+        </view>
+      </view>
+      <view class="period-avatars">
+        <view wx:for="{{item.assignedMembers}}" wx:for-item="m" wx:key="id" class="avatar avatar-sm">{{m.initial}}</view>
+        <view wx:if="{{item.shortCount > 0}}" class="period-short">−{{item.shortCount}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 提交进度（发布者视角） -->
+  <view wx:if="{{task.role === 'publisher' && task.stateClass === 'collecting'}}" class="submit-progress">
+    <view class="sp-head">
+      <view class="sp-title">提交进度</view>
+      <view class="sp-count">{{submittedCount}}/{{task.total}}</view>
+    </view>
+    <view class="progress-bar">
+      <view class="progress-fill" style="width: {{task.progress}}%"></view>
+    </view>
+    <view class="sp-list">
+      <view wx:for="{{submitStatus}}" wx:key="id" class="sp-row">
+        <view class="avatar avatar-sm">{{item.initial}}</view>
+        <view class="sp-body">
+          <view class="sp-name">{{item.name}}</view>
+          <view class="sp-status sp-{{item.status}}">{{item.statusLabel}}</view>
+        </view>
+        <view wx:if="{{item.status === 'pending'}}" class="sp-action" bindtap="reopenSubmit" data-uid="{{item.id}}">重开提交</view>
+        <view wx:elif="{{item.status === 'submitted'}}" class="sp-action sp-action-ghost" bindtap="reopenSubmit" data-uid="{{item.id}}">重开</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 提交热力日历（发布者视角，按周显示，避免遮挡） -->
+  <view wx:if="{{task.role === 'publisher' && (task.stateClass === 'collecting' || task.stateClass === 'reviewing' || task.stateClass === 'published')}}" class="heat-card">
+    <view class="hc-head">
+      <view class="hc-title">提交热力图（按周）</view>
+      <view class="hc-legend">
+        <view class="lg-cell lg-0"></view>
+        <text class="lg-text">无人</text>
+        <view class="lg-cell lg-1"></view>
+        <view class="lg-cell lg-2"></view>
+        <view class="lg-cell lg-3"></view>
+        <text class="lg-text">已满</text>
+      </view>
+    </view>
+
+    <!-- 周切换 -->
+    <view class="hc-month-row">
+      <view class="hc-arrow" bindtap="prevWeek">‹</view>
+      <view class="hc-month">{{calWeekLabel}}</view>
+      <view class="hc-arrow" bindtap="nextWeek">›</view>
+    </view>
+
+    <!-- 按周日历（7 列） -->
+    <view class="hc-week-grid">
+      <view
+        wx:for="{{calendarCells}}"
+        wx:key="key"
+        class="hc-week-cell-item hc-heat-{{item.heatLevel}} {{item.isToday ? 'hc-today' : ''}}"
+        bindtap="onCellTap"
+        data-date="{{item.date}}"
+      >
+        <view class="hc-week-day">{{item.weekday}}</view>
+        <view class="hc-week-date">{{item.monthDay}}</view>
+        <view class="hc-week-count">{{item.submitCount}}</view>
+      </view>
+    </view>
+
+    <!-- 选中日期详情 -->
+    <view wx:if="{{selectedDate}}" class="hc-detail">
+      <view class="hc-detail-head">
+        <view class="hc-detail-date">{{selectedDate.dateLabel}}</view>
+        <view class="hc-detail-count">已提交 {{selectedDate.submitCount}} 人</view>
+        <view class="hc-detail-close" bindtap="closeDetail">×</view>
+      </view>
+      <view class="hc-detail-periods">
+        <view wx:for="{{selectedDate.periods}}" wx:key="id" class="hc-detail-period">
+          <view class="hcdp-time">{{item.start}}—{{item.end}}</view>
+          <view class="hcdp-avatars">
+            <view wx:for="{{item.submitters}}" wx:for-item="s" wx:key="id" class="avatar avatar-xs">{{s.initial}}</view>
+            <view wx:if="{{item.shortLabel}}" class="hcdp-short">{{item.shortLabel}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="hc-tip">点击日期查看当天提交详情 · 颜色越深表示该日提交越满</view>
+  </view>
+
+  <!-- 异议列表（发布者视角） -->
+  <view wx:if="{{task.role === 'publisher' && objections.length > 0}}" class="objection-section">
+    <view class="section-head">
+      <text class="section-title">异议申请</text>
+      <text class="section-count">{{objections.length}}</text>
+    </view>
+    <view wx:for="{{objections}}" wx:key="id" class="objection-card" bindtap="goObjection" data-id="{{item.id}}">
+      <view class="oc-head">
+        <view class="avatar avatar-sm">{{item.initial}}</view>
+        <view class="oc-body">
+          <view class="oc-name">{{item.name}}</view>
+          <view class="oc-time">{{item.time}}</view>
+        </view>
+        <view class="tag tag-warning">待处理</view>
+      </view>
+      <view class="oc-reason">{{item.reason}}</view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="bottom-bar">
+    <block wx:if="{{task.role === 'publisher'}}">
+      <view wx:if="{{task.stateClass === 'collecting'}}" class="bb-row">
+        <view class="btn btn-outline" bindtap="extendDeadline">延长截止</view>
+        <view class="btn btn-ghost" bindtap="cancelTask">取消任务</view>
+        <view class="btn btn-primary btn-block" bindtap="goGenerate">手动生成方案</view>
+      </view>
+      <view wx:elif="{{task.stateClass === 'reviewing'}}" class="bb-row">
+        <view class="btn btn-outline" bindtap="reopenCollect">重新收集</view>
+        <view class="btn btn-primary btn-block" bindtap="goGenerate">生成排班方案</view>
+      </view>
+      <view wx:elif="{{task.stateClass === 'published'}}" class="bb-row">
+        <view class="btn btn-outline" bindtap="archiveTask">归档任务</view>
+        <view class="btn btn-ghost" bindtap="shareTask">分享预览</view>
+        <view class="btn btn-primary btn-block" bindtap="goAdjust">手动调整</view>
+      </view>
+      <view wx:elif="{{task.stateClass === 'adjusting'}}" class="bb-row">
+        <view class="btn btn-outline" bindtap="rollbackScheme">回滚上版</view>
+        <view class="btn btn-primary btn-block" bindtap="goAdjust">继续调整</view>
+      </view>
+    </block>
+    <block wx:else>
+      <view wx:if="{{task.stateClass === 'collecting'}}" class="bb-row">
+        <view class="btn btn-primary btn-block" bindtap="goMark">去填写空闲</view>
+      </view>
+      <view wx:elif="{{task.stateClass === 'published'}}" class="bb-row">
+        <view class="btn btn-outline" bindtap="shareTask">分享预览</view>
+        <view class="btn btn-primary btn-block" bindtap="goReceipt">查看并查收</view>
+      </view>
+      <view wx:elif="{{task.stateClass === 'adjusting'}}" class="bb-row">
+        <view class="btn btn-outline btn-block">等待重新发布</view>
+      </view>
+    </block>
+  </view>
+</view>

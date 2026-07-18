@@ -1,0 +1,37 @@
+# 排班小程序 · 本地 MySQL（开发）
+# 启动：docker compose up -d
+# 停止：docker compose down
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: paiban-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: paiban-root-pwd
+      MYSQL_DATABASE: paiban
+      MYSQL_USER: paiban
+      MYSQL_PASSWORD: paiban-app-pwd
+      TZ: UTC
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+00:00
+      - --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+      - --max_connections=200
+      - --innodb_buffer_pool_size=256M
+      - --explicit_defaults_for_timestamp=1
+    volumes:
+      - paiban_mysql_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./scripts/seed-init.sql:/docker-entrypoint-initdb.d/02-seed-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-ppaiban-root-pwd"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  paiban_mysql_data:

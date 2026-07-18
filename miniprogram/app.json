@@ -1,0 +1,73 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/schedule/schedule",
+    "pages/task/task",
+    "pages/profile/profile",
+    "pages/auth/auth",
+    "pages/style-select/style-select",
+    "pages/cal-edit-time/cal-edit-time",
+    "pages/cal-edit-period/cal-edit-period",
+    "pages/cal-edit-custom/cal-edit-custom",
+    "pages/schedule-rules/schedule-rules",
+    "pages/task-create/task-create",
+    "pages/task-detail/task-detail",
+    "pages/task-mark/task-mark",
+    "pages/member-preset/member-preset",
+    "pages/joiner-fill/joiner-fill",
+    "pages/publisher-review/publisher-review",
+    "pages/scheme-gen/scheme-gen",
+    "pages/scheme-preview/scheme-preview",
+    "pages/public-result/public-result",
+    "pages/schedule-receipt/schedule-receipt",
+    "pages/objection/objection",
+    "pages/members/members",
+    "pages/calendar-manage/calendar-manage",
+    "pages/group-detail/group-detail",
+    "pages/share-preview/share-preview",
+    "pages/join/join"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "排班协同",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F7F8FA",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "color": "#8F959E",
+    "selectedColor": "#2B6DE5",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "assets/tab/home.png",
+        "selectedIconPath": "assets/tab/home-active.png"
+      },
+      {
+        "pagePath": "pages/schedule/schedule",
+        "text": "日程",
+        "iconPath": "assets/tab/schedule.png",
+        "selectedIconPath": "assets/tab/schedule-active.png"
+      },
+      {
+        "pagePath": "pages/task/task",
+        "text": "任务",
+        "iconPath": "assets/tab/task.png",
+        "selectedIconPath": "assets/tab/task-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "assets/tab/profile.png",
+        "selectedIconPath": "assets/tab/profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

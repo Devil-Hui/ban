@@ -1,0 +1,11 @@
+<view class="grp-card" bindtap="onTap">
+  <view class="grp-head">
+    <view class="grp-avatar">{{_initial}}</view>
+    <view class="grp-meta">
+      <view class="grp-name ellipsis">{{group.name}}</view>
+      <view class="grp-sub text-2 small">{{group.memberCount || 0}} 人 · 更新于 {{group.updatedAtText || '—'}}</view>
+    </view>
+    <view class="tag tag-{{_roleCls}}" wx:if="{{_roleText}}">{{_roleText}}</view>
+  </view>
+  <view class="grp-desc text-2 small ellipsis-2" wx:if="{{group.description}}">{{group.description}}</view>
+</view>

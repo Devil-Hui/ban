@@ -1,0 +1,200 @@
+<!-- pages/schedule-receipt/schedule-receipt.wxml —— 查收预览 -->
+<view class="page-sr">
+  <!-- Hero -->
+  <view class="sr-hero">
+    <view class="hero-row">
+      <view class="hero-icon">✓</view>
+      <view class="hero-body">
+        <view class="hero-title">{{task.title}}</view>
+        <view class="hero-meta">{{task.groupName}} · 已发布</view>
+      </view>
+    </view>
+    <view class="hero-stats">
+      <view class="hs-cell">
+        <view class="hs-num">{{mySchedule.length}}</view>
+        <view class="hs-label">我的班次</view>
+      </view>
+      <view class="hs-divider"></view>
+      <view class="hs-cell">
+        <view class="hs-num">{{totalHours}}h</view>
+        <view class="hs-label">总时长</view>
+      </view>
+      <view class="hs-divider"></view>
+      <view class="hs-cell">
+        <view class="hs-num">{{receiptProgress}}/{{task.total}}</view>
+        <view class="hs-label">已查收</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 我的班次（高亮） -->
+  <view class="section-head">
+    <text class="section-title">我的班次</text>
+    <text class="section-tag">{{mySchedule.length}} 个</text>
+  </view>
+  <view wx:if="{{mySchedule.length > 0}}" class="my-schedule-list">
+    <view wx:for="{{mySchedule}}" wx:key="id" class="my-schedule-card">
+      <view class="msc-date">
+        <view class="msc-day">{{item.day}}</view>
+        <view class="msc-month">{{item.monthLabel}}</view>
+        <view class="msc-weekday">{{item.weekday}}</view>
+      </view>
+      <view class="msc-body">
+        <view class="msc-period">{{item.periodLabel}}</view>
+        <view class="msc-meta">
+          <view class="msc-cell">
+            <text class="msc-label">时段</text>
+            <text class="msc-value">{{item.start}}-{{item.end}}</text>
+          </view>
+          <view class="msc-cell">
+            <text class="msc-label">同班</text>
+            <view class="msc-coworkers">
+              <view wx:for="{{item.coworkers}}" wx:for-item="c" wx:key="id" class="msc-coworker">
+                <view class="avatar avatar-sm">{{c.initial}}</view>
+                <text class="msc-coworker-name">{{c.name}}</text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view wx:else class="empty-inline">
+    <view class="empty-icon-sm">∅</view>
+    <text>本次未被排班，可查看完整排班表</text>
+  </view>
+
+  <!-- 完整排班表（按周日历可视化） -->
+  <view class="section-head">
+    <text class="section-title">排班日历（按周）</text>
+    <view class="legend-inline">
+      <view class="li-item"><view class="li-dot li-mine"></view>我的</view>
+      <view class="li-item"><view class="li-dot li-other"></view>他人</view>
+    </view>
+  </view>
+
+  <view class="week-cal-card">
+    <!-- 周切换 -->
+    <view class="wc-nav">
+      <view class="wc-arrow" bindtap="prevWeek">‹</view>
+      <view class="wc-label">{{calWeekLabel}}</view>
+      <view class="wc-arrow" bindtap="nextWeek">›</view>
+    </view>
+
+    <!-- 7 列按周日历 -->
+    <view class="wc-grid">
+      <view
+        wx:for="{{weekCells}}"
+        wx:key="key"
+        class="wc-cell {{item.periodCount > 0 ? 'wc-has-data' : ''}} {{item.hasMine ? 'wc-has-mine' : ''}} {{item.isToday ? 'wc-today' : ''}} {{selectedDayKey === item.key ? 'wc-selected' : ''}}"
+        bindtap="onWeekCellTap"
+        data-key="{{item.key}}"
+      >
+        <view class="wc-weekday">{{item.weekday}}</view>
+        <view class="wc-date">{{item.monthDay}}</view>
+        <view wx:if="{{item.periodCount > 0}}" class="wc-count">{{item.periodCount}} 时段</view>
+        <view wx:else class="wc-count wc-count-empty">无</view>
+        <view wx:if="{{item.members.length > 0}}" class="wc-avatars">
+          <view
+            wx:for="{{item.members}}"
+            wx:for-item="mm"
+            wx:key="id"
+            class="wc-avatar {{mm.isMe ? 'wc-avatar-me' : ''}}"
+          >{{mm.initial}}</view>
+        </view>
+        <view wx:if="{{item.myCount > 0}}" class="wc-mine-badge">我{{item.myCount}}</view>
+      </view>
+    </view>
+
+    <view class="wc-tip">点击有排班的日期查看详情 · 标记"我"的格子表示含我的班次</view>
+  </view>
+
+  <!-- 当日详情（点击日历格子后展开） -->
+  <view wx:if="{{selectedDayDetail}}" class="day-detail-card">
+    <view class="dd-head">
+      <view class="dd-title">{{selectedDayDetail.weekday}} · {{selectedDayDetail.day}} 日</view>
+      <view class="dd-close" bindtap="closeDayDetail">×</view>
+    </view>
+    <view class="dd-periods">
+      <view
+        wx:for="{{selectedDayDetail.periods}}"
+        wx:for-item="p"
+        wx:key="id"
+        class="dd-period {{p.isMine ? 'dd-mine' : ''}}"
+      >
+        <view class="ddp-time">{{p.start}} - {{p.end}}</view>
+        <view class="ddp-members">
+          <view wx:for="{{p.members}}" wx:for-item="m" wx:key="id" class="ddp-member">
+            <view class="avatar avatar-sm {{m.isMe ? 'avatar-me' : ''}}">{{m.initial}}</view>
+            <text class="ddp-name {{m.isMe ? 'ddp-name-me' : ''}}">{{m.name}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 隐私说明 -->
+  <view class="privacy-note">
+    <view class="pn-icon">⛨</view>
+    <view class="pn-body">
+      <view class="pn-title">隐私说明</view>
+      <view class="pn-desc">成员间可见姓名 + 脱敏手机号，微信号不展示</view>
+    </view>
+  </view>
+
+  <!-- 查收状态 -->
+  <view wx:if="{{receiptStatus}}" class="receipt-status rs-{{receiptStatus}}">
+    <view class="rs-icon">{{receiptIcon}}</view>
+    <view class="rs-body">
+      <view class="rs-title">{{receiptTitle}}</view>
+      <view class="rs-desc">{{receiptDesc}}</view>
+    </view>
+  </view>
+
+  <!-- 底部操作 -->
+  <view wx:if="{{!receiptStatus || receiptStatus === 'pending'}}" class="bottom-bar">
+    <view class="btn btn-outline" bindtap="showObjection">我有异议</view>
+    <view class="btn btn-primary btn-block" bindtap="confirmReceipt">确认查收</view>
+  </view>
+  <view wx:elif="{{receiptStatus === 'objected'}}" class="bottom-bar">
+    <view class="btn btn-outline btn-block">等待发布者处理</view>
+  </view>
+</view>
+
+<!-- 异议弹层 -->
+<view wx:if="{{objectionSheet}}" class="obj-mask" bindtap="closeObjection">
+  <view class="obj-sheet" catchtap="">
+    <view class="os-handle"></view>
+    <view class="os-head">
+      <view class="os-title">提交异议</view>
+      <view class="os-close" bindtap="closeObjection">✕</view>
+    </view>
+    <view class="os-desc">请详细描述你遇到的问题，发布者将收到通知并处理</view>
+
+    <view class="os-section-title">异议类型</view>
+    <view class="os-types">
+      <view
+        wx:for="{{objectionTypes}}"
+        wx:key="key"
+        class="os-type {{objectionType === item.key ? 'os-type-active' : ''}}"
+        bindtap="pickType"
+        data-key="{{item.key}}"
+      >{{item.label}}</view>
+    </view>
+
+    <view class="os-section-title">详细说明</view>
+    <textarea
+      class="os-textarea"
+      placeholder="如：10月4日 16:00-18:00 我有事无法值班，请更换其他人"
+      value="{{objectionReason}}"
+      bindinput="onReasonInput"
+      maxlength="200"
+    />
+    <view class="os-counter">{{objectionReason.length}}/200</view>
+
+    <view class="os-actions">
+      <view class="btn btn-outline" bindtap="closeObjection">取消</view>
+      <view class="btn btn-primary btn-block" bindtap="submitObjection">提交异议</view>
+    </view>
+  </view>
+</view>
