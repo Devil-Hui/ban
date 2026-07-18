@@ -56,7 +56,36 @@ async function join(ctx) {
   if (await repos.groups.isBlacklisted(group.id, user.userId)) throw err('MEMBER_BLACKLISTED');
   const existing = await repos.groups.getMember(group.id, user.userId);
   if (existing && existing.status === 'active') throw err('ALREADY_MEMBER');
-  const member = await repos.groups.addMember({ groupId: group.id, userId: user.userId, roleInGroup: 'member' });
+  const member = await repos.groups.addMember({
+    groupId: group.id,
+    userId: user.userId,
+    roleInGroup: 'member',
+    displayName: (ctx.body && ctx.body.displayName) || undefined,
+  });
+  // 站内通知：加入者 + 发布者（不依赖微信模板也能看到）
+  try {
+    await repos.notify.enqueue({
+      userId: user.userId,
+      taskId: null,
+      templateId: 'group_joined',
+      title: '已加入分组',
+      body: `你已加入「${group.name || '分组'}」`,
+    });
+    const members = await repos.groups.listMembers(group.id);
+    for (const m of members) {
+      if (m.roleInGroup === 'publisher' && String(m.userId) !== String(user.userId)) {
+        await repos.notify.enqueue({
+          userId: m.userId,
+          taskId: null,
+          templateId: 'group_joined',
+          title: '有新成员加入',
+          body: `「${group.name || '分组'}」有新成员加入`,
+        });
+      }
+    }
+  } catch (_) {
+    /* 通知失败不阻断加入 */
+  }
   return { group, member };
 }
 

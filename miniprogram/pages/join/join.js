@@ -176,6 +176,11 @@ Page({
       const groupsApi = require('../../services/groups')
       const { ensureLogin } = require('../../utils/auth')
       await ensureLogin()
+      // 用户点击加入：请求「排班加入通知」订阅（有真实模板 ID 会弹微信窗）
+      try {
+        const notifyApi = require('../../services/notify')
+        await notifyApi.subscribe({ scene: 'join' })
+      } catch (_) {}
       const g = await groupsApi.join({
         inviteCode: this.data.codeRaw,
         displayName: (this.data.displayName || '').trim() || undefined,

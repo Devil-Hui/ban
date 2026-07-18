@@ -28,12 +28,14 @@ async function getTemplates(force) {
 function localCatalog() {
   const m = config.subscribeTemplateIds || {};
   const pub = m.taskPublished || '';
+  const join = m.groupJoined || pub || '';
   const dead = m.deadlineRemind || '';
   const items = [
-    { key: 'task_published', label: '排班发布通知', templateId: pub, enabled: !!pub },
-    { key: 'deadline_remind', label: '填报截止提醒', templateId: dead, enabled: !!dead },
+    { key: 'task_published', label: '排班加入/发布通知', templateId: pub, enabled: !!pub },
+    { key: 'group_joined', label: '加入分组通知', templateId: join, enabled: !!join },
+    { key: 'deadline_remind', label: '未提交/截止提醒', templateId: dead, enabled: !!dead },
   ];
-  const wxReadyIds = items.filter((i) => i.enabled).map((i) => i.templateId);
+  const wxReadyIds = [...new Set(items.filter((i) => i.enabled && i.templateId).map((i) => i.templateId))];
   return {
     items,
     wxReadyIds,
@@ -59,9 +61,12 @@ async function subscribe(opts) {
   let keys = o.keys;
   if (!keys || !keys.length) {
     if (o.scene === 'publish') keys = ['task_published'];
+    else if (o.scene === 'join') keys = ['group_joined', 'task_published'];
     else if (o.scene === 'deadline') keys = ['deadline_remind'];
-    else keys = catalog.logicalKeys || ['task_published', 'deadline_remind'];
+    else keys = catalog.logicalKeys || ['task_published', 'group_joined', 'deadline_remind'];
   }
+  // 微信一次最多 3 个模板；按 keys 解析后去重截断
+
 
   // 解析微信真实 ID：优先 opts.tmplIds → catalog 映射 → 本地 config
   let ids = (o.tmplIds || []).filter(Boolean);
@@ -73,7 +78,10 @@ async function subscribe(opts) {
   if (!ids.length && typeof config.getSubscribeTmplList === 'function') {
     ids = config.getSubscribeTmplList().filter(Boolean);
   }
-  ids = ids.filter((id) => id && String(id).indexOf('TEMPLATE_ID_') !== 0 && String(id).trim());
+  ids = [...new Set(ids.filter((id) => id && String(id).indexOf('TEMPLATE_ID_') !== 0 && String(id).trim()))].slice(
+    0,
+    3
+  );
 
   // —— inbox_only：不调微信，仍记录偏好 ——
   if (!ids.length) {

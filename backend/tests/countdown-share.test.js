@@ -131,15 +131,21 @@ describe('deadline worker + share preview', () => {
 });
 
 describe('notify templates dual-mode', () => {
-  it('meta notify-templates returns inbox_only without env templates', async () => {
+  it('meta notify-templates exposes catalog (wechat_subscribe when IDs configured)', async () => {
     setup();
     const res = await request('GET', '/api/v1/meta/notify-templates');
     assert.ok(res.mode === 'inbox_only' || res.mode === 'wechat_subscribe');
     assert.ok(Array.isArray(res.items));
     assert.ok(Array.isArray(res.logicalKeys));
+    assert.ok(res.logicalKeys.includes('task_published'));
+    assert.ok(res.logicalKeys.includes('deadline_remind'));
+    // 已配置真实模板时，mode 为 wechat_subscribe 且 wxReadyIds 非空
+    if (res.mode === 'wechat_subscribe') {
+      assert.ok(Array.isArray(res.wxReadyIds) && res.wxReadyIds.length >= 1);
+    }
   });
 
-  it('subscribe with keys works without wechat template ids', async () => {
+  it('subscribe with keys persists and returns current mode', async () => {
     const repos = setup();
     const login = await request('POST', '/api/v1/auth/miniprogram/login', {
       body: { code: 'sub_keys_user' },
@@ -149,7 +155,7 @@ describe('notify templates dual-mode', () => {
       body: { keys: ['task_published', 'deadline_remind'] },
     });
     assert.ok(res.accepted.length >= 1);
-    assert.equal(res.mode, 'inbox_only');
+    assert.ok(res.mode === 'inbox_only' || res.mode === 'wechat_subscribe');
     const saved = await repos.subscriptions.get(login.user.id);
     assert.ok(saved);
   });

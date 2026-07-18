@@ -81,10 +81,24 @@ const config = {
   shareTokenTtl: num(process.env.SHARE_TOKEN_TTL, 604800),
   // 截止前提醒提前小时数（写入 countdowns.reminder）
   deadlineReminderHours: num(process.env.DEADLINE_REMIND_HOURS, 24),
-  // 微信订阅消息模板 ID（公众平台申请后写入 .env；空则不下发仅站内 inbox）
+  // 微信订阅消息模板 ID（.env 优先；未配时用本机已申请的默认 ID，便于联调）
+  // 空字符串仍可通过 WX_TMPL_*= 强制关闭微信通道、只走站内 inbox
   subscribeTemplates: {
-    taskPublished: process.env.WX_TMPL_TASK_PUBLISHED || '',
-    deadlineRemind: process.env.WX_TMPL_DEADLINE_REMIND || '',
+    taskPublished:
+      process.env.WX_TMPL_TASK_PUBLISHED !== undefined
+        ? process.env.WX_TMPL_TASK_PUBLISHED
+        : 'mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg',
+    // 与「排班加入」同一模板：入组/入班通知
+    groupJoined:
+      process.env.WX_TMPL_GROUP_JOINED !== undefined
+        ? process.env.WX_TMPL_GROUP_JOINED
+        : process.env.WX_TMPL_TASK_PUBLISHED !== undefined
+          ? process.env.WX_TMPL_TASK_PUBLISHED
+          : 'mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg',
+    deadlineRemind:
+      process.env.WX_TMPL_DEADLINE_REMIND !== undefined
+        ? process.env.WX_TMPL_DEADLINE_REMIND
+        : 'JQYOa6W-Fq1qZBSvJVD3vVRxfm2iQ2IaYQs-ex5DYic',
   },
   defaultPageSize: num(process.env.DEFAULT_PAGE_SIZE, 20),
   maxPageSize: num(process.env.MAX_PAGE_SIZE, 100),

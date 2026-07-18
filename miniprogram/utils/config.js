@@ -25,18 +25,21 @@ module.exports = {
   jobPollIntervalMs: 1000,
   jobPollMaxTimes: 30,
   /**
-   * 订阅消息模板 ID。
-   * - 留空或 TEMPLATE_ID_* 占位：开发期跳过 wx.requestSubscribeMessage
-   * - 生产：填微信公众平台真实 ID，或与后端 WX_TMPL_* 保持一致
+   * 订阅消息模板 ID（与公众平台「我的模板」一致，并与 backend WX_TMPL_* 对齐）
+   * - 排班加入通知 → 发布/入组相关
+   * - 未提交日志   → 填报截止/未提交提醒
    */
   subscribeTemplateIds: {
-    taskPublished: '', // e.g. 'xxxxxxxxxxxxxxxxxxxxxxxxxxxx'
-    deadlineRemind: '',
+    // 排班加入通知
+    taskPublished: 'mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg',
+    groupJoined: 'mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg',
+    // 未提交日志
+    deadlineRemind: 'JQYOa6W-Fq1qZBSvJVD3vVRxfm2iQ2IaYQs-ex5DYic',
   },
-  // 兼容旧数组读取
+  // 兼容旧数组读取（去重）
   getSubscribeTmplList() {
     const m = this.subscribeTemplateIds || {};
-    return [m.taskPublished, m.deadlineRemind].filter(Boolean);
+    return [...new Set([m.taskPublished, m.groupJoined, m.deadlineRemind].filter(Boolean))];
   },
   share: { title: '你有一份新的排班待确认，快来查看～', imageUrl: '' },
   TIME_MODES: timeConst.TIME_MODES,

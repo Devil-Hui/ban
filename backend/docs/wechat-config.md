@@ -37,16 +37,23 @@ https://api.example.com
 ## 三、
 ## 三、订阅消息（一次性订阅）
 
-### 3.1 申请模板
-**微信公众平台 → 功能 → 订阅消息 → 我的模板**，选用/申请以下类型（改为你自己的模板 ID）：
-- 排班发布通知（`TEMPLATE_ID_TASK_PUBLISHED`）
-- 截止提醒（`TEMPLATE_ID_DEADLINE_REMIND`）
+### 3.1 已选用模板（本项目）
 
-把真实 ID 填入：
-- 后端 `.env`：`WX_TMPL_TASK_PUBLISHED`、`WX_TMPL_DEADLINE_REMIND`
-- 小程序 `miniprogram/utils/config.js` → `subscribeTemplateIds.taskPublished / deadlineRemind`
+| 公众平台名称 | 模板 ID | 环境变量 / 前端字段 | 业务场景 |
+| --- | --- | --- | --- |
+| 排班加入通知 | `mrVvyweEKlTCsCP75XhrgyDu3OlWFwk9mtHOjIMRBqg` | `WX_TMPL_TASK_PUBLISHED` / `WX_TMPL_GROUP_JOINED` · `taskPublished` / `groupJoined` | 发布排班、加入分组 |
+| 未提交日志 | `JQYOa6W-Fq1qZBSvJVD3vVRxfm2iQ2IaYQs-ex5DYic` | `WX_TMPL_DEADLINE_REMIND` · `deadlineRemind` | 填报截止/未提交提醒 |
 
-开发期留空即可：前端会跳过 `wx.requestSubscribeMessage`，仅走站内 inbox。
+写入位置：
+- 后端 `.env`（见 `.env.example`）
+- 小程序 `miniprogram/utils/config.js` → `subscribeTemplateIds`
+
+**MVP 够用：2 个即可。** 可选再加（非必须）：
+- 异议处理结果通知（有人提异议 / 发布者处理后）
+- 方案生成完成（异步生成耗时较长时）
+
+显式写空 `WX_TMPL_TASK_PUBLISHED=` 可强制仅站内 inbox。  
+`GET /api/v1/meta/notify-templates` 可查看当前 mode（`wechat_subscribe` / `inbox_only`）。
 
 ### 3.2 触发时机（转化率最高原则）
 `wx.requestSubscribeMessage` **必须由用户点击行为触发**，不能在 onLoad 里静默弹。本项目在以下高意图节点调用（见 `services/notify.js` 的 `subscribe`）：
@@ -75,6 +82,10 @@ https://api.example.com
 | 变量 | 用途 |
 | --- | --- |
 | `WX_APPID` / `WX_SECRET` | 小程序身份与 code2Session |
+| `WX_TMPL_TASK_PUBLISHED` | 排班加入/发布通知模板 ID |
+| `WX_TMPL_GROUP_JOINED` | 加入分组通知（可与上一项同 ID） |
+| `WX_TMPL_DEADLINE_REMIND` | 未提交/截止提醒模板 ID |
+| `DEADLINE_REMIND_HOURS` | 截止前提醒提前小时数 |
 | `SHARE_TOKEN_TTL` | 分享只读 token 有效期（秒，默认 7 天） |
 | `JWT_SECRET` / `JWT_ACCESS_EXPIRE` / `JWT_REFRESH_EXPIRE` | 登录态签发与刷新 |
 
@@ -85,7 +96,7 @@ https://api.example.com
 ## 六、上架前自查清单
 - [ ] request 合法域名已配且为 HTTPS
 - [x] 确认产品不做支付，代码与配置无商户密钥残留
-- [ ] 订阅消息模板 ID 已替换为真实值
+- [x] 订阅消息模板 ID 已配置（排班加入 + 未提交日志）
 - [ ] 《隐私保护指引》已发布，隐私弹窗已接入
 - [ ] 真机（iOS + Android）登录、分享、订阅全链路自测通过
 - [ ] 后端错误码与前端 Toast 文案对齐（`API.md` 统一错误码表）

@@ -14,25 +14,38 @@ const { requireAuth } = require('./guard');
 const config = require('../config');
 
 function templateCatalog() {
-  const pub = (config.subscribeTemplates && config.subscribeTemplates.taskPublished) || '';
-  const dead = (config.subscribeTemplates && config.subscribeTemplates.deadlineRemind) || '';
+  const st = config.subscribeTemplates || {};
+  const pub = st.taskPublished || '';
+  const join = st.groupJoined || pub || '';
+  const dead = st.deadlineRemind || '';
   const items = [
     {
       key: 'task_published',
-      label: '排班发布通知',
+      label: '排班加入/发布通知',
       templateId: pub,
       enabled: !!pub,
       scene: 'publish',
+      tmplName: '排班加入通知',
+    },
+    {
+      key: 'group_joined',
+      label: '加入分组通知',
+      templateId: join,
+      enabled: !!join,
+      scene: 'join',
+      tmplName: '排班加入通知',
     },
     {
       key: 'deadline_remind',
-      label: '填报截止提醒',
+      label: '未提交/截止提醒',
       templateId: dead,
       enabled: !!dead,
       scene: 'deadline',
+      tmplName: '未提交日志',
     },
   ];
-  const wxReadyIds = items.filter((i) => i.enabled).map((i) => i.templateId);
+  // 去重后的微信 tmplIds（一次弹窗最多 3 个）
+  const wxReadyIds = [...new Set(items.filter((i) => i.enabled && i.templateId).map((i) => i.templateId))];
   return {
     items,
     wxReadyIds,
@@ -98,6 +111,10 @@ async function subscribe(ctx) {
     keys: keys.length ? keys : accepted,
     configured: {
       taskPublished: !!(config.subscribeTemplates && config.subscribeTemplates.taskPublished),
+      groupJoined: !!(
+        config.subscribeTemplates &&
+        (config.subscribeTemplates.groupJoined || config.subscribeTemplates.taskPublished)
+      ),
       deadlineRemind: !!(config.subscribeTemplates && config.subscribeTemplates.deadlineRemind),
     },
     mode: catalog.mode,
