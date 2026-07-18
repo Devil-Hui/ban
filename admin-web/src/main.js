@@ -9,6 +9,7 @@ const state = {
   settings: null,
   profiles: [],
   notify: null,
+  audits: [],
   timeModes: [],
   loading: false,
   message: '',
@@ -78,16 +79,18 @@ async function loadDashboard() {
   state.loading = true;
   render();
   try {
-    const [overview, settingsPack, notify, timeMeta] = await Promise.all([
+    const [overview, settingsPack, notify, timeMeta, auditsPack] = await Promise.all([
       api.overview(),
       api.settings(),
       api.notifyTemplates().catch(() => null),
       api.timeConstants().catch(() => null),
+      api.auditLogs({ page: 1, pageSize: 30 }).catch(() => ({ list: [] })),
     ]);
     state.overview = overview;
     state.settings = settingsPack.settings || {};
     state.profiles = settingsPack.profiles || [];
     state.notify = notify;
+    state.audits = (auditsPack && auditsPack.list) || [];
     state.timeModes = Object.keys(
       (timeMeta && timeMeta.TIME_MODE_META) || {
         section: {},
@@ -306,6 +309,28 @@ function renderDashboard() {
             <thead><tr><th>逻辑键</th><th>说明</th><th>状态</th><th>模板 ID</th></tr></thead>
             <tbody>${
               tmplRows || '<tr><td colspan="4" class="muted">无数据</td></tr>'
+            }</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <h2 style="margin:0 0 12px;font-size:16px">审计日志（只读）</h2>
+        <p class="muted">关键写操作：建组/建任务/发布/改默认设置。失败不阻断主业务。</p>
+        <div style="overflow:auto">
+          <table>
+            <thead><tr><th>时间</th><th>动作</th><th>目标</th><th>操作者</th></tr></thead>
+            <tbody>${
+              (state.audits || [])
+                .map((a) => {
+                  const t = a.createdAt ? String(a.createdAt).slice(0, 19).replace('T', ' ') : '—';
+                  return `<tr>
+                    <td>${esc(t)}</td>
+                    <td><code>${esc(a.action || '—')}</code></td>
+                    <td>${esc(a.targetType || '')}:${esc(a.targetId || '')}</td>
+                    <td>${esc(a.operatorId != null ? a.operatorId : '—')}</td>
+                  </tr>`;
+                })
+                .join('') || '<tr><td colspan="4" class="muted">暂无审计记录（执行 smoke 或业务写操作后出现）</td></tr>'
             }</tbody>
           </table>
         </div>

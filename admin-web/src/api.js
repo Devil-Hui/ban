@@ -43,4 +43,12 @@ export const api = {
   profiles: () => request('GET', '/schedule-profiles'),
   notifyTemplates: () => request('GET', '/meta/notify-templates', { auth: false }),
   timeConstants: () => request('GET', '/meta/time-constants', { auth: false }),
+  auditLogs: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.page) q.set('page', params.page);
+    if (params.pageSize) q.set('pageSize', params.pageSize);
+    if (params.action) q.set('action', params.action);
+    const s = q.toString();
+    return request('GET', '/admin/audit-logs' + (s ? '?' + s : ''));
+  },
 };

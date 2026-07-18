@@ -47,6 +47,7 @@ function createMemoryRepos() {
     shareTokens: new Map(), // token -> {taskId, expireAt}
     countdowns: new Map(), // id -> countdown
     subscriptions: new Map(), // userId -> { templateIds, accepted, updatedAt }
+    audits: [], // audit log rows
     scheduleProfiles: new Map(), // id -> profile
     groupProfiles: new Map(), // groupId -> profile
     settings: {
@@ -732,7 +733,39 @@ function createMemoryRepos() {
     },
   };
 
-  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles, countdowns, subscriptions };
+
+  // ---------- audits ----------
+  const audits = {
+    async write(row) {
+      const id = 'a_' + (store.audits.length + 1);
+      const rec = {
+        id,
+        operatorId: row.operatorId != null ? row.operatorId : null,
+        targetType: row.targetType || 'unknown',
+        targetId: String(row.targetId != null ? row.targetId : ''),
+        action: row.action || 'unknown',
+        beforeValue: row.beforeValue != null ? row.beforeValue : null,
+        afterValue: row.afterValue != null ? row.afterValue : null,
+        reason: row.reason || null,
+        ipAddress: row.ipAddress || null,
+        requestId: row.requestId || null,
+        createdAt: new Date().toISOString(),
+      };
+      store.audits.unshift(rec);
+      if (store.audits.length > 2000) store.audits.length = 2000;
+      return clone(rec);
+    },
+    async list({ page = 1, pageSize = 20, action = null, targetType = null } = {}) {
+      let list = store.audits.slice();
+      if (action) list = list.filter((x) => x.action === action);
+      if (targetType) list = list.filter((x) => x.targetType === targetType);
+      const total = list.length;
+      const start = (Math.max(1, page) - 1) * pageSize;
+      return { list: list.slice(start, start + pageSize).map(clone), total, page, pageSize };
+    },
+  };
+
+  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles, countdowns, subscriptions, audits };
 }
 
 module.exports = { createMemoryRepos };

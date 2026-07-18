@@ -50,36 +50,43 @@ function buildWxData(logicalKey, payload = {}) {
   );
   const status = clip(payload.statusText || '请查看', 20);
 
-  // 兼容多类公共模板：thing* / time* / phrase*
-  const base = {
+  // 字段按常见公共库命名；可用 extra.wxData 完全覆盖
+  // 排班加入通知 / 未提交日志：优先 thing + time 组合
+  const data = {
     thing1: { value: taskTitle },
     thing2: { value: groupName },
     thing3: { value: body || status },
-    thing4: { value: status },
-    thing5: { value: title },
     time1: { value: timeStr },
     time2: { value: timeStr },
-    time3: { value: timeStr },
     phrase1: { value: status },
-    phrase2: { value: status },
-    name1: { value: clip(payload.userName || '成员', 10) },
   };
-
   if (logicalKey === 'deadline_remind' || logicalKey === 'deadline_closed') {
-    base.thing1 = { value: taskTitle };
-    base.thing2 = { value: clip(payload.body || '请尽快提交', 20) };
-    base.time3 = { value: timeStr };
+    return {
+      thing1: { value: taskTitle },
+      thing2: { value: clip(payload.body || '请尽快提交空闲', 20) },
+      time1: { value: timeStr },
+      time2: { value: timeStr },
+      phrase1: { value: clip(payload.statusText || '待提交', 20) },
+    };
   }
   if (logicalKey === 'group_joined') {
-    base.thing1 = { value: groupName };
-    base.thing2 = { value: clip(payload.body || '欢迎加入', 20) };
+    return {
+      thing1: { value: groupName },
+      thing2: { value: clip(payload.body || '欢迎加入', 20) },
+      time1: { value: timeStr },
+      phrase1: { value: '已加入' },
+    };
   }
   if (logicalKey === 'task_published') {
-    base.thing1 = { value: taskTitle };
-    base.thing2 = { value: groupName };
-    base.thing3 = { value: clip(payload.body || '排班已发布，请查看', 20) };
+    return {
+      thing1: { value: taskTitle },
+      thing2: { value: groupName },
+      thing3: { value: clip(payload.body || '排班已发布，请查看', 20) },
+      time1: { value: timeStr },
+      phrase1: { value: '已发布' },
+    };
   }
-  return base;
+  return data;
 }
 
 function pageFor(logicalKey, payload = {}) {

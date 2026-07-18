@@ -6,7 +6,7 @@
 > 代码：`miniprogram/pages/scheme-gen/*`  
 > 逻辑层：L4（编辑/指派）→ L5（发布公示入口）  
 > API 真源（目标）：`services/tasks.js` → `generate` / `getJob` / `publish`  
-> **重要**：当前 `scheme-gen.js` 大量为**前端模拟数据**（本地格子、自动生成、发布仅 redirect），与 `task-detail` 内真实 `scheme-jobs` 轮询**双轨**。规格同时写清「现状」与「目标态」。
+> **现状（2026-07-18）**：真 `taskId` 时 hydrate 成员/periods/周；random/smart 走 `scheme-jobs`+轮询填表（失败降级本地）；发布已接 `publish`；演示 id 仍全本地。
 
 ---
 
@@ -58,12 +58,12 @@
 
 ### 1.5 数据依赖
 
-| 数据 | 现状代码 | 目标态 |
-|------|----------|--------|
-| 成员列表 | 本地 mock members | `GET` 任务成员/空闲 |
-| 格子 rows | 本地构建 | 候选方案 / 空表 |
-| 生成 | `autoGenerate` 本地 | `POST /tasks/{id}/scheme-jobs` + 轮询 job |
-| 发布 | 无 API，直接 redirect | `POST /tasks/{id}/publish` body 含 finalSchedule |
+| 数据 | 现状（2026-07-18） | 说明 |
+|------|-------------------|------|
+| 成员列表 | 真 id：`listMembers`；演示 mock | hydrateFromTask |
+| periods / 格子 | 真 id：任务 periods 建表；有候选则预填第一套 | initGridFromPeriods + applyAssignments |
+| 生成 | 真 id：`generate`+`getJob`；失败/演示：localAutoGenerate | autoGenerate |
+| 发布 | `publish({ finalSchedule })`；演示 redirect | onPublish |
 
 首屏：若无 task 上下文，【不确定】是否校验 taskId。
 

@@ -113,6 +113,15 @@ async function create(ctx) {
     });
     if (plan.length) await repos.countdowns.replaceForTask(task.id, plan);
   }
+  try {
+    const { writeAudit } = require('./audit');
+    await writeAudit(repos, ctx, {
+      targetType: 'task',
+      targetId: task.id,
+      action: 'task.create',
+      afterValue: { title: task.title, timeMode: task.timeMode, groupId: task.groupId },
+    });
+  } catch (_) {}
   return { task };
 }
 
@@ -333,6 +342,15 @@ async function publish(ctx) {
     taskId: task.id,
     taskTitle: task.title,
   });
+  try {
+    const { writeAudit } = require('./audit');
+    await writeAudit(repos, ctx, {
+      targetType: 'task',
+      targetId: task.id,
+      action: 'task.publish',
+      afterValue: { status: 'published', shareToken: !!shareToken },
+    });
+  } catch (_) {}
   return {
     task: updated,
     shareToken,

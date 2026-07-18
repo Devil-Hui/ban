@@ -18,6 +18,15 @@ async function create(ctx) {
   });
   const repos = require('../repositories').getRepos();
   const group = await repos.groups.create(Object.assign({ createdBy: user.userId }, data, extra));
+  try {
+    const { writeAudit } = require('./audit');
+    await writeAudit(repos, ctx, {
+      targetType: 'group',
+      targetId: group.id,
+      action: 'group.create',
+      afterValue: { name: group.name, inviteCode: group.inviteCode },
+    });
+  } catch (_) {}
   return { group };
 }
 

@@ -15,6 +15,8 @@
     "db:seed": "node scripts/db-seed-profiles.js",
     "db:reset": "docker compose down -v && docker compose up -d && node scripts/wait-mysql.js && node scripts/db-init.js && node scripts/db-seed-profiles.js",
     "worker:deadline": "node scripts/run-deadline-worker.js",
+    "smoke": "node scripts/full-stack-smoke.js",
+    "smoke:mysql": "node scripts/full-stack-smoke.js",
     "test": "node --test"
   },
   "engines": {

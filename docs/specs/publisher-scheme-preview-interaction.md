@@ -6,7 +6,7 @@
 > 代码：`miniprogram/pages/scheme-preview/*`  
 > 逻辑层：L4 选定方案 → L5 确认发布  
 > API 目标：`tasks.generate` / `getJob` / `publish` / `adjust`  
-> **现状**：方案列表、负荷、格子多为**前端演示数据**；`regenerate` 为 setTimeout 模拟；发布按钮走确认后应接真实 publish【以 js `confirmScheme` 实现为准，见下】
+> **现状（2026-07-18）**：真 `taskId` 拉 `candidateSchedules` 渲染；`regenerate` 走 scheme-jobs；发布 `publish({ finalSchedule })`；演示 id 仍 mock
 
 ---
 
@@ -58,12 +58,14 @@
 
 ### 1.5 数据依赖
 
-| 数据 | 现状 | 目标 |
-|------|------|------|
-| schemes[] | 本地/mock | job 结果 candidate_schedules |
-| loadData | 本地算 | 由方案统计 |
-| rows 格子 | buildScheduleRows 种子数据 | 真实 final 草稿 |
-| 发布 | confirmScheme【见代码】 | publish API |
+| 数据 | 现状（2026-07-18） | 说明 |
+|------|-------------------|------|
+| schemes[] | **真 taskId：`GET /tasks/{id}` → candidateSchedules**；演示 id 仍 mock | applySchemesFromRaw |
+| rows | **由当前方案 assignments 填格**；无候选则空表+警告 | buildScheduleRows |
+| loadData | 由 assignments 按人聚合 | buildLoadData |
+| 重新生成 | 真 id：`scheme-jobs` 轮询后重拉任务候选 | regenerate |
+| 发布 | `publish({ finalSchedule })` | 已接 |
+| 微调保存 | 写回 rows，标记 _rowsDirty，发布时用表格组装 | saveAdjust |
 
 ### 1.6 空 / 载 / 错
 

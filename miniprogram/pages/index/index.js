@@ -158,11 +158,7 @@ Page({
 
   onGroupAction(e) {
     const id = e.currentTarget.dataset.id;
-    const role = e.currentTarget.dataset.role;
-    if (role === 'publisher') {
-      wx.navigateTo({ url: `/pages/group-detail/group-detail?id=${id}` });
-    } else {
-      wx.navigateTo({ url: `/pages/joiner-fill/joiner-fill?groupId=${id}` });
-    }
+    // 发布者/成员统一进分组详情（避免 joiner-fill mock 误导）
+    if (id) wx.navigateTo({ url: `/pages/group-detail/group-detail?id=${id}` });
   },
 });

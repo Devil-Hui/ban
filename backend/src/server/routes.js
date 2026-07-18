@@ -14,6 +14,7 @@ const receipts = require('../handlers/receipts');
 const preview = require('../handlers/preview');
 const notify = require('../handlers/notify');
 const scheduleProfiles = require('../handlers/scheduleProfiles');
+const audit = require('../handlers/audit');
 
 const ROUTES = [
   // 鉴权
@@ -34,6 +35,7 @@ const ROUTES = [
   { method: 'GET', path: '/api/v1/admin/overview', handler: scheduleProfiles.getAdminOverview },
   { method: 'GET', path: '/api/v1/admin/settings', handler: scheduleProfiles.getAdminSettings },
   { method: 'PUT', path: '/api/v1/admin/settings', handler: scheduleProfiles.putAdminSettings },
+  { method: 'GET', path: '/api/v1/admin/audit-logs', handler: audit.listAuditLogs },
 
   // 用户
   { method: 'GET', path: '/api/v1/users/me', handler: users.getMe },

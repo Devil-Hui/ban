@@ -901,7 +901,61 @@ function createMysqlRepos(pool) {
     },
   };
 
-  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles, countdowns, subscriptions };
+
+  // ---------- audits ----------
+  const audits = {
+    async write(row) {
+      const [res] = await pool.execute(
+        `INSERT INTO audit_logs (operator_id, target_type, target_id, action, before_value, after_value, reason, ip_address, request_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          row.operatorId != null && String(row.operatorId) !== 'admin' ? row.operatorId : null,
+          row.targetType || 'unknown',
+          String(row.targetId != null ? row.targetId : ''),
+          row.action || 'unknown',
+          row.beforeValue != null ? JSON.stringify(row.beforeValue) : null,
+          row.afterValue != null ? JSON.stringify(row.afterValue) : null,
+          row.reason || null,
+          row.ipAddress || null,
+          row.requestId || null,
+        ]
+      );
+      return { id: res.insertId, ...row };
+    },
+    async list({ page = 1, pageSize = 20, action = null, targetType = null } = {}) {
+      const where = ['1=1'];
+      const params = [];
+      if (action) { where.push('action = ?'); params.push(action); }
+      if (targetType) { where.push('target_type = ?'); params.push(targetType); }
+      const w = where.join(' AND ');
+      const [countRows] = await pool.execute(`SELECT COUNT(*) AS c FROM audit_logs WHERE ${w}`, params);
+      const offset = (Math.max(1, page) - 1) * pageSize;
+      const [rows] = await pool.query(
+        `SELECT * FROM audit_logs WHERE ${w} ORDER BY created_at DESC LIMIT ${Math.floor(pageSize)} OFFSET ${Math.floor(offset)}`,
+        params
+      );
+      return {
+        list: rows.map((r) => ({
+          id: r.id,
+          operatorId: r.operator_id,
+          targetType: r.target_type,
+          targetId: r.target_id,
+          action: r.action,
+          beforeValue: r.before_value,
+          afterValue: r.after_value,
+          reason: r.reason,
+          ipAddress: r.ip_address,
+          requestId: r.request_id,
+          createdAt: r.created_at,
+        })),
+        total: countRows[0].c,
+        page,
+        pageSize,
+      };
+    },
+  };
+
+  return { users, groups, tasks, responses, receipts, notify, scheduleProfiles, countdowns, subscriptions, audits };
 }
 
 module.exports = { createMysqlRepos };

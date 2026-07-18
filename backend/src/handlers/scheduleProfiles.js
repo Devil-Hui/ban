@@ -122,6 +122,15 @@ async function putAdminSettings(ctx) {
     throw err('INTERNAL_ERROR', { message: '当前仓储不支持 settings 写入' });
   }
   const settings = await repos.scheduleProfiles.updateSettings(patch);
+  try {
+    const { writeAudit } = require('./audit');
+    await writeAudit(repos, ctx, {
+      targetType: 'settings',
+      targetId: 'platform',
+      action: 'settings.update',
+      afterValue: settings,
+    });
+  } catch (_) {}
   return { settings };
 }
 

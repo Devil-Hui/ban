@@ -155,6 +155,12 @@ Page({
   },
 
   onGenerate() {
-    wx.navigateTo({ url: '/pages/scheme-gen/scheme-gen' })
+    // 方案生成走已接 API 的任务详情，避免 scheme-gen mock
+    const taskId = this.data.taskId || (this.data.task && this.data.task.id) || '';
+    if (taskId) {
+      wx.navigateTo({ url: `/pages/task-detail/task-detail?id=${taskId}` });
+    } else {
+      wx.showToast({ title: '请从任务详情进入生成', icon: 'none' });
+    }
   }
 })
