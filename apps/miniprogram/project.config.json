@@ -1,44 +1,15 @@
 {
-  "description": "smart scheduling miniprogram",
-  "compileType": "miniprogram",
-  "miniprogramRoot": "",
-  "appid": "wx49e89470ae5fc197",
-  "projectname": "smart-scheduling-miniprogram",
-  "setting": {
-    "es6": true,
-    "minified": true,
-    "postcss": true,
-    "urlCheck": false,
-    "ignoreDevUnusedFiles": false,
-    "ignoreUploadUnusedFiles": false,
-    "packNpmManually": true,
-    "packNpmRelationList": [
-      {
-        "packageJsonPath": "./package.json",
-        "miniprogramNpmDistDir": "./"
-      }
-    ],
-    "babelSetting": {
-      "ignore": [],
-      "disablePlugins": [],
-      "outputPath": ""
-    }
-  },
-  "libVersion": "3.17.0",
   "packOptions": {
-    "ignore": [],
-    "include": []
-  },
-  "condition": {
-    "miniprogram": {
-      "list": [
-        { "name": "首页", "pathName": "pages/home/home", "query": "" },
-        { "name": "清缓存启动", "pathName": "pages/login/login", "query": "reset=1" }
-      ]
-    }
-  },
-  "editorSetting": {
-    "tabIndent": "insertSpaces",
-    "tabSize": 2
+    "include": [],
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "/minitest"
+      },
+      {
+        "type": "folder",
+        "value": "minitest"
+      }
+    ]
   }
 }
