@@ -1,0 +1,70 @@
+sequenceDiagram
+    participant U as 用户
+    participant V as task-create.wxml
+    participant J as task-create.js
+    participant T as time-format.js
+
+    U->>V: 点击 [本周] / [下周]
+    V->>J: bindtap="onQuickWeek" data-which="this|next"
+    J->>T: thisWeekRange() / nextWeekRange()
+    T-->>J: { start:'YYYY-MM-DD'(周一), end:'YYYY-MM-DD'(周日) }
+    J->>J: inclusiveDaySpan(start,end) === 7 <= MAX_TASK_SPAN_DAYS
+    J->>V: setData({ dateStart:start, dateEnd:end })
+    V-->>U: 两个 picker 显示周一~周日
+
+---
+
+sequenceDiagram
+    participant U as 管理者
+    participant C as task-create.js
+    participant API as NestJS /groups/:gid/tasks
+    participant S as ScheduleService
+    participant R as ScheduleRepository
+
+    U->>C: 输入「宿舍号」点 [+ 添加]
+    C->>C: addCustomField(): slug=genSlug(label); key='custom_'+slug
+    C->>C: push {key,label,custom:true} 到 requiredFieldOptions
+    C->>C: requiredFieldLabels[key]=label; requiredFields 含 key
+    U->>C: 点 [发布并开始收集]
+    C->>C: buildCreatePayload(): rules.requiredFields=keys[]
+    C->>C: rules.requiredFieldLabels={custom_dorm:'宿舍号'}
+    C->>API: POST body(rules...)
+    API->>S: createTask(actor, gid, input)
+    S->>S: validateRules(): 固定key通过；custom_* 校验前缀+label必填
+    S->>R: createTask(): rules_json 含 requiredFields+requiredFieldLabels
+    R-->>API: Task
+    API-->>C: { id }
+
+---
+
+sequenceDiagram
+    participant M as 管理者(task-detail)
+    participant W as 微信分享卡片
+    participant A as 受邀人(availability)
+    participant LC as GET landing-context
+    participant S as ScheduleService
+    participant R as ScheduleRepository
+    participant DB as MySQL
+
+    M->>M: mintInvite()(已有) -> inviteCode + onShareAppMessage path=/pages/availability?taskId&shareToken=inviteCode
+    M->>W: 微信分享(open-type=share)
+    W->>A: 受邀人点开 -> onLoad({taskId, shareToken})
+    A->>LC: GET /tasks/:id/landing-context?shareToken=
+    LC->>S: landingContext(actor, taskId, token)
+    S->>R: findTask + findMember + findValidShareForTask(含 used_at)
+    R->>DB: share_links 查 used_at/revoked_at/expires_at
+    DB-->>LC: { isMember, tokenValid, tokenUsed, groupInviteCode? }
+    alt all_members 且非组员
+        LC-->>A: membershipRequired=true -> 显示「请先加入分组」(复制 groupInviteCode)
+    else tokenUsed / 无效
+        LC-->>A: tokenInvalid=true -> 显示「邀请链接已失效」
+    else 可填(reserved_list/share_link 有效token 或 组员)
+        A->>A: load(taskId, shareToken): GET /tasks/:id?shareToken= + availability/me?shareToken=
+        A->>A: 动态渲染 requiredFields 输入(含 custom_*)，reserved_list 高亮姓名
+        A->>S: POST /tasks/:id/availability { entries, profile, shareToken }
+        S->>S: requireTaskForAvailability: scope 判定；reserved_list 校验 profile.name in reservedNames
+        S->>R: saveAvailability(entries, profile->profile_json)
+        S->>R: consumeShare(taskId, tokenHash)  // 仅当本次由 token 授权
+        R->>DB: UPDATE share_links SET used_at=now() (原子)
+        S-->>A: 提交成功（链接此后失效，转发无效）
+    end

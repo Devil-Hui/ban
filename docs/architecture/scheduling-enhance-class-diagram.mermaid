@@ -1,0 +1,81 @@
+classDiagram
+    class TimeFormat {
+        +addDaysYmd(ymd, days) string
+        +formatYmd(v) string
+        +MAX_TASK_SPAN_DAYS int
+        +mondayOfYmd(ymd) string
+        +weekRange(ymd) ~start,end~
+        +thisWeekRange() ~start,end~
+        +nextWeekRange(ymd) ~start,end~
+    }
+    class TaskCreatePage {
+        +data.requiredFieldOptions: RequiredFieldOption[]
+        +data.requiredFields: string[]
+        +data.requiredFieldLabels: map
+        +data.customInput: string
+        +onQuickWeek(which) void
+        +addCustomField() void
+        +toggleRequiredField(e) void
+        +buildCreatePayload() object
+    }
+    class AvailabilityPage {
+        +data.shareToken: string
+        +data.task: ScheduleTask
+        +data.requiredFields: string[]
+        +data.requiredFieldLabels: map
+        +data.customProfile: map
+        +data.membershipRequired: boolean
+        +data.tokenInvalid: boolean
+        +loadLandingContext() void
+        +load(taskId) void
+        +buildProfile() object
+        +submit() void
+    }
+    class ScheduleService {
+        +createTask(actorId, groupId, input) Task
+        +submitAvailability(actorId, taskId, entries, reqId, shareToken?, profile?) void
+        +requireTaskForAvailability(actorId, taskId, shareToken?) Task
+        +getTask(actorId, taskId, shareToken?) Task
+        +landingContext(actorId, taskId, shareToken?) object
+        -validateRules(rules) TaskRules
+    }
+    class ScheduleRepository {
+        +createTask(input) Task
+        +saveAvailability(taskId, userId, entries, reqId, profile?) void
+        +findValidShareForTask(taskId, tokenHash) boolean
+        +consumeShare(taskId, tokenHash) int
+        +ensureCollectionDraftVersion(taskId, actorId) string
+    }
+    class ShareLinks {
+        <<DB table>>
+        +id binary(16)
+        +task_id binary(16)
+        +token_hash char(64) UNIQUE
+        +expires_at datetime(3)
+        +revoked_at datetime(3)
+        +used_at datetime(3)
+        +access_count int
+    }
+    class AvailabilitySubmissions {
+        <<DB table>>
+        +id binary(16)
+        +task_id binary(16)
+        +user_id binary(16)
+        +submission_version int
+        +profile_json json
+    }
+    class TaskRules {
+        <<type>>
+        +requiredFields: (string|{key,label})[]
+        +requiredFieldLabels?: map
+        +participantScope: enum
+        +reservedNames?: string[]
+    }
+    TimeFormat <.. TaskCreatePage : 复用
+    TaskCreatePage ..> ScheduleService : POST /groups/:gid/tasks
+    AvailabilityPage ..> ScheduleService : GET /tasks/:id/landing-context
+    AvailabilityPage ..> ScheduleService : POST /tasks/:id/availability
+    ScheduleService ..> ScheduleRepository
+    ScheduleRepository ..> ShareLinks
+    ScheduleRepository ..> AvailabilitySubmissions
+    ScheduleService ..> TaskRules
