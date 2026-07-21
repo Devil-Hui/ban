@@ -92,7 +92,7 @@ INSERT INTO group_members (group_id, user_id, display_name, role_in_group) VALUE
 ## 场景 4：通过邀请码加入（U04 小红）
 
 **用户操作**：
-1. 小红点击群里的分享卡片 → 小程序打开并预填邀请码"X9K2M"
+1. 小红点击群里的分享卡片 → 小程序打开并预填邀请码"X9K2M"  M,
 2. 系统自动读取微信昵称"小红"，小红可修改 display_name
 3. 点击【加入】
 
