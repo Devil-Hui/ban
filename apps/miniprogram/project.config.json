@@ -29,7 +29,14 @@
     "ignore": [],
     "include": []
   },
-  "condition": {},
+  "condition": {
+    "miniprogram": {
+      "list": [
+        { "name": "首页", "pathName": "pages/home/home", "query": "" },
+        { "name": "清缓存启动", "pathName": "pages/login/login", "query": "reset=1" }
+      ]
+    }
+  },
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2

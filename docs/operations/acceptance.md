@@ -22,7 +22,7 @@ This document maps the approved `user-scenarios.md` flows to executable evidence
 
 ## Automated baseline
 
-Run from `new/`:
+Run from the repository root:
 
 ```bash
 npm run build
@@ -42,7 +42,7 @@ The local integration suite uses real MySQL 8.4 and Redis. `test:lifecycle-worke
 The native mini program must also pass:
 
 ```powershell
-& 'D:\weichat小程序\微信web开发者工具\cli.bat' build-npm --project '<worktree>\new\apps\miniprogram'
+& 'D:\weichat小程序\微信web开发者工具\cli.bat' build-npm --project '<repo-root>\apps\miniprogram'
 ```
 
 Source compilation and TDesign npm packaging work with `touristappid`. Preview upload requires a registered real AppID and is an external WeChat permission gate, not a source build gate.

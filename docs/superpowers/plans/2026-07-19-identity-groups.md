@@ -1,4 +1,5 @@
 # Identity, Permissions, Groups, and Members Implementation Plan
+> ⚠️ 历史文档：本文件中的 `new/` 等路径已过时，代码已提升到仓库根目录。现行结构见根 README.md。
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

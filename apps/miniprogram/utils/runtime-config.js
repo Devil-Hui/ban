@@ -1,4 +1,7 @@
 const LOCAL_API_BASE_URL = 'http://127.0.0.1:3010/api/v1';
+// 生产/体验环境 API 地址（HTTPS）。上线前替换为实际域名，并在小程序后台「开发管理→服务器域名」配置 request 合法域名。
+// 独立小程序 fallback；若接入第三方平台代开发则 extConfig 优先。
+const PRODUCTION_API_BASE_URL = 'https://api.scheduling.example.com/api/v1';
 
 function normalizeBaseUrl(value) {
   return String(value || '').trim().replace(/\/+$/, '');
@@ -34,19 +37,11 @@ function resolveRuntimeConfig({ accountInfo = {}, extConfig = {}, override = {} 
     };
   }
 
-  if (!configuredUrl) {
-    return {
-      apiBaseUrl: '',
-      authMode: 'production',
-      envVersion,
-      isDevelop: false,
-      configurationError: envVersion === 'release' ? '正式环境未配置 HTTPS API 地址' : '体验版未配置 HTTPS API 地址',
-    };
-  }
-
-  const secure = /^https:\/\//i.test(configuredUrl);
+  // trial/release：extConfig 优先，否则 fallback 到 PRODUCTION_API_BASE_URL 常量
+  const resolvedUrl = configuredUrl || normalizeBaseUrl(PRODUCTION_API_BASE_URL);
+  const secure = /^https:\/\//i.test(resolvedUrl);
   return {
-    apiBaseUrl: secure ? configuredUrl : '',
+    apiBaseUrl: secure ? resolvedUrl : '',
     authMode: 'production',
     envVersion,
     isDevelop: false,
@@ -54,4 +49,4 @@ function resolveRuntimeConfig({ accountInfo = {}, extConfig = {}, override = {} 
   };
 }
 
-module.exports = { LOCAL_API_BASE_URL, resolveRuntimeConfig };
+module.exports = { LOCAL_API_BASE_URL, PRODUCTION_API_BASE_URL, resolveRuntimeConfig };

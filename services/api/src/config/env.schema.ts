@@ -4,7 +4,7 @@ const port = z.coerce.number().int().min(1).max(65535);
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  API_PORT: port.default(3000),
+  API_PORT: port.default(3010),
   MYSQL_HOST: z.string().min(1),
   MYSQL_PORT: port,
   MYSQL_DATABASE: z.string().regex(/^[a-z0-9_]+$/),
