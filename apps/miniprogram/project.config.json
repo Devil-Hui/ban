@@ -4,23 +4,48 @@
     "include": [],
     "ignore": [
       {
-        "type": "folder",
-        "value": "/minitest"
+        "value": "/minitest",
+        "type": "folder"
       },
       {
-        "type": "folder",
-        "value": "minitest"
+        "value": "minitest",
+        "type": "folder"
       }
     ]
   },
   "setting": {
-    "packNpmManually": false,
+    "packNpmManually": true,
     "miniprogramNpmDistDir": "./miniprogram_npm",
     "packNpmRelationList": [
       {
         "packageJsonPath": "./package.json",
         "miniprogramNpmDistDir": "./miniprogram_npm"
       }
-    ]
-  }
+    ],
+    "es6": false,
+    "postcss": false,
+    "compileWorklet": false,
+    "minified": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "enhance": false,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "appid": "wx32b25e60a3131c4c",
+  "libVersion": "3.17.0",
+  "compileType": "miniprogram",
+  "simulatorPluginLibVersion": {},
+  "editorSetting": {}
 }
