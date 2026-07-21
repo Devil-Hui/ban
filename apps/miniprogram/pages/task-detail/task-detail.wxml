@@ -1,0 +1,130 @@
+<view wx:if="{{task}}" class="page task-page">
+  <!-- 1. 标题 -->
+  <view class="head surface">
+    <view class="head-main">
+      <view class="title">{{task.title}}</view>
+      <view class="subtitle">{{task.dateRangeText}} · 截止 {{task.deadlineText}}</view>
+    </view>
+    <view class="task-status {{task.status}}">{{task.statusLabel}}</view>
+  </view>
+
+  <!-- 2. 收集进度 / 我的提交 -->
+  <view wx:if="{{manage && collection}}" class="block surface">
+    <view class="block-title">收集进度 {{collection.progress}}%</view>
+    <view class="subtitle">{{collection.submittedMembers}}/{{collection.totalMembers}} 人已交
+      <text wx:if="{{collection.missingMembers}}"> · 缺 {{collection.missingMembers}} 人</text>
+    </view>
+    <t-progress percentage="{{collection.progress}}" stroke-width="10" color="#1e9e5a" track-color="#eaf1ec" />
+  </view>
+  <view wx:elif="{{!manage}}" class="block surface">
+    <view class="block-title">我的可用时间</view>
+    <view class="subtitle">{{availabilitySubmitted ? '已提交' : '尚未提交'}}</view>
+  </view>
+
+  <!-- 3. 课表（主交互） -->
+  <view class="block surface">
+    <view class="block-head">
+      <text class="block-title">时段课表</text>
+      <text class="mini-label">{{task.canStaff ? '点绿格选人' : (gridDates.length + ' 天')}}</text>
+    </view>
+    <view wx:if="{{gridDates.length && gridPeriods.length}}" class="grid-wrap">
+      <schedule-grid
+        mode="{{gridMode}}"
+        periods="{{gridPeriods}}"
+        dates="{{gridDates}}"
+        timeMode="{{task.timeMode || 'section_range'}}"
+        selectedKeys="{{gridSelectedKeys}}"
+        peopleByKey="{{gridPeopleByKey}}"
+        bind:celltap="onGridCellTap"
+      />
+      <view class="mini-label grid-hint">
+        {{task.canStaff ? '绿格可点：查看该时段已填报的人并选择值班' : '绿格为可排班时段；列=任务起止全部日期'}}
+      </view>
+    </view>
+    <view wx:else class="empty-hint">暂无时段</view>
+  </view>
+
+  <!-- 4. 邀请（仅收集中） -->
+  <view wx:if="{{manage && task.canMintShare}}" class="block surface">
+    <view class="block-title">收集邀请</view>
+    <view class="subtitle">微信分享或邀请码</view>
+    <view wx:if="{{inviteCode}}" class="invite-code-block">
+      <text class="mini-label">邀请码</text>
+      <text class="invite-code">{{inviteCode}}</text>
+      <text wx:if="{{inviteExpiresText}}" class="mini-label">至 {{inviteExpiresText}}</text>
+    </view>
+    <view class="row-actions">
+      <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="mintInvite" disabled="{{mintingShare}}">
+        {{mintingShare ? '生成中…' : (inviteCode ? '重新生成' : '生成邀请码')}}
+      </button>
+      <button wx:if="{{inviteCode}}" class="ui-btn ui-btn-light ui-btn-sm" bindtap="copyInviteCode">复制邀请码</button>
+      <button wx:if="{{inviteCode}}" class="ui-btn ui-btn-light ui-btn-sm" bindtap="copyInviteShareText">复制文案</button>
+      <button wx:if="{{inviteCode}}" class="ui-btn ui-btn-primary ui-btn-sm" open-type="share">微信分享</button>
+    </view>
+  </view>
+
+  <!-- 5. 管理动作（扁平按钮，不套多层 grid 文案） -->
+  <view wx:if="{{manage}}" class="block surface">
+    <view class="block-title">管理</view>
+    <view class="row-actions">
+      <button wx:if="{{task.canClose}}" class="ui-btn ui-btn-light ui-btn-sm" bindtap="closeCollection">结束收集</button>
+      <button wx:if="{{task.canClose}}" class="ui-btn ui-btn-light ui-btn-sm" bindtap="extend">延长截止</button>
+      <button wx:if="{{task.canReopen}}" class="ui-btn ui-btn-light ui-btn-sm" bindtap="reopen">重新开放</button>
+      <button wx:if="{{task.canSolve}}" class="ui-btn ui-btn-primary ui-btn-sm" bindtap="solve" disabled="{{solving}}">
+        {{solving ? '生成中…' : '生成方案'}}
+      </button>
+      <button wx:if="{{task.canViewResult}}" class="ui-btn ui-btn-primary ui-btn-sm" bindtap="result">查看结果</button>
+    </view>
+  </view>
+
+  <!-- 6. 异议（发布后） -->
+  <view wx:if="{{manage && task.status === 'published' && objections.length}}" class="block surface">
+    <view class="block-title">异议 {{objections.length}}</view>
+    <view wx:for="{{objections}}" wx:key="id" class="objection-item">
+      <view class="subtitle">{{item.reason}}</view>
+      <view class="mini-label">{{item.status}}</view>
+      <view wx:if="{{item.status === 'open'}}" class="row-actions">
+        <button class="ui-btn ui-btn-light ui-btn-sm" data-index="{{index}}" data-status="rejected" bindtap="resolveObjection">拒绝</button>
+        <button class="ui-btn ui-btn-primary ui-btn-sm" data-index="{{index}}" data-status="accepted" bindtap="resolveObjection">接受</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 成员底栏 -->
+  <view class="fixed-action" wx:if="{{!manage && task.status === 'collecting'}}">
+    <button class="ui-btn ui-btn-primary" bindtap="fill">填写我的可用时间</button>
+  </view>
+
+  <!-- 选人弹层：结束收集后点课表格 -->
+  <view wx:if="{{sheetOpen}}" class="sheet-mask" bindtap="closeSheet">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-head">
+        <view class="block-title">{{sheetTitle}}</view>
+        <text class="mini-label">已选 {{sheetSelectedCount}}/{{sheetMax}}</text>
+      </view>
+      <scroll-view scroll-y class="sheet-body">
+        <view wx:if="{{!sheetCandidates.length}}" class="empty-hint">该时段暂无人填报可用</view>
+        <view
+          wx:for="{{sheetCandidates}}"
+          wx:key="userId"
+          class="member-row {{item.checked ? 'on' : ''}}"
+          data-userid="{{item.userId}}"
+          bindtap="toggleSheetMember"
+        >
+          <view class="member-main">
+            <text class="member-name">{{item.displayName}}</text>
+            <text class="mini-label">{{item.state === 'preferred' ? '优先' : (item.state === 'fixed' ? '已固定' : '可用')}}</text>
+          </view>
+          <view class="check {{item.checked ? 'on' : ''}}">{{item.checked ? '✓' : ''}}</view>
+        </view>
+      </scroll-view>
+      <view class="sheet-foot">
+        <button class="ui-btn ui-btn-light" bindtap="closeSheet">取消</button>
+        <button class="ui-btn ui-btn-primary" bindtap="saveSheet" disabled="{{sheetSaving}}">
+          {{sheetSaving ? '保存中…' : '保存人选'}}
+        </button>
+      </view>
+    </view>
+  </view>
+</view>
+<view wx:else class="page state-box">{{loading ? '加载中…' : '任务不存在或无权访问'}}</view>

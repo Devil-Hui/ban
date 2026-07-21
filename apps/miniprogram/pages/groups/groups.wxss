@@ -1,0 +1,56 @@
+.groups-page { padding-top: 24rpx; }
+.group-total { display: flex; flex-direction: column; align-items: flex-end; gap: 8rpx; }
+.group-actions { display: flex; gap: 16rpx; }
+.group-actions .ui-btn { flex: 1; margin-top: 0; width: auto; }
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  flex-wrap: wrap;
+}
+.filter-bar {
+  display: flex;
+  gap: 8rpx;
+  flex: none;
+}
+.filter-chip {
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #eef2ef;
+  color: var(--subtle);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+.filter-chip.on {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+.group-list-card { padding: 24rpx; margin-bottom: 16rpx; }
+.group-mark.purple { background: #8b72c8; }
+.member-line { display: flex; justify-content: space-between; align-items: center; margin: 26rpx 0 18rpx; }
+.more-avatar { width: 48rpx; height: 48rpx; border-radius: 50%; background: #eef2ef; color: var(--subtle); display: flex; align-items: center; justify-content: center; margin-left: -10rpx; border: 3rpx solid #fff; font-size: 18rpx; }
+.list-foot { display: flex; justify-content: space-between; padding-top: 18rpx; border-top: 1rpx solid var(--line); }
+.foot-role { color: var(--brand); font-weight: 600; }
+.invite-hint { display: flex; align-items: center; gap: 12rpx; color: var(--subtle); font-size: 22rpx; line-height: 1.45; padding: 16rpx 4rpx; }
+.modal-mask { position: fixed; z-index: 10; inset: 0; display: flex; align-items: flex-end; background: rgba(17, 27, 20, .42); }
+.join-modal { width: 100%; padding: 34rpx 28rpx 52rpx; border-radius: 26rpx 26rpx 0 0; }
+.modal-title { font-size: 38rpx; font-weight: 700; }
+.modal-subtitle { color: var(--subtle); font-size: 24rpx; margin: 12rpx 0 28rpx; }
+.code-input { height: 96rpx; background: #f3f7f4; border-radius: 14rpx; text-align: center; letter-spacing: 10rpx; font-size: 36rpx; margin-bottom: 22rpx; }
+.cancel { display: block; text-align: center; color: var(--subtle); font-size: 25rpx; padding: 24rpx 0 0; }
+
+.ui-btn {
+  margin: 0;
+  padding: 0 20rpx;
+  min-height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  border: 0;
+}
+.ui-btn::after { border: 0; }
+.ui-btn-primary { background: #1d4ed8; color: #fff; }
+.ui-btn-light { background: #eef2ff; color: #1e293b; }
+.ui-btn[disabled] { opacity: 0.55; }

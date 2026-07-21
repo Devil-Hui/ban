@@ -1,0 +1,461 @@
+openapi: 3.1.0
+info:
+  title: Smart Scheduling API
+  version: 0.1.0
+  license: { name: Proprietary, identifier: LicenseRef-Proprietary }
+servers:
+  - url: /api/v1
+paths:
+  /health/live:
+    get:
+      summary: Liveness probe
+      operationId: healthLive
+      servers: [{ url: / }]
+      security: []
+      responses: { '200': { description: Process is alive } }
+  /health/ready:
+    get:
+      summary: Readiness probe
+      operationId: healthReady
+      servers: [{ url: / }]
+      security: []
+      responses:
+        '200': { description: Dependencies are ready }
+        '503': { description: One or more dependencies are unavailable }
+  /admin/auth/login:
+    post:
+      summary: Admin password and optional TOTP login
+      operationId: adminLogin
+      security: []
+      responses: { '200': { description: Admin access and refresh tokens } }
+  /admin/auth/refresh:
+    post:
+      summary: Rotate admin refresh token
+      operationId: adminRefresh
+      security: []
+      responses: { '200': { description: Rotated admin tokens } }
+  /admin/auth/logout:
+    post:
+      summary: Revoke admin refresh token
+      operationId: adminLogout
+      security: []
+      responses: { '204': { description: Logged out } }
+  /auth/wechat/login:
+    post:
+      summary: WeChat user login
+      operationId: wechatLogin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [code], properties: { code: { type: string } } }
+      responses:
+        '201': { description: Login tokens }
+        '400': { $ref: '#/components/responses/InvalidArgument' }
+  /auth/refresh:
+    post:
+      summary: Rotate user refresh token
+      operationId: userRefresh
+      security: []
+      responses: { '200': { description: Rotated user tokens } }
+  /auth/logout:
+    post:
+      summary: Revoke user refresh token
+      operationId: userLogout
+      security: []
+      responses: { '204': { description: Logged out } }
+  /groups:
+    get:
+      summary: List current user's groups
+      operationId: listGroups
+      security: [{ userBearer: [] }]
+      responses: { '200': { description: Active groups } }
+    post:
+      summary: Create a group
+      operationId: createGroup
+      security: [{ userBearer: [] }]
+      responses: { '201': { description: Created group } }
+  /groups/join:
+    post:
+      summary: Join a group by invite code
+      operationId: joinGroup
+      security: [{ userBearer: [] }]
+      responses: { '201': { description: Active membership } }
+  /groups/{groupId}/members/{userId}/kick:
+    post:
+      summary: Kick a group member
+      operationId: kickMember
+      security: [{ userBearer: [] }]
+      parameters:
+        - { name: groupId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { '204': { description: Member kicked }, '403': { $ref: '#/components/responses/PermissionDenied' } }
+  /groups/{groupId}:
+    get:
+      summary: Read a member-visible group
+      operationId: getGroup
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Group summary }, '404': { $ref: '#/components/responses/NotFound' } }
+    delete:
+      summary: Dissolve a group
+      operationId: dissolveGroup
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Group dissolved } }
+  /groups/{groupId}/members:
+    get:
+      summary: List visible group members
+      operationId: listGroupMembers
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Group members } }
+  /groups/{groupId}/leave:
+    post:
+      summary: Leave a group
+      operationId: leaveGroup
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Left group } }
+  /groups/{groupId}/members/{userId}/unblock:
+    post:
+      summary: Remove a group blacklist
+      operationId: unblockGroupMember
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }, { name: userId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Member unblocked } }
+  /groups/{groupId}/members/{userId}/admin:
+    patch:
+      summary: Grant administrator role
+      operationId: setGroupAdmin
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }, { name: userId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Administrator role granted } }
+    delete:
+      summary: Remove administrator role
+      operationId: removeGroupAdmin
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }, { name: userId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Administrator role removed } }
+  /groups/{groupId}/transfer-ownership:
+    post:
+      summary: Transfer group ownership
+      operationId: transferGroupOwnership
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Ownership transferred } }
+  /groups/{groupId}/tasks:
+    get:
+      summary: List group tasks
+      operationId: listTasks
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Tasks visible to the member } }
+    post:
+      summary: Create a schedule task
+      operationId: createTask
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, dateStart, dateEnd, deadline]
+              properties:
+                title: { type: string, maxLength: 160 }
+                dateStart: { type: string, format: date }
+                dateEnd: { type: string, format: date }
+                deadline: { type: string, format: date-time }
+                templateId: { type: string, format: uuid }
+                periods: { type: array, items: { type: object } }
+      responses: { '201': { description: Created collecting task } }
+  /groups/{groupId}/templates:
+    get:
+      summary: List reusable shift templates
+      operationId: listShiftTemplates
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Group shift templates } }
+    post:
+      summary: Create a reusable shift template
+      operationId: createShiftTemplate
+      security: [{ userBearer: [] }]
+      parameters: [{ name: groupId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: Created reusable template } }
+  /tasks/{taskId}/availability:
+    post:
+      summary: Submit availability
+      operationId: submitAvailability
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: Versioned submission } }
+  /tasks/{taskId}:
+    get:
+      summary: Read a task and its immutable slots
+      operationId: getTask
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Task details } }
+  /tasks/{taskId}/collection:
+    get:
+      summary: Read management-only availability collection summary
+      operationId: getCollectionSummary
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Submission progress and risk slots } }
+  /tasks/{taskId}/availability/me:
+    get:
+      summary: Read caller's latest availability
+      operationId: getMyAvailability
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Availability entries } }
+  /tasks/{taskId}/fixed-assignments:
+    get:
+      summary: Read fixed member requirements
+      operationId: listFixedAssignments
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Fixed assignments } }
+    patch:
+      summary: Replace fixed member requirements
+      operationId: replaceFixedAssignments
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Updated fixed assignments } }
+  /tasks/{taskId}/close-collection:
+    post:
+      summary: Close availability collection
+      operationId: closeCollection
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Task ready for solving } }
+  /tasks/{taskId}/reopen:
+    post:
+      summary: Reopen availability collection
+      operationId: reopenCollection
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Reopened task } }
+  /tasks/{taskId}/extend-deadline:
+    post:
+      summary: Extend collection deadline
+      operationId: extendDeadline
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Updated deadline } }
+  /tasks/{taskId}/solve:
+    post:
+      summary: Queue a solver job
+      operationId: requestSolve
+      security: [{ userBearer: [] }]
+      parameters:
+        - { name: taskId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      responses: { '201': { description: Queued solver job } }
+  /tasks/{taskId}/publish:
+    post:
+      summary: Publish a schedule version
+      operationId: publishSchedule
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: Published schedule version } }
+  /tasks/{taskId}/solve/{jobId}:
+    get:
+      summary: Poll solver job
+      operationId: getSolverJob
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Solver progress } }
+  /tasks/{taskId}/solve/{jobId}/candidates:
+    get:
+      summary: Read solver candidates
+      operationId: listSolverCandidates
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Explainable candidate plans } }
+  /tasks/{taskId}/schedule:
+    get:
+      summary: Read current published schedule
+      operationId: getPublishedSchedule
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Published assignments } }
+  /users/me/schedule:
+    get:
+      summary: List the caller's published assignments
+      operationId: getMyPublishedSchedule
+      security: [{ userBearer: [] }]
+      responses: { '200': { description: Published assignments visible to the caller } }
+  /tasks/{taskId}/versions/{versionId}/receipt:
+    post:
+      summary: Confirm schedule receipt
+      operationId: confirmReceipt
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Receipt saved } }
+  /tasks/{taskId}/versions/{versionId}/objections:
+    get:
+      summary: List objections for group management
+      operationId: listScheduleObjections
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Objections } }
+    post:
+      summary: Create schedule objection
+      operationId: createObjection
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: Objection saved } }
+  /tasks/{taskId}/versions/{versionId}/objections/{objectionId}:
+    patch:
+      summary: Accept or reject an objection
+      operationId: resolveScheduleObjection
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }, { name: objectionId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Resolved objection } }
+  /tasks/{taskId}/versions/{versionId}/shares:
+    post:
+      summary: Create expiring masked share link
+      operationId: createShareLink
+      security: [{ userBearer: [] }]
+      parameters: [{ name: taskId, in: path, required: true, schema: { type: string, format: uuid } }, { name: versionId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: One-time share token } }
+  /shares/{shareId}:
+    delete:
+      summary: Revoke share link
+      operationId: revokeShareLink
+      security: [{ userBearer: [] }]
+      parameters: [{ name: shareId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Share link revoked } }
+  /public/shares/{token}:
+    get:
+      summary: Read masked public schedule
+      operationId: getPublicShare
+      parameters: [{ name: token, in: path, required: true, schema: { type: string } }]
+      security: []
+      responses: { '200': { description: Masked schedule }, '404': { $ref: '#/components/responses/NotFound' } }
+  /admin/overview:
+    get:
+      summary: Read platform overview
+      operationId: adminOverview
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Platform summary (read only) } }
+  /admin/users/{userId}/status:
+    patch:
+      summary: Ban or restore a platform user
+      operationId: setUserStatus
+      security: [{ adminBearer: [] }]
+      parameters: [{ name: userId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Updated platform status } }
+  /admin/accounts:
+    get:
+      summary: List admin accounts
+      operationId: listAdminAccounts
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Admin accounts } }
+    post:
+      summary: Create an admin account
+      operationId: createAdminAccount
+      security: [{ adminBearer: [] }]
+      responses: { '201': { description: Created admin account } }
+  /admin/users:
+    get:
+      summary: List platform users
+      operationId: listAdminUsers
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: User summaries } }
+  /admin/groups:
+    get:
+      summary: List read-only group summaries
+      operationId: listAdminGroups
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Group summaries } }
+  /admin/tasks:
+    get:
+      summary: List read-only task summaries
+      operationId: listAdminTasks
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Task summaries } }
+  /admin/audit:
+    get:
+      summary: List immutable audit records
+      operationId: listAdminAudit
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Audit records } }
+  /admin/notifications:
+    get:
+      summary: List notification outbox deliveries
+      operationId: listAdminNotifications
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Notification delivery records } }
+  /admin/notifications/{notificationId}/retry:
+    post:
+      summary: Requeue a notification that has not been sent
+      operationId: retryAdminNotification
+      security: [{ adminBearer: [] }]
+      parameters: [{ name: notificationId, in: path, required: true, schema: { type: string, format: uuid } }]
+      responses: { '201': { description: Notification requeued }, '404': { $ref: '#/components/responses/NotFound' } }
+  /admin/solver-jobs:
+    get:
+      summary: List solver worker jobs
+      operationId: listAdminSolverJobs
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Solver queue records } }
+  /admin/templates:
+    get:
+      summary: List reusable shift templates
+      operationId: listAdminTemplates
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: Read-only template records } }
+  /admin/system:
+    get:
+      summary: Read dependency, queue, migration and backup status
+      operationId: getAdminSystemStatus
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: System operations status } }
+  /admin/auth/mfa/enroll:
+    post:
+      summary: Enroll optional admin TOTP
+      operationId: enrollAdminTotp
+      security: [{ adminBearer: [] }]
+      responses: { '201': { description: One-time otpauth URI } }
+  /admin/auth/mfa:
+    delete:
+      summary: Disable admin TOTP
+      operationId: disableAdminTotp
+      security: [{ adminBearer: [] }]
+      responses: { '200': { description: TOTP disabled } }
+  /users/me/phone:
+    get:
+      summary: Read masked authorized phone
+      operationId: getMyMaskedPhone
+      security: [{ userBearer: [] }]
+      responses: { '200': { description: Masked phone or null } }
+    post:
+      summary: Authorize and encrypt phone
+      operationId: authorizeMyPhone
+      security: [{ userBearer: [] }]
+      responses: { '201': { description: Masked phone } }
+  /users/me/deletion:
+    post:
+      summary: Request account deletion
+      operationId: requestAccountDeletion
+      security: [{ userBearer: [] }]
+      responses: { '201': { description: Cooling-period deadline } }
+    delete:
+      summary: Cancel account deletion
+      operationId: cancelAccountDeletion
+      security: [{ userBearer: [] }]
+      responses: { '200': { description: Deletion request cancelled } }
+components:
+  securitySchemes:
+    userBearer: { type: http, scheme: bearer, bearerFormat: JWT }
+    adminBearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  responses:
+    InvalidArgument: { description: Invalid request }
+    PermissionDenied: { description: Insufficient group permission }
+    NotFound: { description: Resource not found }

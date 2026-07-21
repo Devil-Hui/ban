@@ -1,0 +1,95 @@
+@import "../schedule/schedule.wxss";
+
+.profile-card {
+  padding: 22rpx 24rpx;
+  margin-top: 18rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.profile-input {
+  height: 72rpx;
+  padding: 0 20rpx;
+  border-radius: 12rpx;
+  background: #f3f6f4;
+  font-size: 28rpx;
+  color: var(--ink);
+}
+
+.invite-entry {
+  padding: 22rpx 24rpx;
+  margin-top: 18rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.invite-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.invite-input {
+  flex: 1;
+  letter-spacing: 2rpx;
+  text-transform: uppercase;
+}
+
+.invite-row .ui-btn {
+  width: auto;
+  flex: none;
+  min-width: 120rpx;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 14rpx;
+  align-items: stretch;
+}
+
+.schedule-actions .ui-btn-light {
+  width: auto;
+  flex: none;
+  min-width: 140rpx;
+}
+
+.schedule-actions .ui-btn-primary {
+  flex: 1;
+}
+
+.ui-btn {
+  margin: 0;
+  padding: 0 28rpx;
+  min-height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: 0;
+}
+
+.ui-btn::after {
+  border: 0;
+}
+
+.ui-btn-primary {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.ui-btn-light {
+  background: #eef2ff;
+  color: #1e293b;
+}
+
+.ui-btn[disabled] {
+  opacity: 0.55;
+}

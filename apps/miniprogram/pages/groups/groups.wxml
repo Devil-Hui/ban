@@ -1,0 +1,83 @@
+<view class="page groups-page">
+  <view class="topbar">
+    <view>
+      <view class="eyebrow">GROUPS</view>
+      <view class="title">我的分组</view>
+      <view class="subtitle">和伙伴一起，把每个时段安排好</view>
+    </view>
+    <view class="group-total">
+      <text class="number">{{filteredGroups.length}}</text>
+      <text class="mini-label">个分组</text>
+    </view>
+  </view>
+
+  <view class="group-actions">
+    <button class="ui-btn ui-btn-primary" bindtap="onCreate">+ 创建分组</button>
+    <button class="ui-btn ui-btn-light" bindtap="onJoin">输入邀请码</button>
+  </view>
+
+  <view class="section-head">
+    <text class="section-title">全部分组</text>
+    <view class="filter-bar">
+      <view
+        wx:for="{{filters}}"
+        wx:key="key"
+        class="filter-chip {{roleFilter === item.key ? 'on' : ''}}"
+        data-key="{{item.key}}"
+        catchtap="setRoleFilter"
+      >{{item.label}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-box">正在加载...</view>
+  <view wx:elif="{{!filteredGroups.length}}" class="state-box surface">
+    <t-icon name="usergroup" size="64rpx" color="#9ba79f" />
+    <text>{{groups.length ? '当前筛选下暂无分组' : '暂无分组'}}</text>
+    <text class="mini-label">{{groups.length ? '试试切换右侧筛选' : '创建自己的分组，或使用邀请码加入'}}</text>
+  </view>
+
+  <view
+    wx:for="{{filteredGroups}}"
+    wx:key="id"
+    class="group-list-card surface"
+    data-index="{{index}}"
+    bindtap="onGroup"
+  >
+    <view class="between">
+      <view class="row gap-16">
+        <view class="group-mark {{item.tone}}">
+          <t-icon name="usergroup" size="36rpx" color="#fff" />
+        </view>
+        <view>
+          <view class="card-title">{{item.name}}</view>
+          <view class="mini-label">{{item.desc}}</view>
+        </view>
+      </view>
+      <t-icon name="chevron-right" size="34rpx" color="#9ba79f" />
+    </view>
+    <view class="member-line">
+      <view class="mini-label">我的身份</view>
+      <view class="role {{item.tone}}">{{item.roleLabel}}</view>
+    </view>
+    <view class="list-foot">
+      <text class="mini-label">状态：{{item.status}}</text>
+    </view>
+  </view>
+
+  <view class="invite-hint">
+    <t-icon name="lightbulb" size="34rpx" color="#e6a21a" />
+    <text>邀请码只用于加入分组，已被拉黑的账号无法重新加入。</text>
+  </view>
+
+  <view wx:if="{{showJoin}}" class="modal-mask" catchtap="closeJoin">
+    <view class="join-modal surface" catchtap="noop">
+      <view class="modal-title">加入分组</view>
+      <view class="modal-subtitle">请输入管理员分享的 6 位邀请码</view>
+      <input class="code-input" maxlength="6" value="{{code}}" bindinput="onCode" placeholder="例如 2FK8QZ" />
+      <button class="ui-btn ui-btn-primary" bindtap="confirmJoin" disabled="{{joining}}">
+        {{joining ? '加入中...' : '确认加入'}}
+      </button>
+      <text class="cancel" bindtap="closeJoin">暂不加入</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+{
+  "name": "@scheduling/miniprogram",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "echo \"tests removed\"",
+    "postbuild-npm": "node tools/patch-tdesign-icon-font.mjs",
+    "patch:icon-font": "node tools/patch-tdesign-icon-font.mjs"
+  },
+  "dependencies": {
+    "tdesign-miniprogram": "^1.15.3"
+  },
+  "devDependencies": {
+    "miniprogram-automator": "^0.12.1"
+  }
+}

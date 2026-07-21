@@ -1,0 +1,69 @@
+<view class="page me-page">
+  <view class="profile-card surface">
+    <view class="avatar-ring">
+      <t-avatar size="120rpx" shape="circle">{{user.nickname || '我'}}</t-avatar>
+    </view>
+    <view class="profile-copy">
+      <view class="profile-name">{{user.nickname || '未登录'}}</view>
+      <view class="subtitle">排班协作账号</view>
+      <view class="member-id">ID {{user.id || '—'}}</view>
+    </view>
+  </view>
+
+  <view class="section-label">账号与隐私</view>
+  <view class="settings surface">
+    <view class="setting-row" bindtap="authorizePhone">
+      <view class="setting-icon green-bg"><t-icon name="mobile" size="32rpx" color="#1e9e5a" /></view>
+      <view class="setting-copy">
+        <text class="setting-title">手机号</text>
+        <text class="mini-label">{{privacyPhone}}</text>
+      </view>
+      <t-icon name="chevron-right" size="30rpx" color="#9ba79f" />
+    </view>
+    <view class="setting-row" bindtap="requestDeletion">
+      <view class="setting-icon red-bg"><t-icon name="delete" size="32rpx" color="#df5c4c" /></view>
+      <view class="setting-copy">
+        <text class="setting-title danger-text">注销账号</text>
+        <text class="mini-label">30 天冷静期后匿名化</text>
+      </view>
+      <t-icon name="chevron-right" size="30rpx" color="#9ba79f" />
+    </view>
+  </view>
+
+  <view class="section-label">会话</view>
+  <view class="settings surface">
+    <view class="setting-row" bindtap="logout">
+      <view class="setting-icon gray-bg"><t-icon name="logout" size="32rpx" color="#68766d" /></view>
+      <view class="setting-copy">
+        <text class="setting-title">退出登录</text>
+        <text class="mini-label">清除当前设备令牌</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 用户只看到版本号；开发版长按可打开隐藏运维面板 -->
+  <view class="version" bindlongpress="onVersionLongPress">
+    智能排班 v0.1.0 · 数据仅用于排班协作
+  </view>
+
+  <view wx:if="{{devSheetOpen}}" class="dev-mask" bindtap="closeDevSheet">
+    <view class="dev-sheet surface" catchtap="noop">
+      <view class="dev-title">开发者选项</view>
+      <view class="mini-label">仅 develop 可见 · 用户界面不展示入口</view>
+      <view class="dev-row">
+        <text>登录</text>
+        <text class="dev-value">{{authModeLabel}}</text>
+      </view>
+      <view class="dev-row">
+        <text>API</text>
+        <text class="dev-value api">{{apiBaseUrl || '—'}}</text>
+      </view>
+      <view class="dev-actions">
+        <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="switchAuthMode">切换登录方式</button>
+        <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="copyApi">复制服务地址</button>
+        <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="resetLocal">恢复初始化</button>
+        <button class="ui-btn ui-btn-primary ui-btn-sm" bindtap="closeDevSheet">关闭</button>
+      </view>
+    </view>
+  </view>
+</view>

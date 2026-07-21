@@ -1,0 +1,59 @@
+<view class="page result-page">
+  <view wx:if="{{schedule}}">
+    <view class="eyebrow">PUBLISHED SCHEDULE</view>
+    <view class="title">排班结果</view>
+    <view class="subtitle">第 {{schedule.versionNumber}} 版 · 已发布</view>
+
+    <view class="result-banner surface">
+      <view class="success-mark"><t-icon name="check" size="46rpx" color="#fff" /></view>
+      <view>
+        <view class="section-title">方案已发布</view>
+        <view class="mini-label">成员可确认或提出异议 · 绿格为班次</view>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">排班课表</text>
+      <text class="mini-label">{{schedule.assignments.length}} 人次</text>
+    </view>
+    <view wx:if="{{planDates.length && planPeriods.length}}" class="grid-wrap surface">
+      <schedule-grid
+        mode="readonly"
+        periods="{{planPeriods}}"
+        dates="{{planDates}}"
+        selectedKeys="{{planSelectedKeys}}"
+        peopleByKey="{{planPeopleByKey}}"
+        timeMode="{{task.timeMode || 'section_range'}}"
+      />
+      <view class="mini-label grid-hint">时间统一为 HH:mm-HH:mm；格内数字为该班次人数</view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">班次明细</text>
+    </view>
+    <view wx:for="{{grouped}}" wx:key="key" class="assignment-card surface">
+      <view class="assignment-time">
+        <text>{{item.date}} {{item.time}}</text>
+      </view>
+      <view class="name-list">
+        <view wx:for="{{item.names}}" wx:for-item="person" wx:key="userId" class="name-pill {{person.isMine ? 'mine' : ''}}">
+          <t-avatar size="48rpx">{{person.displayName}}</t-avatar>
+          <view>
+            <text>{{person.displayName}}{{person.isMine ? '（我）' : ''}}</text>
+            <text wx:if="{{person.phone}}" class="mini-label">{{person.phone}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="result-actions">
+      <button wx:if="{{manage}}" class="ui-btn ui-btn-primary" loading="{{sending}}" bindtap="share">创建分享链接</button>
+      <block wx:else>
+        <button class="ui-btn ui-btn-light" bindtap="objection">我有异议</button>
+        <button class="ui-btn ui-btn-primary" bindtap="receipt">我已确认</button>
+      </block>
+    </view>
+  </view>
+  <view wx:elif="{{loading}}" class="state-box">正在加载发布结果...</view>
+  <view wx:else class="state-box">还没有已发布的排班</view>
+</view>

@@ -1,0 +1,14 @@
+/* Global design tokens — keep in sync with task-create wizard spec §7.1 */
+page {
+  --font-size-xs: 20rpx;
+  --font-size-sm: 24rpx;
+  --font-size-md: 28rpx;
+  --font-size-lg: 32rpx;
+  --font-size-xl: 40rpx;
+  --color-brand: #1e9e5a;
+  --color-brand-soft: #e8f7ef;
+  --color-danger: #df5c4c;
+  --color-text: #1f2a24;
+  --color-text-secondary: #7b8780;
+  --radius-md: 16rpx;
+}

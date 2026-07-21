@@ -1,0 +1,87 @@
+.login-page {
+  min-height: 100vh;
+  padding: 112rpx 44rpx 48rpx;
+  background: #f7faf8;
+  box-sizing: border-box;
+}
+.brand-mark {
+  width: 92rpx;
+  height: 92rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18rpx;
+  background: #1e9e5a;
+  box-shadow: 0 16rpx 36rpx rgba(30, 158, 90, 0.2);
+}
+.eyebrow {
+  margin-top: 42rpx;
+  color: #1e9e5a;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+.title {
+  margin-top: 12rpx;
+  color: #17241c;
+  font-size: 48rpx;
+  font-weight: 700;
+}
+.subtitle {
+  margin-top: 14rpx;
+  color: #738078;
+  font-size: 25rpx;
+  line-height: 1.6;
+}
+.error-panel {
+  margin: 36rpx 0 24rpx;
+  padding: 22rpx;
+  display: flex;
+  gap: 16rpx;
+  border: 1rpx solid #f0c9c4;
+  border-radius: 10rpx;
+  background: #fff2f0;
+  color: #9f3f35;
+  font-size: 25rpx;
+}
+.error-panel view {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+.error-detail {
+  font-size: 21rpx;
+  line-height: 1.5;
+}
+.login-error {
+  margin: 36rpx 0 18rpx;
+  color: #c64f42;
+  font-size: 23rpx;
+  text-align: center;
+}
+.login-btn {
+  margin-top: 48rpx;
+  width: 100%;
+}
+.ui-btn {
+  margin: 0;
+  padding: 0 28rpx;
+  min-height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 16rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  border: 0;
+}
+.ui-btn::after { border: 0; }
+.ui-btn-primary {
+  background: #1e9e5a;
+  color: #fff;
+}
+.ui-btn[disabled] { opacity: 0.55; }
+.privacy-note {
+  margin-top: 24rpx;
+  color: #8a978f;
+  font-size: 20rpx;
+  line-height: 1.5;
+  text-align: center;
+}

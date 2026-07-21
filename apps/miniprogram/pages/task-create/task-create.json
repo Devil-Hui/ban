@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "新建排班任务",
+  "usingComponents": {
+    "schedule-grid": "/components/schedule-grid/schedule-grid"
+  }
+}

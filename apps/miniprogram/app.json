@@ -1,0 +1,32 @@
+{
+  "pages": ["pages/login/login", "pages/home/home", "pages/groups/groups", "pages/schedule/schedule", "pages/me/me", "pages/group-detail/group-detail", "pages/task-create/task-create", "pages/task-detail/task-detail", "pages/candidates/candidates", "pages/result/result", "pages/availability/availability"],
+  "window": {
+    "navigationBarTitleText": "智能排班",
+    "navigationBarBackgroundColor": "#f7faf8",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7faf8",
+    "backgroundTextStyle": "light"
+  },
+  "tabBar": {
+    "color": "#7b8780",
+    "selectedColor": "#1e9e5a",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/home/home", "text": "首页" },
+      { "pagePath": "pages/groups/groups", "text": "分组" },
+      { "pagePath": "pages/schedule/schedule", "text": "排班" },
+      { "pagePath": "pages/me/me", "text": "我的" }
+    ]
+  },
+  "usingComponents": {
+    "t-button": "tdesign-miniprogram/button/button",
+    "t-icon": "tdesign-miniprogram/icon/icon",
+    "t-tag": "tdesign-miniprogram/tag/tag",
+    "t-avatar": "tdesign-miniprogram/avatar/avatar",
+    "t-progress": "tdesign-miniprogram/progress/progress",
+    "t-cell": "tdesign-miniprogram/cell/cell",
+    "t-divider": "tdesign-miniprogram/divider/divider",
+    "t-empty": "tdesign-miniprogram/empty/empty"
+  }
+}

@@ -1,0 +1,118 @@
+.candidates-page { padding-top: 24rpx; padding-bottom: 180rpx; }
+.solver-state {
+  min-height: 360rpx;
+  margin-top: 32rpx;
+  padding: 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18rpx;
+  text-align: center;
+}
+.solver-state t-progress { width: 100%; margin-top: 16rpx; }
+.solver-icon {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 24rpx;
+  background: var(--brand-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.candidate-tabs {
+  display: flex;
+  white-space: nowrap;
+  margin: 20rpx 0 12rpx;
+}
+.candidate-tab {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 180rpx;
+  padding: 18rpx 20rpx;
+  margin-right: 12rpx;
+  border-radius: 14rpx;
+  background: #fff;
+  border: 2rpx solid var(--line);
+}
+.candidate-tab.on {
+  border-color: var(--brand);
+  background: #f3fbf6;
+}
+.tab-title { font-size: 28rpx; font-weight: 700; }
+.tab-score { color: var(--brand); font-size: 22rpx; font-weight: 600; }
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 22rpx 0;
+  margin-bottom: 8rpx;
+}
+.metrics view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  border-right: 1rpx solid var(--line);
+}
+.metrics view:last-child { border-right: 0; }
+.metric-value { font-size: 30rpx; font-weight: 700; }
+
+.grid-wrap {
+  padding: 16rpx;
+  overflow-x: auto;
+  margin-bottom: 12rpx;
+}
+.empty-hint {
+  text-align: center;
+  color: var(--muted);
+  padding: 24rpx;
+  font-size: 24rpx;
+}
+
+.fixed-action {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18rpx 28rpx calc(18rpx + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1rpx solid var(--line);
+}
+.ui-btn {
+  margin: 0;
+  padding: 0 28rpx;
+  min-height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  border: 0;
+  width: 100%;
+}
+.ui-btn::after { border: 0; }
+.ui-btn-primary { background: #1d4ed8; color: #fff; }
+.ui-btn[disabled] { opacity: 0.55; }
+
+.adjustment { margin-top: 20rpx; padding: 24rpx; }
+.adjustment-row {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+.adjustment-row:last-child { border-bottom: 0; }
+.adjustment-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 7rpx;
+}
+.picker-value {
+  color: var(--brand);
+  font-size: 22rpx;
+  white-space: nowrap;
+}

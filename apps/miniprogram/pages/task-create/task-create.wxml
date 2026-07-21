@@ -1,0 +1,343 @@
+<view class="page create-page">
+  <view class="stepper">
+    <block wx:for="{{steps}}" wx:key="index">
+      <view class="step {{step === item.index ? 'active' : ''}} {{step > item.index ? 'done' : ''}}">
+        <text>{{item.index}}</text>
+        <span>{{item.label}}</span>
+      </view>
+      <view wx:if="{{index < steps.length - 1}}" class="line {{step > item.index ? 'done' : ''}}"></view>
+    </block>
+  </view>
+
+  <!-- Step 1: 任务信息 -->
+  <view wx:if="{{step === 1}}">
+    <view class="eyebrow">NEW TASK</view>
+    <view class="title">创建排班任务</view>
+    <view class="subtitle">先说明这次需要安排什么</view>
+
+    <view class="form surface">
+      <view class="field">
+        <text>任务名称</text>
+        <input
+          placeholder="请输入任务名称"
+          value="{{title}}"
+          maxlength="160"
+          bindinput="onTitleInput"
+        />
+      </view>
+      <view class="field">
+        <text>开始日期</text>
+        <picker mode="date" value="{{dateStart}}" data-field="dateStart" bindchange="onDateChange">
+          <view class="picker-value">{{dateStart}} <t-icon name="chevron-down" size="26rpx" /></view>
+        </picker>
+      </view>
+      <view class="field">
+        <text>结束日期</text>
+        <picker mode="date" value="{{dateEnd}}" data-field="dateEnd" bindchange="onDateChange">
+          <view class="picker-value">{{dateEnd}} <t-icon name="chevron-down" size="26rpx" /></view>
+        </picker>
+      </view>
+      <view class="field">
+        <text>收集截止</text>
+        <picker mode="date" value="{{deadlineDate}}" data-field="deadline" bindchange="onDateChange">
+          <view class="picker-value">{{deadlineDate}} 23:59 <t-icon name="chevron-down" size="26rpx" /></view>
+        </picker>
+      </view>
+    </view>
+
+    <button class="ui-btn ui-btn-primary" bindtap="nextFromStep1">下一步</button>
+  </view>
+
+  <!-- Step 2: 时段与规则 -->
+  <view wx:elif="{{step === 2}}">
+    <view class="eyebrow">PERIOD SETUP</view>
+    <view class="title">设置时段</view>
+    <view class="subtitle">选择展示方式与常见起点，再微调生成课表骨架</view>
+
+    <view class="section-head">
+      <text class="section-title">展示模式</text>
+      <text class="mini-label">可多选</text>
+    </view>
+    <view class="chip-row">
+      <view
+        class="chip {{modeFlags.range ? 'active' : ''}}"
+        data-key="range"
+        bindtap="toggleMode"
+      >时间段</view>
+      <view
+        class="chip {{modeFlags.section ? 'active' : ''}}"
+        data-key="section"
+        bindtap="toggleMode"
+      >节次</view>
+      <view
+        wx:if="{{showCustomChip}}"
+        class="chip {{modeFlags.custom ? 'active' : ''}}"
+        data-key="custom"
+        bindtap="toggleMode"
+      >自定义</view>
+    </view>
+    <view class="mode-hint mini-label">当前：{{timeMode}}</view>
+
+    <view class="section-head">
+      <text class="section-title">常见校园起点</text>
+      <text class="mini-label">可改</text>
+    </view>
+    <view class="chip-row">
+      <view
+        wx:for="{{presetChips}}"
+        wx:key="code"
+        class="chip {{preset === item.code ? 'active' : ''}}"
+        data-preset="{{item.code}}"
+        bindtap="selectPreset"
+      >{{item.label}}</view>
+    </view>
+
+    <view wx:if="{{presetChosen}}" class="form surface tweak-form">
+      <view class="field">
+        <text>首节开始</text>
+        <picker mode="time" value="{{tweaks.firstStart}}" bindchange="onTweakTimeChange">
+          <view class="picker-value">{{tweaks.firstStart}} <t-icon name="chevron-down" size="26rpx" /></view>
+        </picker>
+      </view>
+      <view class="field">
+        <text>单节时长（分钟）</text>
+        <input type="number" value="{{tweaks.durationMin}}" data-field="durationMin" bindinput="onTweakInput" />
+      </view>
+      <view class="field">
+        <text>上午节数</text>
+        <input type="number" value="{{tweaks.morningCount}}" data-field="morningCount" bindinput="onTweakInput" />
+      </view>
+      <view class="field">
+        <text>下午节数</text>
+        <input type="number" value="{{tweaks.afternoonCount}}" data-field="afternoonCount" bindinput="onTweakInput" />
+      </view>
+      <view class="field">
+        <text>晚上节数</text>
+        <input type="number" value="{{tweaks.eveningCount}}" data-field="eveningCount" bindinput="onTweakInput" />
+      </view>
+      <view class="field">
+        <text>节间休息（分钟）</text>
+        <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
+      </view>
+    </view>
+
+    <button class="ui-btn ui-btn-primary" bindtap="generatePeriods">生成课表骨架</button>
+
+    <view wx:if="{{periods.length}}" class="period-preview surface">
+      <view class="between">
+        <text class="section-title">骨架预览</text>
+        <text class="pill">{{periods.length}} 节</text>
+      </view>
+      <view wx:for="{{periods}}" wx:key="code" class="period-line">
+        <text class="period-code">{{item.code}}</text>
+        <text class="period-label">{{item.label}}</text>
+      </view>
+    </view>
+    <view wx:else class="empty-hint mini-label">生成后可进入下一步预览</view>
+
+    <view class="bottom-actions">
+      <button class="ui-btn ui-btn-light" bindtap="back">上一步</button>
+      <button class="ui-btn ui-btn-primary" bindtap="nextFromStep2">下一步</button>
+    </view>
+  </view>
+
+  <!-- Step 3: 初预览（只读 schedule-grid） -->
+  <view wx:elif="{{step === 3}}">
+    <view class="eyebrow">PREVIEW</view>
+    <view class="title">初预览</view>
+    <view class="subtitle">确认课表骨架与日期范围，无误后再选定时段</view>
+
+    <view class="summary-row surface">
+      <text class="pill">{{timeMode}}</text>
+      <text class="mini-label">{{dateStart}} 至 {{dateEnd}}</text>
+      <text class="mini-label">{{periods.length}} 个时段 · {{dates.length}} 天</text>
+    </view>
+
+    <view class="grid-wrap surface">
+      <schedule-grid
+        mode="readonly"
+        periods="{{periods}}"
+        dates="{{dates}}"
+        timeMode="{{timeMode}}"
+      />
+    </view>
+
+    <view class="bottom-actions">
+      <button class="ui-btn ui-btn-light" bindtap="back">上一步</button>
+      <button class="ui-btn ui-btn-primary" bindtap="nextFromStep3">确认无误，下一步</button>
+    </view>
+  </view>
+
+  <!-- Step 4: 时间选定 -->
+  <view wx:elif="{{step === 4}}">
+    <view class="eyebrow">SELECT SLOTS</view>
+    <view class="title">时间选定</view>
+    <view class="subtitle">点选或行内拖选可排班时段，至少选 1 格</view>
+
+    <view class="summary-row surface">
+      <text class="pill">已选 {{selectedKeys.length}}</text>
+      <text class="mini-label">默认全不选 · 绿格为可排班</text>
+    </view>
+
+    <view class="grid-wrap surface">
+      <schedule-grid
+        id="slotSelectGrid"
+        mode="select"
+        periods="{{periods}}"
+        dates="{{dates}}"
+        timeMode="{{timeMode}}"
+        selectedKeys="{{selectedKeys}}"
+        bind:selectchange="onSelectChange"
+      />
+    </view>
+
+    <view class="bottom-actions">
+      <button class="ui-btn ui-btn-light" bindtap="back">上一步</button>
+      <button class="ui-btn ui-btn-primary" bindtap="nextFromStep4">下一步</button>
+    </view>
+  </view>
+
+  <!-- Step 5: 详细规则 + 人数画笔 + 提交 -->
+  <view wx:elif="{{step === 5}}">
+    <view class="eyebrow">RULES</view>
+    <view class="title">详细规则</view>
+    <view class="subtitle">配置收集规则，并用画笔标注每格人数上限</view>
+
+    <view class="section-head">
+      <text class="section-title">必填信息</text>
+      <text class="mini-label">可多选</text>
+    </view>
+    <view class="chip-row">
+      <view
+        wx:for="{{requiredFieldOptions}}"
+        wx:key="key"
+        class="chip {{requiredFieldMap[item.key] ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="toggleRequiredField"
+      >{{item.label}}</view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">参与范围</text>
+    </view>
+    <view class="chip-row">
+      <view
+        wx:for="{{participantScopeOptions}}"
+        wx:key="key"
+        class="chip {{participantScope === item.key ? 'active' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="selectParticipantScope"
+      >{{item.label}}</view>
+    </view>
+
+    <view wx:if="{{participantScope === 'reserved_list'}}" class="form surface reserved-box">
+      <view class="field field-textarea">
+        <text>预留名单</text>
+        <textarea
+          class="reserved-textarea"
+          placeholder="粘贴姓名，支持空格/逗号/顿号/换行分隔"
+          value="{{reservedText}}"
+          maxlength="2000"
+          auto-height
+          bindinput="onReservedTextInput"
+          bindblur="parseReserved"
+        />
+      </view>
+      <view class="reserved-actions">
+        <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="parseReserved">解析名单</button>
+        <text class="mini-label">已解析 {{reservedNames.length}} 人</text>
+      </view>
+      <view wx:if="{{reservedNames.length}}" class="reserved-list">
+        <view
+          wx:for="{{reservedNames}}"
+          wx:key="*this"
+          class="reserved-chip"
+        >
+          <text>{{item}}</text>
+          <text class="reserved-del" data-index="{{index}}" catchtap="removeReservedName">×</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="form surface">
+      <view class="field">
+        <text>收集截止</text>
+        <picker mode="date" value="{{deadlineDate}}" data-field="deadline" bindchange="onDateChange">
+          <view class="picker-value">{{deadlineDate}} 23:59 <t-icon name="chevron-down" size="26rpx" /></view>
+        </picker>
+      </view>
+      <view class="field field-row">
+        <view class="field-row-main">
+          <text>提交后允许修改</text>
+          <text class="mini-label">开启后需设置可修改次数</text>
+        </view>
+        <switch checked="{{allowEditAfterSubmit}}" color="#1e9e5a" bindchange="onAllowEditChange" />
+      </view>
+      <view wx:if="{{allowEditAfterSubmit}}" class="field">
+        <text>可修改次数</text>
+        <input type="number" value="{{maxEditCount}}" bindinput="onMaxEditCountInput" />
+      </view>
+      <view class="field">
+        <text>截止前提醒</text>
+        <picker mode="selector" range="{{remindOptionLabels}}" value="{{remindIndex}}" bindchange="onRemindChange">
+          <view class="picker-value">{{remindOptionLabels[remindIndex]}} <t-icon name="chevron-down" size="26rpx" /></view>
+        </picker>
+      </view>
+      <view class="field field-row">
+        <view class="field-row-main">
+          <text>保存为模板</text>
+          <text class="mini-label">复用本次时段骨架</text>
+        </view>
+        <switch checked="{{saveAsTemplate}}" color="#1e9e5a" bindchange="onSaveAsTemplateChange" />
+      </view>
+      <view wx:if="{{saveAsTemplate}}" class="field">
+        <text>模板名称</text>
+        <input placeholder="请输入模板名称" value="{{templateName}}" maxlength="120" bindinput="onTemplateNameInput" />
+      </view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">人数画笔</text>
+      <text class="mini-label">未刷格默认 1 人</text>
+    </view>
+    <view class="paint-bar surface">
+      <view class="paint-cap">
+        <text class="mini-label">每格上限 N</text>
+        <input class="cap-input" type="number" value="{{maxCapacity}}" bindinput="onMaxCapacityInput" />
+      </view>
+      <view class="chip-row paint-tools">
+        <view
+          wx:for="{{paintTools}}"
+          wx:key="key"
+          class="chip tool-chip {{activeTool === item.value ? 'active' : ''}} {{item.value === 'erase' ? 'erase' : ''}}"
+          data-tool="{{item.value}}"
+          bindtap="selectPaintTool"
+        >{{item.label}}</view>
+      </view>
+      <text class="mini-label paint-hint">仅已选定格可点；擦除后提交按 1 人</text>
+    </view>
+
+    <view class="summary-row surface">
+      <text class="pill">已选 {{selectedKeys.length}} 格</text>
+      <text class="mini-label">工具：{{activeTool === 'erase' ? '擦除' : activeTool}}</text>
+    </view>
+
+    <view class="grid-wrap surface">
+      <schedule-grid
+        mode="paint"
+        periods="{{periods}}"
+        dates="{{dates}}"
+        timeMode="{{timeMode}}"
+        selectedKeys="{{selectedKeys}}"
+        peopleByKey="{{peopleByKey}}"
+        activeTool="{{activeTool}}"
+        bind:paint="onPaint"
+      />
+    </view>
+
+    <view class="bottom-actions">
+      <button class="ui-btn ui-btn-light" bindtap="back" disabled="{{submitting}}">上一步</button>
+      <button class="ui-btn ui-btn-primary" bindtap="submit" disabled="{{submitting}}">{{submitting ? '提交中...' : '发布并开始收集'}}</button>
+    </view>
+  </view>
+</view>

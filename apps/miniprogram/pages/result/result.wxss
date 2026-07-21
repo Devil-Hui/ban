@@ -1,0 +1,84 @@
+.result-page { padding-top: 24rpx; padding-bottom: 48rpx; }
+.result-banner {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 25rpx;
+  margin-top: 28rpx;
+  background: var(--brand-soft);
+  border-color: #ccebd7;
+}
+.success-mark {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 50%;
+  background: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.grid-wrap {
+  padding: 16rpx;
+  overflow-x: auto;
+  margin-bottom: 8rpx;
+}
+.grid-hint {
+  display: block;
+  text-align: center;
+  margin-top: 12rpx;
+}
+.assignment-card {
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+.assignment-time {
+  color: var(--ink);
+  font-size: 27rpx;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.name-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 22rpx;
+}
+.name-pill {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 7rpx 12rpx 7rpx 7rpx;
+  border-radius: 999rpx;
+  background: #f2f6f3;
+  font-size: 22rpx;
+}
+.name-pill.mine {
+  background: #d9f2e4;
+  border: 1rpx solid #9ed9b5;
+}
+.result-actions {
+  display: flex;
+  gap: 14rpx;
+  margin-top: 24rpx;
+}
+.result-actions .ui-btn { flex: 1; width: auto; }
+.ui-btn {
+  margin: 0;
+  padding: 0 24rpx;
+  min-height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  border: 0;
+}
+.ui-btn::after { border: 0; }
+.ui-btn-primary { background: #1d4ed8; color: #fff; }
+.ui-btn-light { background: #eef2ff; color: #1e293b; }
+.state-box {
+  min-height: 400rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}

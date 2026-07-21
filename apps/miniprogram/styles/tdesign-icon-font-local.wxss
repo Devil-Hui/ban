@@ -1,0 +1,8 @@
+/* Local TDesign icon font — no CDN (fixes ERR_CACHE_MISS in DevTools) */
+@font-face {
+  font-family: t;
+  src: url('/assets/fonts/t.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}

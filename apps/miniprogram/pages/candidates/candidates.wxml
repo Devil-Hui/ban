@@ -1,0 +1,86 @@
+<view class="page candidates-page">
+  <view class="eyebrow">AI SCHEDULING</view>
+  <view class="title">候选方案</view>
+  <view class="subtitle">点选方案查看课表，再决定发布哪一套</view>
+
+  <view wx:if="{{status !== 'completed' && status !== 'failed'}}" class="solver-state surface">
+    <view class="solver-icon"><t-icon name="system-sum" size="48rpx" color="#1e9e5a" /></view>
+    <view class="section-title">正在智能排班</view>
+    <view class="subtitle">冻结快照并计算可行方案</view>
+    <t-progress percentage="{{progress}}" color="#1e9e5a" />
+    <text class="mini-label">{{progress}}%</text>
+  </view>
+
+  <view wx:elif="{{status === 'failed'}}" class="solver-state surface">
+    <t-icon name="error-circle" size="58rpx" color="#df5c4c" />
+    <view class="section-title">暂时没有可行方案</view>
+    <view class="subtitle">请放宽人数、固定人员或可用时间约束后重试</view>
+  </view>
+
+  <block wx:else>
+    <scroll-view scroll-x class="candidate-tabs" enable-flex>
+      <view
+        wx:for="{{candidates}}"
+        wx:key="id"
+        class="candidate-tab {{selected === index ? 'on' : ''}}"
+        data-index="{{index}}"
+        bindtap="select"
+      >
+        <text class="tab-title">方案 {{index + 1}}</text>
+        <text class="mini-label">{{item.explanation.strategy}}</text>
+        <text class="tab-score">{{item.score}} 分</text>
+      </view>
+    </scroll-view>
+
+    <view class="metrics surface">
+      <view>
+        <text class="metric-value">{{candidates[selected].explanation.preferredAssignments}}</text>
+        <text class="mini-label">偏好满足</text>
+      </view>
+      <view>
+        <text class="metric-value">{{candidates[selected].explanation.loadRange[0]}}-{{candidates[selected].explanation.loadRange[1]}}</text>
+        <text class="mini-label">负荷范围</text>
+      </view>
+      <view>
+        <text class="metric-value">{{candidates[selected].score}}</text>
+        <text class="mini-label">综合评分</text>
+      </view>
+    </view>
+
+    <view class="section-head">
+      <text class="section-title">方案课表</text>
+      <text class="mini-label">格内数字=排班人数</text>
+    </view>
+    <view wx:if="{{planDates.length && planPeriods.length}}" class="grid-wrap surface">
+      <schedule-grid
+        mode="readonly"
+        periods="{{planPeriods}}"
+        dates="{{planDates}}"
+        selectedKeys="{{planSelectedKeys}}"
+        peopleByKey="{{planPeopleByKey}}"
+        timeMode="{{task.timeMode || 'section_range'}}"
+      />
+    </view>
+    <view wx:else class="empty-hint">暂无课表数据</view>
+
+    <view wx:if="{{selectedRows.length}}" class="adjustment surface">
+      <view class="section-title">发布前微调</view>
+      <view class="mini-label">时间统一为「日期 HH:mm-HH:mm」</view>
+      <view wx:for="{{selectedRows}}" wx:key="key" class="adjustment-row">
+        <view class="adjustment-copy">
+          <text>{{item.slotLabel}}</text>
+          <text class="mini-label">当前：{{item.displayName}}</text>
+        </view>
+        <picker range="{{members}}" range-key="displayName" data-row="{{index}}" bindchange="adjust">
+          <view class="picker-value">替换 <t-icon name="chevron-down" size="24rpx" /></view>
+        </picker>
+      </view>
+    </view>
+
+    <view class="fixed-action">
+      <button class="ui-btn ui-btn-primary" bindtap="publish" disabled="{{publishing}}">
+        {{publishing ? '发布中...' : '发布选中的方案'}}
+      </button>
+    </view>
+  </block>
+</view>

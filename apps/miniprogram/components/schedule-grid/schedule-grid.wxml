@@ -1,0 +1,47 @@
+<view class="sg {{mode}}">
+  <!-- Header: dates as columns -->
+  <view class="sg-row sg-head">
+    <view class="sg-cell sg-label sg-corner">时段</view>
+    <view
+      class="sg-cell sg-date-h"
+      wx:for="{{dateHeaders}}"
+      wx:for-item="h"
+      wx:for-index="di"
+      wx:key="*this"
+    >
+      <text class="sg-date-text">{{h}}</text>
+    </view>
+  </view>
+
+  <!-- Body: one row per period -->
+  <view
+    class="sg-row"
+    wx:for="{{rows}}"
+    wx:for-item="row"
+    wx:key="code"
+    id="sg-row-{{row.code}}"
+    data-period="{{row.code}}"
+    bindtouchstart="onRowTouchStart"
+    bindtouchmove="onRowTouchMove"
+    bindtouchend="onRowTouchEnd"
+    bindtouchcancel="onRowTouchEnd"
+  >
+    <view class="sg-cell sg-label" id="sg-label-{{row.code}}">
+      <text class="sg-period-label">{{row.label}}</text>
+    </view>
+    <view
+      class="sg-cell sg-slot {{item.selected ? 'is-selected' : ''}} {{item.disabled ? 'is-disabled' : ''}} {{item.interactive ? 'is-interactive' : ''}}"
+      wx:for="{{row.cells}}"
+      wx:for-item="item"
+      wx:key="key"
+      data-key="{{item.key}}"
+      data-period="{{row.code}}"
+      data-date="{{item.date}}"
+      data-date-index="{{item.dateIndex}}"
+      bindtap="onCellTap"
+    >
+      <text wx:if="{{item.showPeople}}" class="sg-people">{{item.people}}</text>
+      <text wx:else class="sg-dot"></text>
+    </view>
+  </view>
+</view>

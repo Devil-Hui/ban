@@ -1,0 +1,147 @@
+<view class="page schedule-page">
+  <view class="topbar">
+    <view>
+      <view class="eyebrow">AVAILABILITY</view>
+      <view class="title">填写可用时间</view>
+      <view class="subtitle">点击单元格循环切换不可用、可用和优先</view>
+    </view>
+    <view class="month-switch">
+      <t-icon name="calendar" size="34rpx" color="#1e9e5a" />
+      <text>{{days.length}} 天</text>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="state-box">正在加载任务...</view>
+  <view wx:elif="{{!task}}" class="state-box surface">
+    <t-icon name="calendar" size="64rpx" color="#9ba79f" />
+    <text>请从任务详情进入填写</text>
+  </view>
+
+  <block wx:else>
+    <view class="task-strip surface">
+      <view>
+        <view class="mini-label">当前任务</view>
+        <view class="task-name">{{task.title}}</view>
+      </view>
+      <view class="deadline">
+        <text>收集截止</text>
+        <text class="time-left">{{deadlineText || task.deadline}}</text>
+      </view>
+    </view>
+
+    <view class="invite-entry surface">
+      <view class="section-title">邀请码</view>
+      <view class="subtitle">{{shareToken ? '已绑定邀请码，可直接提交' : '分享进入或手动输入邀请码（组外访客必填）'}}</view>
+      <view class="invite-row">
+        <input
+          class="profile-input invite-input"
+          placeholder="输入 8 位邀请码"
+          value="{{inviteCodeInput}}"
+          maxlength="16"
+          bindinput="onInviteCodeInput"
+        />
+        <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="applyInviteCode">应用</button>
+      </view>
+    </view>
+
+    <view wx:if="{{needName || needStudentId || needPhone}}" class="profile-card surface">
+      <view class="section-title">必填资料</view>
+      <view class="subtitle">发布者要求提交时附带以下信息</view>
+      <view wx:if="{{needName}}" class="profile-field">
+        <text class="mini-label">姓名</text>
+        <input
+          class="profile-input"
+          placeholder="请输入姓名"
+          value="{{profileName}}"
+          data-field="profileName"
+          bindinput="onProfileInput"
+        />
+      </view>
+      <view wx:if="{{needStudentId}}" class="profile-field">
+        <text class="mini-label">学号</text>
+        <input
+          class="profile-input"
+          placeholder="请输入学号"
+          value="{{profileStudentId}}"
+          data-field="profileStudentId"
+          bindinput="onProfileInput"
+        />
+      </view>
+      <view wx:if="{{needPhone}}" class="profile-field">
+        <text class="mini-label">手机号</text>
+        <input
+          class="profile-input"
+          placeholder="请输入手机号"
+          value="{{profilePhone}}"
+          data-field="profilePhone"
+          bindinput="onProfileInput"
+        />
+      </view>
+    </view>
+
+    <view class="mode-switch">
+      <view class="mode {{mode === 'calendar' ? 'active' : ''}}" data-mode="calendar" bindtap="setMode">
+        <t-icon name="calendar" size="28rpx" />日历
+      </view>
+      <view class="mode {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="setMode">
+        <t-icon name="view-list" size="28rpx" />列表
+      </view>
+    </view>
+
+    <view wx:if="{{mode === 'calendar'}}">
+      <view class="date-head">
+        <view class="time-column"></view>
+        <view wx:for="{{days}}" wx:key="date" class="date-cell">
+          <text class="weekday">周{{item.week}}</text>
+          <text class="date">{{item.day}}</text>
+        </view>
+      </view>
+      <view class="grid surface">
+        <view wx:for="{{rows}}" wx:key="label" wx:for-index="row" class="slot-row">
+          <view class="time-column">
+            <text>{{item.label}}</text>
+            <text class="slot-label">时段</text>
+          </view>
+          <view
+            wx:for="{{item.states}}"
+            wx:key="index"
+            wx:for-index="col"
+            class="slot-cell {{item}}"
+            data-row="{{row}}"
+            data-col="{{col}}"
+            bindtap="cycleState"
+          >
+            <t-icon wx:if="{{item === 'preferred'}}" name="star-filled" size="20rpx" color="#fff" />
+            <t-icon wx:if="{{item === 'unavailable'}}" name="close" size="20rpx" color="#fff" />
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="assignment-list surface">
+      <view wx:for="{{rows}}" wx:key="label" class="assignment">
+        <view class="date-badge">
+          <text>{{item.label}}</text>
+          <text>时段</text>
+        </view>
+        <view class="assignment-copy">
+          <text class="task-name">{{item.states.length}} 个日期</text>
+          <text class="mini-label">切换到日历视图逐日填写</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="legend">
+      <view><text class="legend-dot unavailable"></text>不可用</view>
+      <view><text class="legend-dot available"></text>可用</view>
+      <view><text class="legend-dot preferred"></text>优先</view>
+    </view>
+
+    <view class="schedule-actions">
+      <button class="ui-btn ui-btn-light" bindtap="undo" disabled="{{saving}}">撤销</button>
+      <button class="ui-btn ui-btn-primary" bindtap="submit" disabled="{{saving}}">
+        {{saving ? '提交中...' : (submitted ? '更新提交' : '提交可用时间')}}
+      </button>
+    </view>
+  </block>
+</view>

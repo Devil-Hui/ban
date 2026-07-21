@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "任务详情",
+  "usingComponents": {
+    "schedule-grid": "/components/schedule-grid/schedule-grid"
+  }
+}

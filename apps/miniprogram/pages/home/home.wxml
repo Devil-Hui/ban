@@ -1,0 +1,37 @@
+<view class="page home-page">
+  <view class="topbar">
+    <view>
+      <view class="eyebrow">SMART SCHEDULING</view>
+      <view class="title">早上好，{{user.nickname || '同学'}}</view>
+      <view class="subtitle">今天也把时间安排得刚刚好</view>
+    </view>
+  </view>
+  <view wx:if="{{loading}}" class="state-box">正在加载分组...</view>
+  <block wx:else>
+    <view class="focus surface">
+      <view class="focus-copy">
+        <view class="mini-label">今日排班概览</view>
+        <view class="focus-number">{{groups.length}} <text>个分组</text></view>
+        <view class="focus-meta"><text class="dot"></text> {{groups.length ? '进入分组查看待办' : '创建或加入一个排班分组'}}</view>
+      </view>
+      <view class="ring"><view class="ring-inner"><text>{{groups.length ? '今日' : '开始'}}</text><text class="mini-label">排班</text></view></view>
+    </view>
+    <view class="quick-actions">
+      <view wx:for="{{actions}}" wx:key="label" class="quick-action" data-page="{{item.page}}" data-action="{{item.action}}" bindtap="onActionTap">
+        <view class="quick-icon"><t-icon name="{{item.icon}}" size="38rpx" color="#1e9e5a" /></view><text>{{item.label}}</text>
+      </view>
+    </view>
+    <view class="section-head"><text class="section-title">我的分组</text><text class="section-link" bindtap="onActionTap" data-page="/pages/groups/groups">全部分组 →</text></view>
+    <view wx:if="{{!groups.length}}" class="state-box surface">暂无分组，点击上方入口开始</view>
+    <view wx:for="{{groups}}" wx:key="id" class="group-card surface" data-index="{{index}}" bindtap="onGroupTap">
+      <view class="between">
+        <view class="row gap-12">
+          <view class="group-mark {{item.tone}}"><t-icon name="usergroup" size="34rpx" color="#fff" /></view>
+          <view class="card-title">{{item.name}}</view>
+        </view>
+        <view class="role {{item.tone}}">{{item.role}}</view>
+      </view>
+      <view class="card-foot"><text class="mini-label">进入分组查看任务</text><t-icon name="chevron-right" size="30rpx" color="#9ba79f" /></view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,26 @@
+<view class="login-page">
+  <view class="brand-mark"><t-icon name="calendar" size="52rpx" color="#ffffff" /></view>
+  <view class="eyebrow">SMART SCHEDULING</view>
+  <view class="title">登录智能排班</view>
+  <view class="subtitle">使用微信身份进入你的排班工作区</view>
+
+  <view wx:if="{{configurationError}}" class="error-panel">
+    <t-icon name="error-circle" size="36rpx" color="#c64f42" />
+    <view>
+      <text>服务配置不可用</text>
+      <text class="error-detail">{{configurationError}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{error}}" class="login-error">{{error}}</view>
+
+  <button
+    class="ui-btn ui-btn-primary login-btn"
+    loading="{{loading}}"
+    disabled="{{!!configurationError || loading}}"
+    bindtap="submit"
+  >
+    微信登录
+  </button>
+  <view class="privacy-note">登录即表示你同意仅将账号信息用于排班协作</view>
+</view>

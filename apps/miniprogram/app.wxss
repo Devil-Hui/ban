@@ -1,0 +1,47 @@
+@import 'miniprogram_npm/tdesign-miniprogram/common/style/theme/_index.wxss';
+@import './styles/design-tokens.wxss';
+/* Override TDesign icon CDN with local font (must load after npm icon styles). */
+@import './styles/tdesign-icon-font-local.wxss';
+
+page {
+  --brand: #1e9e5a;
+  --brand-soft: #e6f6eb;
+  --ink: #17221b;
+  --subtle: #6d7a71;
+  --muted: #9ba79f;
+  --canvas: #f7faf8;
+  --surface: #ffffff;
+  --line: rgba(23, 34, 27, 0.08);
+  --warning: #e6a21a;
+  --danger: #df5c4c;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  font-size: 28rpx;
+}
+
+view, text, button { box-sizing: border-box; }
+button::after { border: 0; }
+.page { min-height: 100vh; padding: 28rpx 28rpx 150rpx; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28rpx; }
+.eyebrow { color: var(--brand); font-size: 22rpx; font-weight: 600; letter-spacing: 2rpx; }
+.title { margin-top: 8rpx; font-size: 48rpx; line-height: 1.1; font-weight: 700; letter-spacing: 0; }
+.subtitle { color: var(--subtle); font-size: 25rpx; line-height: 1.5; }
+.surface { background: var(--surface); border: 1rpx solid var(--line); border-radius: 18rpx; }
+.section-head { display: flex; justify-content: space-between; align-items: center; margin: 34rpx 0 16rpx; }
+.section-title { font-size: 31rpx; font-weight: 650; }
+.section-link { color: var(--brand); font-size: 24rpx; }
+.mini-label { color: var(--muted); font-size: 22rpx; }
+.number { font-size: 42rpx; font-weight: 700; line-height: 1; }
+.green { color: var(--brand); }
+.row { display: flex; align-items: center; }
+.between { display: flex; align-items: center; justify-content: space-between; }
+.gap-12 { gap: 12rpx; }
+.gap-16 { gap: 16rpx; }
+.mt-16 { margin-top: 16rpx; }
+.mt-24 { margin-top: 24rpx; }
+.btn-full { width: 100%; }
+.avatar-stack { display: flex; align-items: center; }
+.avatar-stack t-avatar { margin-left: -10rpx; border: 3rpx solid #fff; }
+.avatar-stack t-avatar:first-child { margin-left: 0; }
+.pill { padding: 7rpx 14rpx; border-radius: 999rpx; background: var(--brand-soft); color: var(--brand); font-size: 22rpx; }
