@@ -93,3 +93,44 @@
 .ui-btn[disabled] {
   opacity: 0.55;
 }
+
+.state-box {
+  min-height: 56vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14rpx;
+  padding: 40rpx 32rpx;
+  text-align: center;
+  color: var(--muted);
+  font-size: 27rpx;
+}
+
+.state-box .t-icon {
+  margin-bottom: 8rpx;
+}
+
+.state-title {
+  font-size: 32rpx;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.invite-code-hint {
+  margin-top: 8rpx;
+  padding: 18rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  background: #f3f6f4;
+  border-radius: 14rpx;
+}
+
+.invite-code-hint .code {
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 6rpx;
+  color: #1d4ed8;
+}

@@ -133,6 +133,13 @@ Page({
     if (this.data.taskId) this.load();
   },
 
+  onReady() {
+    // Ensure the "..." share menu entry is enabled so managers can forward the invite.
+    if (typeof wx.showShareMenu === 'function') {
+      wx.showShareMenu({ menus: ['shareAppMessage'] });
+    }
+  },
+
   onShareAppMessage() {
     const taskId = this.data.taskId;
     const code = this.data.inviteCode;

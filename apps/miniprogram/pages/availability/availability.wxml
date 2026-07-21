@@ -1,5 +1,5 @@
 <view class="page schedule-page">
-  <view class="topbar">
+  <view wx:if="{{accessState === 'open'}}" class="topbar">
     <view>
       <view class="eyebrow">AVAILABILITY</view>
       <view class="title">填写可用时间</view>
@@ -12,6 +12,66 @@
   </view>
 
   <view wx:if="{{loading}}" class="state-box">正在加载任务...</view>
+
+  <view wx:elif="{{accessState === 'membershipRequired'}}" class="state-box surface">
+    <t-icon name="user-circle" size="64rpx" color="#9ba79f" />
+    <text class="state-title">需要加入分组才能填写</text>
+    <text class="subtitle">{{groupName ? groupName + ' 仅限组员填写' : '该任务仅限组员填写'}}</text>
+    <view wx:if="{{groupInviteCode}}" class="invite-code-hint">
+      <text class="mini-label">本分组邀请码</text>
+      <text class="code">{{groupInviteCode}}</text>
+      <text class="mini-label">在「我的分组」中输入即可加入</text>
+    </view>
+  </view>
+
+  <view wx:elif="{{accessState === 'tokenMissing'}}" class="state-box surface">
+    <t-icon name="link" size="64rpx" color="#9ba79f" />
+    <text class="state-title">请通过分享链接进入</text>
+    <text class="subtitle">该任务需要有效的邀请码才能填写</text>
+    <view class="invite-row">
+      <input
+        class="profile-input invite-input"
+        placeholder="输入邀请码"
+        value="{{inviteCodeInput}}"
+        maxlength="16"
+        bindinput="onInviteCodeInput"
+      />
+      <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="applyInviteCode">应用</button>
+    </view>
+  </view>
+
+  <view wx:elif="{{accessState === 'tokenUsed'}}" class="state-box surface">
+    <t-icon name="close-circle" size="64rpx" color="#9ba79f" />
+    <text class="state-title">邀请链接已失效</text>
+    <text class="subtitle">该链接已被使用，无法重复填写</text>
+    <view class="invite-row">
+      <input
+        class="profile-input invite-input"
+        placeholder="输入新的邀请码"
+        value="{{inviteCodeInput}}"
+        maxlength="16"
+        bindinput="onInviteCodeInput"
+      />
+      <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="applyInviteCode">应用</button>
+    </view>
+  </view>
+
+  <view wx:elif="{{accessState === 'tokenInvalid'}}" class="state-box surface">
+    <t-icon name="close-circle" size="64rpx" color="#9ba79f" />
+    <text class="state-title">邀请链接无效</text>
+    <text class="subtitle">链接可能已过期，或邀请码输入有误</text>
+    <view class="invite-row">
+      <input
+        class="profile-input invite-input"
+        placeholder="输入新的邀请码"
+        value="{{inviteCodeInput}}"
+        maxlength="16"
+        bindinput="onInviteCodeInput"
+      />
+      <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="applyInviteCode">应用</button>
+    </view>
+  </view>
+
   <view wx:elif="{{!task}}" class="state-box surface">
     <t-icon name="calendar" size="64rpx" color="#9ba79f" />
     <text>请从任务详情进入填写</text>
@@ -29,13 +89,13 @@
       </view>
     </view>
 
-    <view class="invite-entry surface">
+    <view wx:if="{{!isMember}}" class="invite-entry surface">
       <view class="section-title">邀请码</view>
       <view class="subtitle">{{shareToken ? '已绑定邀请码，可直接提交' : '分享进入或手动输入邀请码（组外访客必填）'}}</view>
       <view class="invite-row">
         <input
           class="profile-input invite-input"
-          placeholder="输入 8 位邀请码"
+          placeholder="输入邀请码"
           value="{{inviteCodeInput}}"
           maxlength="16"
           bindinput="onInviteCodeInput"
@@ -44,7 +104,7 @@
       </view>
     </view>
 
-    <view wx:if="{{needName || needStudentId || needPhone}}" class="profile-card surface">
+    <view wx:if="{{needName || needStudentId || needPhone || customFields.length}}" class="profile-card surface">
       <view class="section-title">必填资料</view>
       <view class="subtitle">发布者要求提交时附带以下信息</view>
       <view wx:if="{{needName}}" class="profile-field">
@@ -75,6 +135,16 @@
           value="{{profilePhone}}"
           data-field="profilePhone"
           bindinput="onProfileInput"
+        />
+      </view>
+      <view wx:for="{{customFields}}" wx:key="key" class="profile-field">
+        <text class="mini-label">{{item.label}}</text>
+        <input
+          class="profile-input"
+          placeholder="请输入{{item.label}}"
+          value="{{customValues[item.key]}}"
+          data-key="{{item.key}}"
+          bindinput="onCustomInput"
         />
       </view>
     </view>

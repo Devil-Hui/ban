@@ -37,6 +37,10 @@
           <view class="picker-value">{{dateEnd}} <t-icon name="chevron-down" size="26rpx" /></view>
         </picker>
       </view>
+      <view class="quick-week">
+        <view class="quick-btn" bindtap="onQuickWeek" data-which="this">本周</view>
+        <view class="quick-btn" bindtap="onQuickWeek" data-which="next">下周</view>
+      </view>
       <view class="field">
         <text>收集截止</text>
         <picker mode="date" value="{{deadlineDate}}" data-field="deadline" bindchange="onDateChange">
@@ -79,7 +83,7 @@
     <view class="mode-hint mini-label">当前：{{timeMode}}</view>
 
     <view class="section-head">
-      <text class="section-title">常见校园起点</text>
+      <text class="section-title">常用作息起点</text>
       <text class="mini-label">可改</text>
     </view>
     <view class="chip-row">
@@ -128,9 +132,11 @@
         <text class="section-title">骨架预览</text>
         <text class="pill">{{periods.length}} 节</text>
       </view>
-      <view wx:for="{{periods}}" wx:key="code" class="period-line">
-        <text class="period-code">{{item.code}}</text>
-        <text class="period-label">{{item.label}}</text>
+      <view class="period-grid">
+        <view wx:for="{{periods}}" wx:key="code" class="period-card">
+          <text class="period-code">{{item.code}}</text>
+          <text class="period-label">{{item.label}}</text>
+        </view>
       </view>
     </view>
     <view wx:else class="empty-hint mini-label">生成后可进入下一步预览</view>
@@ -215,6 +221,15 @@
         data-key="{{item.key}}"
         bindtap="toggleRequiredField"
       >{{item.label}}</view>
+    </view>
+    <view class="custom-field-row">
+      <input
+        class="custom-input"
+        placeholder="如 宿舍号"
+        value="{{customInput}}"
+        bindinput="onCustomInput"
+      />
+      <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="addCustomField">+ 添加</button>
     </view>
 
     <view class="section-head">

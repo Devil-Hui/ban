@@ -102,6 +102,50 @@ function enumerateDates(dateStart, dateEnd, maxDays = MAX_TASK_SPAN_DAYS) {
   return out.length ? out : [start];
 }
 
+/** Local "today" as YYYY-MM-DD (device clock), used by week shortcuts. */
+function localTodayYmd() {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/**
+ * Monday of the week containing ymd (Monday is the first day of the week).
+ * @param {string} ymd 'YYYY-MM-DD'
+ * @returns {string} Monday as 'YYYY-MM-DD' ('' if invalid)
+ */
+function mondayOfYmd(ymd) {
+  const base = formatYmd(ymd);
+  if (!base) return '';
+  const d = new Date(`${base}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+  const dow = d.getDay(); // 0=Sun .. 6=Sat
+  const back = dow === 0 ? -6 : 1 - dow;
+  return addDaysYmd(base, back);
+}
+
+/**
+ * Inclusive natural week (Mon~Sun) for the given ymd.
+ * @returns {{start:string, end:string}} always 7 days (== MAX_TASK_SPAN_DAYS)
+ */
+function weekRange(ymd) {
+  const mon = mondayOfYmd(ymd);
+  if (!mon) return { start: '', end: '' };
+  return { start: mon, end: addDaysYmd(mon, 6) };
+}
+
+/** This week (Mon~Sun) based on today. */
+function thisWeekRange() {
+  return weekRange(localTodayYmd());
+}
+
+/** Next week (Mon~Sun) relative to the given ymd (defaults to today). */
+function nextWeekRange(ymd) {
+  const mon = mondayOfYmd(ymd || localTodayYmd());
+  if (!mon) return { start: '', end: '' };
+  const nextMon = addDaysYmd(mon, 7);
+  return { start: nextMon, end: addDaysYmd(nextMon, 6) };
+}
+
 module.exports = {
   pad2,
   formatYmd,
@@ -113,4 +157,8 @@ module.exports = {
   addDaysYmd,
   inclusiveDaySpan,
   MAX_TASK_SPAN_DAYS,
+  mondayOfYmd,
+  weekRange,
+  thisWeekRange,
+  nextWeekRange,
 };

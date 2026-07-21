@@ -18,6 +18,18 @@ function requiredFieldsOf(task) {
   return Array.isArray(task?.rules?.requiredFields) ? task.rules.requiredFields : [];
 }
 
+/** Map a domain error code to a friendly Chinese toast. */
+function messageForShareCode(code, fallback) {
+  const map = {
+    SHARE_TOKEN_USED: '该邀请链接已被使用，无法重复提交',
+    SHARE_TOKEN_INVALID: '邀请链接无效或已过期',
+    MEMBERSHIP_REQUIRED: '请先加入该分组后再填写',
+    RESERVED_NAME_MISMATCH: '姓名与预留名单不一致，无法提交',
+    INVALID_REQUIRED_FIELD: '必填项格式不正确，请检查后重试',
+  };
+  return map[code] || fallback;
+}
+
 Page({
   data: {
     taskId: '',
@@ -38,6 +50,17 @@ Page({
     deadlineText: '',
     shareToken: '',
     inviteCodeInput: '',
+
+    // E7: share-based participation & one-time token awareness
+    isMember: false,
+    accessState: '', // '' | 'open' | 'membershipRequired' | 'tokenMissing' | 'tokenUsed' | 'tokenInvalid' | 'unknown'
+    landingContext: null,
+    groupName: '',
+    groupInviteCode: '',
+
+    // E6: dynamic custom required fields
+    customFields: [], // [{ key, label }]
+    customValues: {}, // { [key]: string }
   },
 
   onLoad(options) {
@@ -52,13 +75,14 @@ Page({
       shareToken,
       inviteCodeInput: shareToken,
     });
-    this.load(taskId);
+    this.loadLandingContext();
   },
 
   onInviteCodeInput(e) {
     this.setData({ inviteCodeInput: e.detail.value || '' });
   },
 
+  /** Apply an invite code, then re-derive landing context so the page re-evaluates access. */
   applyInviteCode() {
     const code = String(this.data.inviteCodeInput || '').trim().toUpperCase();
     if (!code) {
@@ -68,13 +92,74 @@ Page({
     wx.setStorageSync('scheduling-share-token', code);
     this.setData({ shareToken: code, inviteCodeInput: code });
     wx.showToast({ title: '邀请码已应用', icon: 'success' });
+    this.loadLandingContext();
+  },
+
+  /**
+   * Read-only landing context (no membership required). Determines whether the
+   * current visitor may fill the form and, for external invitees, whether the
+   * share token is still usable.
+   */
+  loadLandingContext() {
+    const id = this.data.taskId;
+    if (!id) return this.setData({ loading: false, accessState: 'unknown' });
+    this.setData({ loading: true });
+    const token = this.data.shareToken;
+    const qs = token ? `?shareToken=${encodeURIComponent(token)}` : '';
+    return api
+      .request(`/tasks/${id}/landing-context${qs}`)
+      .then((ctx) => {
+        const accessState = this.deriveAccessState(ctx);
+        this.setData({
+          landingContext: ctx,
+          isMember: Boolean(ctx && ctx.isMember),
+          groupName: (ctx && ctx.groupName) || '',
+          groupInviteCode: (ctx && ctx.groupInviteCode) || '',
+          accessState,
+        });
+        if (accessState === 'open') {
+          this.load();
+        } else {
+          this.setData({ loading: false });
+        }
+      })
+      .catch(() => {
+        // Landing context itself failed (e.g. task not found): fall back to the
+        // direct task fetch (previous behaviour) so members can still load.
+        this.setData({
+          landingContext: null,
+          isMember: false,
+          accessState: 'unknown',
+        });
+        this.load();
+      });
+  },
+
+  /** Derive the page access state from the landing-context payload. */
+  deriveAccessState(ctx) {
+    if (!ctx) return 'unknown';
+    if (ctx.isMember) return 'open';
+    const scope = ctx.participantScope;
+    if (scope === 'all_members') return 'membershipRequired';
+    // share_link / reserved_list require a valid (unused) token.
+    if (!this.data.shareToken) return 'tokenMissing';
+    if (ctx.tokenValid) return 'open';
+    return ctx.tokenUsed ? 'tokenUsed' : 'tokenInvalid';
   },
 
   load(taskId) {
-    if (!taskId) return this.setData({ loading: false });
+    const id = taskId || this.data.taskId;
+    if (!id) return this.setData({ loading: false });
+    // Blocked visitors (explicit access state) never reach the task fetch.
+    const blockedStates = ['membershipRequired', 'tokenMissing', 'tokenUsed', 'tokenInvalid'];
+    if (blockedStates.includes(this.data.accessState)) {
+      return this.setData({ loading: false });
+    }
+    const token = this.data.shareToken;
+    const qs = token ? `?shareToken=${encodeURIComponent(token)}` : '';
     Promise.all([
-      api.request(`/tasks/${taskId}`),
-      api.request(`/tasks/${taskId}/availability/me`),
+      api.request(`/tasks/${id}${qs}`),
+      api.request(`/tasks/${id}/availability/me${qs}`),
     ])
       .then(([task, current]) => {
         const days = [...new Set((task.slots || []).map((slot) => slot.slotDate))].sort();
@@ -93,6 +178,10 @@ Page({
           }),
         }));
         const requiredFields = requiredFieldsOf(task);
+        const labels = (task.rules && task.rules.requiredFieldLabels) || {};
+        const customFields = requiredFields
+          .filter((field) => field.indexOf('custom_') === 0)
+          .map((field) => ({ key: field, label: labels[field] || field.replace(/^custom_/, '') }));
         const user = currentUser();
         const profileName = this.data.profileName || user?.nickname || user?.displayName || user?.name || '';
         this.setData({
@@ -105,11 +194,23 @@ Page({
           needName: requiredFields.includes('name'),
           needStudentId: requiredFields.includes('studentId'),
           needPhone: requiredFields.includes('phone'),
+          customFields,
+          customValues: {},
           profileName,
           deadlineText: formatDeadline(task.deadline),
         });
       })
-      .catch(() => this.setData({ loading: false }));
+      .catch((err) => {
+        // Token may have been consumed between landing-context and the task fetch
+        // (race / forwarded link). Reflect the consumed state instead of failing silently.
+        const code = err?.data?.error?.code || err?.code;
+        if (!this.data.isMember && (code === 'MEMBERSHIP_REQUIRED' || code === 'SHARE_TOKEN_INVALID' || code === 'SHARE_TOKEN_USED' || code === 'NOT_FOUND')) {
+          const nextState = this.data.shareToken ? 'tokenUsed' : 'membershipRequired';
+          this.setData({ accessState: nextState, loading: false });
+          return;
+        }
+        this.setData({ loading: false });
+      });
   },
 
   setMode(e) {
@@ -120,6 +221,12 @@ Page({
     const field = e.currentTarget.dataset.field;
     if (!field) return;
     this.setData({ [field]: e.detail.value });
+  },
+
+  onCustomInput(e) {
+    const key = e.currentTarget.dataset.key;
+    if (!key) return;
+    this.setData({ [`customValues.${key}`]: e.detail.value });
   },
 
   cycleState(e) {
@@ -160,10 +267,31 @@ Page({
       }
       profile.phone = phone;
     }
+    // E6: custom required fields are validated and included verbatim.
+    const customValues = this.data.customValues || {};
+    for (const field of required) {
+      if (field.indexOf('custom_') !== 0) continue;
+      const value = String(customValues[field] || '').trim();
+      const meta = (this.data.customFields || []).find((item) => item.key === field);
+      const label = (meta && meta.label) || '该项';
+      if (!value) {
+        wx.showToast({ title: `请填写${label}`, icon: 'none' });
+        return null;
+      }
+      profile[field] = value;
+    }
     return profile;
   },
 
   submit() {
+    if (this.data.saving) return;
+    // E3: a one-time share token is consumed on first submit; block resubmission
+    // once the external invitee has already submitted.
+    if (this.data.submitted && !this.data.isMember && !this.data.shareToken) {
+      wx.showToast({ title: '已提交，邀请链接不可重复提交', icon: 'none' });
+      return;
+    }
+
     const profile = this.buildProfile();
     if (profile === null) return;
 
@@ -188,10 +316,19 @@ Page({
         header: shareToken ? { 'x-share-token': shareToken } : undefined,
       })
       .then(() => {
-        this.setData({ submitted: true, shareToken });
+        // Consume the token locally so a forwarded/ reused link cannot resubmit.
+        if (shareToken && !this.data.isMember) {
+          wx.removeStorageSync('scheduling-share-token');
+          this.setData({ shareToken: '', inviteCodeInput: '' });
+        }
+        this.setData({ submitted: true });
         wx.showToast({ title: '可用时间已提交', icon: 'success' });
       })
-      .catch(() => wx.showToast({ title: '提交失败，请检查任务状态', icon: 'none' }))
+      .catch((err) => {
+        const code = err?.data?.error?.code || err?.code;
+        const fallback = api.errorMessage(err, '提交失败，请检查任务状态');
+        wx.showToast({ title: messageForShareCode(code, fallback), icon: 'none' });
+      })
       .finally(() => this.setData({ saving: false }));
   },
 

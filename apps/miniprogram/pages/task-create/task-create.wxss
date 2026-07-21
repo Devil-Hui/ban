@@ -336,3 +336,73 @@
 .ui-btn[disabled] {
   opacity: 0.55;
 }
+
+/* 本周/下周 快捷按钮 (E5) */
+.quick-week {
+  display: flex;
+  gap: 16rpx;
+  margin: 8rpx 0 4rpx;
+}
+
+.quick-btn {
+  flex: 1;
+  text-align: center;
+  padding: 16rpx 0;
+  border-radius: 12rpx;
+  border: 1rpx solid var(--line);
+  background: var(--surface);
+  color: var(--brand);
+  font-size: 26rpx;
+}
+
+.quick-btn:active {
+  background: var(--brand-soft);
+}
+
+/* 时段规则 两列网格 (E10) */
+.period-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12rpx;
+  margin-top: 14rpx;
+}
+
+.period-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 12rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--line);
+}
+
+.period-card .period-code {
+  color: var(--brand);
+  font-weight: 600;
+  font-size: 26rpx;
+}
+
+.period-card .period-label {
+  color: var(--ink);
+  font-size: 24rpx;
+}
+
+/* 自定义必填项输入行 (E6) */
+.custom-field-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin: 12rpx 0 4rpx;
+}
+
+.custom-input {
+  flex: 1;
+  height: 76rpx;
+  padding: 0 20rpx;
+  border-radius: 12rpx;
+  border: 1rpx solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 27rpx;
+}

@@ -9,6 +9,8 @@ const {
   inclusiveDaySpan,
   MAX_TASK_SPAN_DAYS,
   formatYmd,
+  thisWeekRange,
+  nextWeekRange,
 } = require('../../utils/time-format');
 
 /** Offline emergency only — production UI options come from GET /catalog/task-create (DB). */
@@ -100,6 +102,19 @@ function applyCatalog(catalog) {
 
 const BOOT = applyCatalog(null);
 
+/** Build a stable, regex-safe key suffix for a custom required field label. */
+function slugify(label) {
+  let base = String(label || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '');
+  if (!base) base = 'field';
+  const suffix = Date.now().toString(36).slice(-6);
+  let slug = `${base}_${suffix}`;
+  if (slug.length > 48) slug = slug.slice(slug.length - 48);
+  return slug;
+}
+
 function deadlineDateFromIso(iso) {
   const raw = String(iso || '');
   return raw.slice(0, 10) || todayYmd();
@@ -172,6 +187,8 @@ Page({
     requiredFieldOptions: BOOT.requiredFieldOptions,
     requiredFields: [],
     requiredFieldMap: BOOT.requiredFieldMap,
+    customInput: '',
+    requiredFieldLabels: {},
     participantScopeOptions: BOOT.participantScopeOptions,
     participantScope: 'all_members',
     reservedText: '',
@@ -427,6 +444,61 @@ Page({
     this.setData({ requiredFields, requiredFieldMap });
   },
 
+  onQuickWeek(e) {
+    const which = e.currentTarget.dataset.which;
+    const range = which === 'next' ? nextWeekRange() : thisWeekRange();
+    if (!range.start || !range.end) return;
+    this.setData({ dateStart: range.start, dateEnd: range.end });
+  },
+
+  onCustomInput(e) {
+    this.setData({ customInput: e.detail.value });
+  },
+
+  addCustomField() {
+    const label = (this.data.customInput || '').trim();
+    if (!label) {
+      wx.showToast({ title: '请输入自定义项名称', icon: 'none' });
+      return;
+    }
+    if (label.length > 40) {
+      wx.showToast({ title: '名称不能超过 40 字', icon: 'none' });
+      return;
+    }
+    const options = this.data.requiredFieldOptions || [];
+    if (options.some((o) => o.label === label)) {
+      wx.showToast({ title: '该必填项已存在', icon: 'none' });
+      return;
+    }
+    const existingKeys = new Set(options.map((o) => o.key));
+    const base = `custom_${slugify(label)}`;
+    let key = base;
+    let n = 1;
+    while (existingKeys.has(key)) {
+      n += 1;
+      key = `${base}_${n}`;
+    }
+    // Server CUSTOM_FIELD_RE = /^custom_[A-Za-z0-9_]{1,48}$/ allows <=55 chars total.
+    if (key.length > 55) key = key.slice(0, 55);
+    const option = { key, label, custom: true };
+    const requiredFieldOptions = options.concat(option);
+    const requiredFieldLabels = { ...(this.data.requiredFieldLabels || {}), [key]: label };
+    const set = new Set(this.data.requiredFields || []);
+    set.add(key);
+    const requiredFields = requiredFieldOptions.map((o) => o.key).filter((k) => set.has(k));
+    const requiredFieldMap = { ...(this.data.requiredFieldMap || {}) };
+    requiredFieldOptions.forEach((o) => {
+      requiredFieldMap[o.key] = set.has(o.key);
+    });
+    this.setData({
+      requiredFieldOptions,
+      requiredFieldLabels,
+      requiredFields,
+      requiredFieldMap,
+      customInput: '',
+    });
+  },
+
   selectParticipantScope(e) {
     const key = e.currentTarget.dataset.key;
     if (!key) return;
@@ -609,6 +681,7 @@ Page({
 
     const rules = {
       requiredFields: this.data.requiredFields || [],
+      requiredFieldLabels: this.data.requiredFieldLabels || {},
       participantScope: this.data.participantScope || 'all_members',
       allowEditAfterSubmit: !!this.data.allowEditAfterSubmit,
       maxEditCount: this.data.allowEditAfterSubmit
