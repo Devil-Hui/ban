@@ -8,6 +8,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { ApiErrorCode } from '@scheduling/contracts';
 import { buildErrorResponse } from './error-response.js';
+import { ApiError } from './api-error.js';
 
 const statusCodes: Partial<Record<number, ApiErrorCode>> = {
   [HttpStatus.BAD_REQUEST]: 'INVALID_ARGUMENT',
@@ -25,8 +26,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const request = host.switchToHttp().getRequest<FastifyRequest>();
     const reply = host.switchToHttp().getResponse<FastifyReply>();
     const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-    const raw = exception instanceof HttpException ? exception.message : 'Internal server error';
-    const code = statusCodes[status] ?? 'INTERNAL';
+    let code: ApiErrorCode = statusCodes[status] ?? 'INTERNAL';
+    let raw = exception instanceof HttpException ? exception.message : 'Internal server error';
+    // Domain errors carry a stable code distinct from the HTTP-status mapping.
+    if (exception instanceof ApiError) {
+      code = exception.apiCode;
+      raw = exception.message;
+    }
     reply.status(status).send(buildErrorResponse(code, raw, request.id));
   }
 }

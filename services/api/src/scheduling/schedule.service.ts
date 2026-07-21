@@ -4,12 +4,14 @@ import type { Redis } from 'ioredis';
 import { GroupRepository, type MemberRecord } from '../groups/group.repository.js';
 import { canGroup, type GroupAction } from '../groups/group.policy.js';
 import { REDIS } from '../redis/redis.tokens.js';
+import { ApiError } from '../http/api-error.js';
 import { ScheduleRepository, type AvailabilityEntry, type ScheduleTask, type ShiftPeriodDefinition } from './schedule.repository.js';
 
 type PeriodInput = { code: string; label: string; startMinute: number; endMinute: number; endDayOffset?: number; minPeople?: number; targetPeople?: number; maxPeople?: number };
 type SelectedSlotInput = { date: string; periodCode: string; maxPeople?: number };
 type TaskRulesInput = {
-  requiredFields: Array<'name' | 'studentId' | 'phone'>;
+  requiredFields: string[];
+  requiredFieldLabels?: Record<string, string>;
   participantScope: 'all_members' | 'share_link' | 'reserved_list';
   reservedNames?: string[];
   allowEditAfterSubmit: boolean;
@@ -18,6 +20,8 @@ type TaskRulesInput = {
   saveAsTemplate?: boolean;
   templateName?: string;
 };
+/** Prefix + suffix allowed for user-defined required fields (see validateRules). */
+const CUSTOM_FIELD_RE = /^custom_[A-Za-z0-9_]{1,48}$/;
 const TIME_MODES = new Set(['range', 'section', 'section_range']);
 const REQUIRED_FIELD_OPTIONS = new Set(['name', 'studentId', 'phone']);
 const PARTICIPANT_SCOPES = new Set(['all_members', 'share_link', 'reserved_list']);
@@ -138,7 +142,26 @@ export class ScheduleService {
     });
   }
   async listTasks(actorId: string, groupId: string) { await this.requireGroup(actorId, groupId, 'view'); return this.schedules.listTasks(groupId); }
-  async getTask(actorId: string, taskId: string) { const task = await this.requireTask(actorId, taskId, 'view'); return { ...task, slots: await this.schedules.listSlots(taskId) }; }
+
+  /** Read-only task fetch. Group viewers may always read; external invitees
+   *  (reserved_list / share_link) may read with a valid (unused) share token. */
+  async getTask(actorId: string, taskId: string, shareToken?: string) {
+    const task = await this.schedules.findTask(taskId);
+    if (!task) throw new NotFoundException('Task not found');
+    if (await this.isGroupViewer(actorId, task.groupId)) {
+      return { ...task, slots: await this.schedules.listSlots(taskId) };
+    }
+    const scope = task.rules?.participantScope ?? 'all_members';
+    const token = shareToken?.trim();
+    if (scope !== 'all_members' && token) {
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      if (await this.schedules.findValidShareForTask(taskId, tokenHash)) {
+        return { ...task, slots: await this.schedules.listSlots(taskId) };
+      }
+    }
+    throw new NotFoundException('Task not found');
+  }
+
   async collectionSummary(actorId: string, taskId: string) { const task = await this.requireTask(actorId, taskId, 'manageTasks'); return this.schedules.collectionSummary(task); }
 
   async submitAvailability(
@@ -147,18 +170,30 @@ export class ScheduleService {
     entries: AvailabilityEntry[],
     requestId: string,
     shareToken?: string,
-    profile?: { name?: string; studentId?: string; phone?: string },
+    profile?: Record<string, string>,
   ) {
     const task = await this.requireTaskForAvailability(actorId, taskId, shareToken);
     if (task.status !== 'collecting' || task.deadline.getTime() <= Date.now()) throw new ConflictException('Availability collection is closed');
 
     const rules = task.rules;
+    const profileObj: Record<string, string> = profile && typeof profile === 'object' ? profile : {};
     if (rules?.requiredFields?.length) {
       for (const field of rules.requiredFields) {
-        const value = profile?.[field];
+        const value = profileObj[field];
         if (typeof value !== 'string' || !value.trim()) {
           throw new BadRequestException(`Required field missing: ${field}`);
         }
+      }
+    }
+
+    const scope = rules?.participantScope ?? 'all_members';
+    const isMember = await this.isGroupViewer(actorId, task.groupId);
+    // reserved_list: an external invitee authorized by token must match the reserved name.
+    if (scope === 'reserved_list' && !isMember) {
+      const reservedNames = (task.reservedNames || []).map((name) => String(name).trim());
+      const name = String(profileObj.name || '').trim();
+      if (!reservedNames.includes(name)) {
+        throw new ApiError('RESERVED_NAME_MISMATCH', '姓名与预留名单不一致，无法提交', 400);
       }
     }
 
@@ -175,9 +210,65 @@ export class ScheduleService {
     const slots = await this.schedules.listSlots(taskId); const validSlots = new Set(slots.map((slot) => slot.id));
     if (!Array.isArray(entries) || entries.length !== slots.length || new Set(entries.map((entry) => entry.slotId)).size !== entries.length) throw new BadRequestException('Submit exactly one state for every task slot');
     for (const entry of entries) if (!validSlots.has(entry.slotId) || !['unavailable', 'available', 'preferred'].includes(entry.state) || (entry.note?.length ?? 0) > 500) throw new BadRequestException('Invalid availability entry');
-    return this.schedules.saveAvailability(taskId, actorId, entries, requestId);
+
+    // Consume the one-time share token BEFORE persisting so a forwarded link
+    // cannot be reused (the UPDATE ... WHERE used_at is null is atomic).
+    if (shareToken?.trim() && !isMember) {
+      const tokenHash = createHash('sha256').update(shareToken.trim()).digest('hex');
+      const affected = await this.schedules.consumeShare(taskId, tokenHash);
+      if (affected === 0) throw new ApiError('SHARE_TOKEN_USED', '该邀请链接已被使用，无法重复提交', 409);
+    }
+
+    return this.schedules.saveAvailability(taskId, actorId, entries, requestId, profileObj);
   }
-  async myAvailability(actorId: string, taskId: string) { await this.requireTask(actorId, taskId, 'view'); return this.schedules.latestAvailability(taskId, actorId); }
+
+  /** Read-only my-submission fetch with the same external-invitee allowance as getTask. */
+  async myAvailability(actorId: string, taskId: string, shareToken?: string) {
+    const task = await this.schedules.findTask(taskId);
+    if (!task) throw new NotFoundException('Task not found');
+    if (await this.isGroupViewer(actorId, task.groupId)) {
+      return this.schedules.latestAvailability(taskId, actorId);
+    }
+    const scope = task.rules?.participantScope ?? 'all_members';
+    const token = shareToken?.trim();
+    if (scope !== 'all_members' && token) {
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      if (await this.schedules.findValidShareForTask(taskId, tokenHash)) {
+        return this.schedules.latestAvailability(taskId, actorId);
+      }
+    }
+    throw new NotFoundException('Task not found');
+  }
+
+  /** Safe landing context for the availability page (no membership required). */
+  async landingContext(actorId: string, taskId: string, shareToken?: string) {
+    const task = await this.schedules.findTask(taskId);
+    if (!task) throw new NotFoundException('Task not found');
+    const group = await this.groups.findGroup(task.groupId);
+    const isMember = await this.isGroupViewer(actorId, task.groupId);
+    const scope = task.rules?.participantScope ?? 'all_members';
+    let tokenValid = false;
+    let tokenUsed = false;
+    const token = shareToken?.trim();
+    if (token) {
+      const tokenHash = createHash('sha256').update(token).digest('hex');
+      const info = await this.schedules.findShareInfo(taskId, tokenHash);
+      tokenValid = info.valid;
+      tokenUsed = info.used;
+    }
+    const context: Record<string, unknown> = {
+      taskId,
+      groupId: task.groupId,
+      groupName: group?.name ?? '',
+      participantScope: scope,
+      isMember,
+      tokenValid,
+      tokenUsed,
+    };
+    // Only expose the invite code to non-members (so they can join the group).
+    if (!isMember && group?.inviteCode) context.groupInviteCode = group.inviteCode;
+    return context;
+  }
 
   /** Per-slot availability board for staffing after collection closes. */
   async availabilityBoard(actorId: string, taskId: string) {
@@ -330,7 +421,22 @@ export class ScheduleService {
   private validateRules(rules: TaskRulesInput | undefined) {
     if (rules === undefined) return undefined;
     if (!rules || typeof rules !== 'object') throw new BadRequestException('Invalid rules');
-    if (!Array.isArray(rules.requiredFields) || rules.requiredFields.some((field) => !REQUIRED_FIELD_OPTIONS.has(field))) throw new BadRequestException('Invalid requiredFields');
+    if (!Array.isArray(rules.requiredFields)) throw new BadRequestException('Invalid requiredFields');
+    const requiredFieldLabels: Record<string, string> = {};
+    for (const field of rules.requiredFields) {
+      if (typeof field !== 'string') throw new BadRequestException('Invalid requiredFields');
+      // Fixed keys are always allowed.
+      if (REQUIRED_FIELD_OPTIONS.has(field as 'name' | 'studentId' | 'phone')) continue;
+      // Custom keys must match the documented prefix/suffix pattern.
+      if (!CUSTOM_FIELD_RE.test(field)) {
+        throw new ApiError('INVALID_REQUIRED_FIELD', `非法的必填项标识：${field}`, 400);
+      }
+      const label = rules.requiredFieldLabels?.[field];
+      if (typeof label !== 'string' || label.trim().length < 1 || label.trim().length > 40) {
+        throw new ApiError('INVALID_REQUIRED_FIELD', `自定义必填项「${field}」的标签无效（1-40 字）`, 400);
+      }
+      requiredFieldLabels[field] = label.trim();
+    }
     if (!PARTICIPANT_SCOPES.has(rules.participantScope)) throw new BadRequestException('Invalid participantScope');
     const reservedNames = (rules.reservedNames ?? []).map((name) => String(name ?? '').trim()).filter(Boolean);
     if (rules.participantScope === 'reserved_list' && reservedNames.length < 1) throw new BadRequestException('reservedNames are required for reserved_list');
@@ -338,27 +444,27 @@ export class ScheduleService {
     if (!Number.isInteger(rules.maxEditCount) || rules.maxEditCount < 0) throw new BadRequestException('Invalid maxEditCount');
     if (rules.allowEditAfterSubmit && rules.maxEditCount < 1) throw new BadRequestException('maxEditCount must be at least 1 when edits are allowed');
     if (!(rules.remindBeforeMinutes === null || (Number.isInteger(rules.remindBeforeMinutes) && rules.remindBeforeMinutes >= 0))) throw new BadRequestException('Invalid remindBeforeMinutes');
-    if (rules.saveAsTemplate) {
-      const templateName = rules.templateName?.trim();
-      if (!templateName || templateName.length > 120) throw new BadRequestException('templateName is required when saveAsTemplate is true');
-      return {
-        requiredFields: rules.requiredFields,
-        participantScope: rules.participantScope,
-        reservedNames,
-        allowEditAfterSubmit: rules.allowEditAfterSubmit,
-        maxEditCount: rules.maxEditCount,
-        remindBeforeMinutes: rules.remindBeforeMinutes,
-        saveAsTemplate: true,
-        templateName,
-      };
-    }
-    return {
-      requiredFields: rules.requiredFields,
+    const labels = Object.keys(requiredFieldLabels).length ? requiredFieldLabels : undefined;
+    const common = {
+      requiredFields: rules.requiredFields.map(String),
       participantScope: rules.participantScope,
       reservedNames,
       allowEditAfterSubmit: rules.allowEditAfterSubmit,
       maxEditCount: rules.maxEditCount,
       remindBeforeMinutes: rules.remindBeforeMinutes,
+    };
+    const labeledCommon = labels ? { ...common, requiredFieldLabels: labels } : common;
+    if (rules.saveAsTemplate) {
+      const templateName = rules.templateName?.trim();
+      if (!templateName || templateName.length > 120) throw new BadRequestException('templateName is required when saveAsTemplate is true');
+      return {
+        ...labeledCommon,
+        saveAsTemplate: true,
+        templateName,
+      };
+    }
+    return {
+      ...labeledCommon,
       ...(rules.saveAsTemplate === false ? { saveAsTemplate: false } : {}),
       ...(rules.templateName ? { templateName: rules.templateName.trim() } : {}),
     };
@@ -382,25 +488,37 @@ export class ScheduleService {
     return result;
   }
   private async requireTask(actorId: string, taskId: string, action: GroupAction): Promise<ScheduleTask> { const task = await this.schedules.findTask(taskId); if (!task) throw new NotFoundException('Task not found'); await this.requireGroup(actorId, task.groupId, action); return task; }
+  private async isGroupViewer(actorId: string, groupId: string): Promise<boolean> {
+    try {
+      await this.requireGroup(actorId, groupId, 'view');
+      return true;
+    } catch {
+      return false;
+    }
+  }
   private async requireTaskForAvailability(actorId: string, taskId: string, shareToken?: string): Promise<ScheduleTask> {
     const task = await this.schedules.findTask(taskId);
     if (!task) throw new NotFoundException('Task not found');
 
     const scope = task.rules?.participantScope ?? 'all_members';
-    const member = await this.groups.findMember(task.groupId, actorId);
-    const isActiveMember = Boolean(member && member.status === 'active' && canGroup(member.role, 'view'));
-    if (isActiveMember) return task;
+    const isMember = await this.isGroupViewer(actorId, task.groupId);
+    if (isMember) return task;
 
-    if (scope === 'share_link') {
-      const token = shareToken?.trim();
-      if (token) {
-        const tokenHash = createHash('sha256').update(token).digest('hex');
-        if (await this.schedules.findValidShareForTask(taskId, tokenHash)) return task;
-      }
+    if (scope === 'all_members') {
+      // Only active group members may submit; external invitees must join first.
+      throw new ApiError('MEMBERSHIP_REQUIRED', '请先加入该分组后再填写', 403);
     }
 
-    // all_members, reserved_list (membership-only this round), or share_link without valid token
-    throw new NotFoundException('Task not found');
+    // share_link / reserved_list: a valid (unused, unrevoked, unexpired) token authorizes the submit.
+    const token = shareToken?.trim();
+    if (!token) throw new NotFoundException('Task not found'); // 不可达
+    const tokenHash = createHash('sha256').update(token).digest('hex');
+    if (await this.schedules.findValidShareForTask(taskId, tokenHash)) return task;
+
+    // Token provided but no longer usable: distinguish used vs invalid for the frontend.
+    const info = await this.schedules.findShareInfo(taskId, tokenHash);
+    if (info.used) throw new ApiError('SHARE_TOKEN_USED', '该邀请链接已失效', 409);
+    throw new ApiError('SHARE_TOKEN_INVALID', '邀请链接无效或已过期', 409);
   }
   private async requireGroup(actorId: string, groupId: string, action: GroupAction): Promise<MemberRecord> { const member = await this.groups.findMember(groupId, actorId); if (!member || member.status !== 'active') throw new NotFoundException('Group not found'); if (!canGroup(member.role, action)) throw new ForbiddenException('Insufficient group permission'); return member; }
 }

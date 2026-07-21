@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Inject, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Inject, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 import { UserAuthGuard } from '../auth/auth.guard.js';
 import type { UserPrincipal } from '../auth/auth.types.js';
@@ -26,7 +26,7 @@ export class ScheduleController {
   @Get('catalog/options') listOptions(@Req() request: UserRequest) {
     return this.schedules.listOptionCatalog(actor(request));
   }
-  @Get('tasks/:taskId') get(@Param('taskId') taskId: string, @Req() request: UserRequest) { return this.schedules.getTask(actor(request), taskId); }
+  @Get('tasks/:taskId') get(@Param('taskId') taskId: string, @Query('shareToken') shareToken: string | undefined, @Req() request: UserRequest) { return this.schedules.getTask(actor(request), taskId, shareToken?.trim() || undefined); }
   @Get('tasks/:taskId/collection') collection(@Param('taskId') taskId: string, @Req() request: UserRequest) { return this.schedules.collectionSummary(actor(request), taskId); }
   @Post('tasks/:taskId/availability') availability(
     @Param('taskId') taskId: string,
@@ -49,7 +49,12 @@ export class ScheduleController {
   @Post('tasks/:taskId/close-collection') close(@Param('taskId') taskId: string, @Req() request: UserRequest) { return this.schedules.closeCollection(actor(request), taskId, request.id); }
   @Post('tasks/:taskId/reopen') reopen(@Param('taskId') taskId: string, @Req() request: UserRequest) { return this.schedules.reopen(actor(request), taskId, request.id); }
   @Post('tasks/:taskId/extend-deadline') extend(@Param('taskId') taskId: string, @Body() body: any, @Req() request: UserRequest) { return this.schedules.extendDeadline(actor(request), taskId, String(body?.deadline ?? ''), request.id); }
-  @Get('tasks/:taskId/availability/me') mine(@Param('taskId') taskId: string, @Req() request: UserRequest) { return this.schedules.myAvailability(actor(request), taskId); }
+  @Get('tasks/:taskId/availability/me') mine(@Param('taskId') taskId: string, @Query('shareToken') shareToken: string | undefined, @Req() request: UserRequest) { return this.schedules.myAvailability(actor(request), taskId, shareToken?.trim() || undefined); }
+  /** Read-only, membership-optional landing context for the availability page. */
+  @Get('tasks/:taskId/landing-context')
+  landingContext(@Param('taskId') taskId: string, @Query('shareToken') shareToken: string | undefined, @Req() request: UserRequest) {
+    return this.schedules.landingContext(actor(request), taskId, shareToken?.trim() || undefined);
+  }
   @Get('tasks/:taskId/availability-board') availabilityBoard(@Param('taskId') taskId: string, @Req() request: UserRequest) {
     return this.schedules.availabilityBoard(actor(request), taskId);
   }

@@ -7,7 +7,8 @@ import { OutboxService } from '../notifications/outbox.service.js';
 import { PrivacyService } from '../users/privacy.service.js';
 
 export type TaskRules = {
-  requiredFields: Array<'name' | 'studentId' | 'phone'>;
+  requiredFields: string[];
+  requiredFieldLabels?: Record<string, string>;
   participantScope: 'all_members' | 'share_link' | 'reserved_list';
   reservedNames?: string[];
   allowEditAfterSubmit: boolean;
@@ -337,11 +338,12 @@ export class ScheduleRepository {
     });
     return this.listFixedAssignments(taskId);
   }
-  async saveAvailability(taskId: string, userId: string, entries: AvailabilityEntry[], requestId: string): Promise<{ version: number }> {
+  async saveAvailability(taskId: string, userId: string, entries: AvailabilityEntry[], requestId: string, profile?: Record<string, unknown> | null): Promise<{ version: number }> {
     return this.db.transaction().execute(async (trx) => {
       const latest = await sql<{ version: number }>`select coalesce(max(submission_version), 0) as version from availability_submissions where task_id = ${parseId(taskId)} and user_id = ${parseId(userId)}`.execute(trx);
       const version = Number(latest.rows[0]?.version ?? 0) + 1; const submissionId = newId();
-      await sql`insert into availability_submissions (id, task_id, user_id, submission_version) values (${parseId(submissionId)}, ${parseId(taskId)}, ${parseId(userId)}, ${version})`.execute(trx);
+      const profileJson = profile && typeof profile === 'object' ? JSON.stringify(profile) : null;
+      await sql`insert into availability_submissions (id, task_id, user_id, submission_version, profile_json) values (${parseId(submissionId)}, ${parseId(taskId)}, ${parseId(userId)}, ${version}, ${profileJson})`.execute(trx);
       for (const entry of entries) await sql`insert into availability_entries (id, submission_id, slot_id, state, note) values (${parseId(newId())}, ${parseId(submissionId)}, ${parseId(entry.slotId)}, ${entry.state}, ${entry.note ?? null})`.execute(trx);
       await this.audit.record({ actorId: userId, action: 'schedule.availability.submit', targetType: 'task', targetId: taskId, requestId, metadata: { version } }, trx);
       return { version };
@@ -491,11 +493,44 @@ export class ScheduleRepository {
       select id from share_links
       where task_id = ${parseId(taskId)}
         and token_hash = ${tokenHash}
+        and used_at is null
         and revoked_at is null
         and expires_at > current_timestamp(3)
       limit 1
     `.execute(this.db);
     return result.rows.length > 0;
+  }
+
+  /**
+   * Atomically consume a one-time share token. Returns the number of affected
+   * rows (1 = consumed, 0 = already used / revoked / expired). The `used_at is null`
+   * guard makes the consume idempotent-safe under concurrent submits.
+   */
+  async consumeShare(taskId: string, tokenHash: string): Promise<number> {
+    const result = await sql`
+      update share_links
+      set used_at = current_timestamp(3)
+      where task_id = ${parseId(taskId)}
+        and token_hash = ${tokenHash}
+        and used_at is null
+        and revoked_at is null
+        and expires_at > current_timestamp(3)
+    `.execute(this.db);
+    return Number((result as unknown as { numAffectedRows?: bigint }).numAffectedRows) || 0;
+  }
+
+  /** Inspect a share token without consuming it (for landing-context). */
+  async findShareInfo(taskId: string, tokenHash: string): Promise<{ valid: boolean; used: boolean }> {
+    const result = await sql<{ used_at: Date | null; revoked_at: Date | null; expires_at: Date }>`
+      select used_at, revoked_at, expires_at from share_links
+      where task_id = ${parseId(taskId)} and token_hash = ${tokenHash}
+      limit 1
+    `.execute(this.db);
+    const row = result.rows[0];
+    if (!row) return { valid: false, used: false };
+    const used = row.used_at != null;
+    const valid = !used && row.revoked_at == null && row.expires_at > new Date();
+    return { valid, used };
   }
   async revokeShare(shareId: string, actorId: string) { const result = await sql`update share_links l join schedule_tasks t on t.id = l.task_id join group_members m on m.group_id = t.group_id and m.user_id = ${parseId(actorId)} and m.status = 'active' and m.role_in_group in ('owner','admin') set l.revoked_at = current_timestamp(3) where l.id = ${parseId(shareId)} and l.revoked_at is null`.execute(this.db); if (Number((result as any).numAffectedRows) !== 1) throw new Error('share not found'); }
   async publicShare(tokenHash: string) {
