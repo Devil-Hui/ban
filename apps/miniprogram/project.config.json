@@ -14,7 +14,7 @@
     ]
   },
   "setting": {
-    "packNpmManually": true,
+    "packNpmManually": false,
     "miniprogramNpmDistDir": "./miniprogram_npm",
     "packNpmRelationList": [
       {
@@ -22,7 +22,7 @@
         "miniprogramNpmDistDir": "./miniprogram_npm"
       }
     ],
-    "es6": false,
+    "es6": true,
     "postcss": false,
     "compileWorklet": false,
     "minified": false,
