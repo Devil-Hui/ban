@@ -35,6 +35,8 @@ Page({
     apiBaseUrl: '',
     devSheetOpen: false,
     authModeLabel: '',
+    /** 帮助与反馈面板 */
+    helpSheetOpen: false,
   },
 
   _versionTapCount: 0,
@@ -100,22 +102,17 @@ Page({
   },
 
   openHelp() {
-    wx.showActionSheet({
-      itemList: ['复制邮箱地址'],
-      success: (res) => {
-        if (res.tapIndex === 0) {
-          wx.setClipboardData({
-            data: 'deavenhui@163.com',
-            success: () => wx.showToast({ title: '已复制 deavenhui@163.com', icon: 'success' }),
-          });
-        }
-      },
-      fail: () => {
-        wx.setClipboardData({
-          data: 'deavenhui@163.com',
-          success: () => wx.showToast({ title: '已复制 deavenhui@163.com', icon: 'success' }),
-        });
-      },
+    this.setData({ helpSheetOpen: true });
+  },
+
+  closeHelpSheet() {
+    this.setData({ helpSheetOpen: false });
+  },
+
+  copyHelpEmail() {
+    wx.setClipboardData({
+      data: 'deavenhui@163.com',
+      success: () => wx.showToast({ title: '已复制邮箱地址', icon: 'success' }),
     });
   },
 

@@ -68,7 +68,6 @@
     <view class="menu-row" bindtap="openHelp">
       <view class="menu-icon icon-gray"><t-icon name="help-circle" size="34rpx" color="#68766d" /></view>
       <text class="menu-title">帮助与反馈</text>
-      <text class="menu-value">deavenhui@163.com</text>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
     <view class="menu-divider"></view>
@@ -94,6 +93,55 @@
   <!-- ===== 版本号（长按可打开隐藏运维面板）===== -->
   <view class="version" bindlongpress="onVersionLongPress">
     智能排班 v0.1.0 · 数据仅用于排班协作
+  </view>
+
+  <!-- ===== 隐藏开发者面板 ===== -->
+
+  <!-- ===== 帮助与反馈面板 ===== -->
+  <view wx:if="{{helpSheetOpen}}" class="sheet-mask" bindtap="closeHelpSheet">
+    <view class="help-sheet surface" catchtap="noop">
+      <!-- 拖拽条 -->
+      <view class="sheet-handle"><view class="handle-bar"></view></view>
+      <view class="help-header">
+        <text class="help-title">帮助与反馈</text>
+        <t-icon name="close" size="36rpx" color="#9ba79f" bindtap="closeHelpSheet" />
+      </view>
+
+      <!-- 反馈邮箱 -->
+      <view class="help-section">
+        <text class="help-section-title">联系邮箱</text>
+        <view class="help-contact-row">
+          <view class="help-contact-left">
+            <t-icon name="mail" size="36rpx" color="#1e9e5a" />
+            <text class="help-email">deavenhui@163.com</text>
+          </view>
+          <button class="help-copy-btn" bindtap="copyHelpEmail">复制</button>
+        </view>
+      </view>
+
+      <!-- 常见问题 -->
+      <view class="help-section">
+        <text class="help-section-title">常见问题</text>
+        <view class="help-faq-item">
+          <view class="help-faq-q"><view class="faq-dot">Q</view><text>如何填写可用时间？</text></view>
+          <view class="help-faq-a"><view class="faq-dot answer">A</view><text>进入「可用时间」页面，选择日期并标记可用/首选/不可用时段，提交后发布者即可看到。</text></view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-q"><view class="faq-dot">Q</view><text>已发布的班次在哪里查看？</text></view>
+          <view class="help-faq-a"><view class="faq-dot answer">A</view><text>在「我的日程」页面或首页下方可看到已分配给你的所有班次。</text></view>
+        </view>
+        <view class="help-faq-item">
+          <view class="help-faq-q"><view class="faq-dot">Q</view><text>如何加入一个排班分组？</text></view>
+          <view class="help-faq-a"><view class="faq-dot answer">A</view><text>联系分组管理员获取邀请码，在「我的分组」页输入邀请码即可加入。</text></view>
+        </view>
+      </view>
+
+      <!-- 底部说明 -->
+      <view class="help-footer">
+        <text>如遇问题或建议，请发送邮件反馈</text>
+        <text>我们会在 1-2 个工作日内回复</text>
+      </view>
+    </view>
   </view>
 
   <!-- ===== 隐藏开发者面板 ===== -->
