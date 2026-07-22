@@ -1,0 +1,51 @@
+<view class="page ocr-page">
+  <!-- 引导状态 -->
+  <view class="ocr-hero">
+    <view class="ocr-hero-icon"><t-icon name="image" size="80rpx" color="#c3cbc6" /></view>
+    <text class="ocr-hero-title">课表识别</text>
+    <text class="ocr-hero-sub">上传课程表或排班表图片，自动识别并生成本周模板</text>
+    <button class="ocr-upload-btn" bindtap="chooseImage">选择图片</button>
+    <text class="ocr-hint">支持 JPG / PNG，建议清晰无反光</text>
+  </view>
+
+  <!-- 图片预览 & 识别中 -->
+  <view wx:if="{{imagePath}}" class="ocr-preview surface">
+    <image class="preview-img" src="{{imagePath}}" mode="widthFix" />
+    <view class="preview-actions">
+      <button class="action-btn secondary" bindtap="chooseImage">重新选择</button>
+      <button class="action-btn primary" bindtap="startRecognition" loading="{{recognizing}}">开始识别</button>
+    </view>
+  </view>
+
+  <!-- 识别结果 -->
+  <view wx:if="{{recognized && schedule.length}}" class="ocr-result">
+    <view class="section-label">识别结果 — 本周课表</view>
+    <view class="result-card surface">
+      <view class="result-week"><text>{{weekRange}}</text><text class="mini-label">共 {{schedule.length}} 条</text></view>
+      <view wx:for="{{schedule}}" wx:key="index" class="result-item">
+        <view class="result-time">
+          <text class="time-day">{{item.day}}</text>
+          <text class="time-slot">{{item.start}} - {{item.end}}</text>
+        </view>
+        <view class="result-info">
+          <text class="result-name">{{item.name}}</text>
+          <text class="result-location" wx:if="{{item.location}}">{{item.location}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="result-actions">
+      <button class="action-btn secondary" bindtap="resetResult">重新识别</button>
+      <button class="action-btn primary" bindtap="applyAsTemplate">应用为时段模板</button>
+    </view>
+  </view>
+
+  <!-- 识别失败 -->
+  <view wx:if="{{recognized && !schedule.length}}" class="ocr-result">
+    <view class="section-label">识别结果</view>
+    <view class="state-box surface">
+      <t-icon name="error-circle" size="64rpx" color="#df5c4c" />
+      <text>未能识别出有效课表</text>
+      <text class="mini-label">请确保图片清晰、包含完整时间信息，或手动填写</text>
+    </view>
+  </view>
+</view>

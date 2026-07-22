@@ -1,5 +1,5 @@
 {
-  "pages": ["pages/login/login", "pages/home/home", "pages/groups/groups", "pages/schedule/schedule", "pages/me/me", "pages/group-detail/group-detail", "pages/task-create/task-create", "pages/task-detail/task-detail", "pages/candidates/candidates", "pages/result/result", "pages/availability/availability"],
+  "pages": ["pages/login/login", "pages/home/home", "pages/groups/groups", "pages/schedule/schedule", "pages/me/me", "pages/group-detail/group-detail", "pages/task-create/task-create", "pages/task-detail/task-detail", "pages/candidates/candidates", "pages/result/result", "pages/availability/availability", "pages/ocr-schedule/ocr-schedule"],
   "window": {
     "navigationBarTitleText": "智能排班",
     "navigationBarBackgroundColor": "#f7faf8",

@@ -143,4 +143,26 @@ function logout() {
   return rawRequest('/auth/logout', { method: 'POST', data: { refreshToken } }).catch(() => {}).then(done);
 }
 
-module.exports = { clearSession, errorMessage, login, logout, request };
+function uploadFile(path, filePath, formKey = 'image') {
+  return new Promise((resolve, reject) => {
+    const apiBaseUrl = app.globalData.apiBaseUrl;
+    if (!apiBaseUrl) { reject(configurationError()); return; }
+    const token = wx.getStorageSync('scheduling-access-token') || '';
+    wx.uploadFile({
+      url: `${apiBaseUrl}${path}`,
+      filePath,
+      name: formKey,
+      header: { Authorization: token ? `Bearer ${token}` : '' },
+      success(res) {
+        try {
+          const data = JSON.parse(res.data);
+          if (res.statusCode >= 200 && res.statusCode < 300 && !data.error) resolve(data);
+          else reject({ statusCode: res.statusCode, data });
+        } catch { reject({ statusCode: res.statusCode, data: res.data }); }
+      },
+      fail(err) { reject(err); },
+    });
+  });
+}
+
+module.exports = { clearSession, errorMessage, login, logout, request, uploadFile };

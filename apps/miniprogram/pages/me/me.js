@@ -37,6 +37,10 @@ Page({
     authModeLabel: '',
     /** 帮助与反馈面板 */
     helpSheetOpen: false,
+    /** 今日班次预告 */
+    todaySchedule: [],
+    /** 我的分组列表 */
+    groups: [],
   },
 
   _versionTapCount: 0,
@@ -47,6 +51,8 @@ Page({
     this.setData({ greeting: getGreeting() });
     this.loadUser();
     this.loadStats();
+    this.loadToday();
+    this.loadGroups();
   },
 
   /* ----- 数据加载 ----- */
@@ -72,11 +78,29 @@ Page({
         const groups = Array.isArray(data) ? data : data?.items || [];
         this.setData({ 'stats.groupCount': groups.length });
       }),
-      api.request('/scheduling/assignments/me?limit=1').then((data) => {
-        const count = typeof data?.total === 'number' ? data.total : (Array.isArray(data) ? data.length : 0);
+      api.request('/users/me/schedule').then((data) => {
+        const count = Array.isArray(data) ? data.length : (typeof data?.total === 'number' ? data.total : 0);
         this.setData({ 'stats.totalShifts': count });
       }),
     ]).catch(() => {});
+  },
+
+  /** 今日班次预告 */
+  loadToday() {
+    api.request('/scheduling/assignments/me?limit=5').then((data) => {
+      const list = Array.isArray(data) ? data : data?.items || [];
+      const today = new Date().toISOString().slice(0, 10);
+      const todayItems = list.filter((a) => a.date === today).slice(0, 3);
+      this.setData({ todaySchedule: todayItems, 'stats.pendingTasks': todayItems.length });
+    }).catch(() => {});
+  },
+
+  /** 我的分组列表 */
+  loadGroups() {
+    api.request('/groups').then((data) => {
+      const list = Array.isArray(data) ? data : data?.items || [];
+      this.setData({ groups: list.slice(0, 5) });
+    }).catch(() => {});
   },
 
   /* ----- 环境 / 开关 ----- */
@@ -99,6 +123,16 @@ Page({
   navigateTo(e) {
     const page = e.currentTarget.dataset.page;
     if (page) wx.navigateTo({ url: page });
+  },
+
+  openTask(e) {
+    const id = e.currentTarget.dataset.taskId;
+    if (id) wx.navigateTo({ url: `/pages/task-detail/task-detail?taskId=${id}` });
+  },
+
+  openGroup(e) {
+    const id = e.currentTarget.dataset.id;
+    if (id) wx.navigateTo({ url: `/pages/group-detail/group-detail?groupId=${id}` });
   },
 
   openHelp() {

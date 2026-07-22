@@ -1,52 +1,79 @@
 <view class="page me-page">
-  <!-- ===== 头部信息卡（白底，与首页 topbar 画风一致）===== -->
+  <!-- ===== 头部信息卡 ===== -->
   <view class="profile-card surface">
-    <view class="profile-avatar">
-      <t-avatar size="104rpx" shape="circle">{{user.nickname || '我'}}</t-avatar>
-    </view>
-    <view class="profile-info">
-      <view class="greeting">{{greeting}}，{{user.nickname || '同学'}}</view>
-      <view class="profile-meta">
-        <text class="role-tag">排班协作者</text>
-        <text wx:if="{{user.id}}" class="user-id">ID {{user.id}}</text>
+    <view class="profile-top">
+      <view class="profile-avatar">
+        <t-avatar size="100rpx" shape="circle">{{user.nickname || '我'}}</t-avatar>
+        <view wx:if="{{stats.pendingTasks > 0}}" class="avatar-badge">{{stats.pendingTasks}}</view>
+      </view>
+      <view class="profile-info">
+        <view class="greeting">{{greeting}}，{{user.nickname || '同学'}}</view>
+        <view class="profile-meta">
+          <text class="role-tag">排班协作者</text>
+          <text class="uid">ID {{user.id || '—'}}</text>
+        </view>
       </view>
     </view>
-  </view>
-
-  <!-- ===== 数据看板（4 列卡片）===== -->
-  <view class="stats-row surface">
-    <view class="stat-item"><text class="stat-num">{{stats.groupCount || 0}}</text><text class="stat-label">我的分组</text></view>
-    <view class="stat-item"><text class="stat-num">{{stats.pendingTasks || 0}}</text><text class="stat-label">待办班次</text></view>
-    <view class="stat-item"><text class="stat-num">{{stats.submissionCount || 0}}</text><text class="stat-label">可用时间</text></view>
-    <view class="stat-item"><text class="stat-num">{{stats.totalShifts || 0}}</text><text class="stat-label">累计班次</text></view>
-  </view>
-
-  <!-- ===== 快捷操作：预填写可用时间 ===== -->
-  <view class="prefill-card surface" bindtap="navigateTo" data-page="/pages/availability/availability">
-    <view class="prefill-left">
-      <view class="prefill-icon"><t-icon name="check-circle" size="44rpx" color="#1e9e5a" /></view>
-      <view class="prefill-copy">
-        <text class="prefill-title">预填写可用时间</text>
-        <text class="prefill-sub">提前设定你的空闲时段，发布后自动匹配班次</text>
-      </view>
+    <!-- 数据看板 -->
+    <view class="stats-row">
+      <view class="stat-item"><text class="stat-num brand">{{stats.groupCount || 0}}</text><text class="stat-label">我的分组</text></view>
+      <view class="stat-item"><text class="stat-num warn">{{stats.pendingTasks || 0}}</text><text class="stat-label">待办班次</text></view>
+      <view class="stat-item"><text class="stat-num">{{stats.totalShifts || 0}}</text><text class="stat-label">累计班次</text></view>
+      <view class="stat-item"><text class="stat-num muted">{{stats.submissionCount || 0}}</text><text class="stat-label">可用时段</text></view>
     </view>
-    <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
   </view>
 
-  <!-- ===== 常用服务 ===== -->
-  <view class="section-label">常用服务</view>
-  <view class="menu-card surface">
-    <view class="menu-row" bindtap="navigateTo" data-page="/pages/schedule/schedule">
-      <view class="menu-icon icon-green"><t-icon name="calendar" size="34rpx" color="#1e9e5a" /></view>
-      <text class="menu-title">我的日程</text>
-      <text class="menu-hint">查看已发布班次</text>
+  <!-- ===== 快捷功能网格 ===== -->
+  <view class="section-label">快捷功能</view>
+  <view class="quick-grid surface">
+    <view class="quick-item" bindtap="navigateTo" data-page="/pages/schedule/schedule">
+      <view class="q-icon" style="background:#e6f6eb"><t-icon name="calendar" size="40rpx" color="#1e9e5a" /></view>
+      <text>我的日程</text>
+    </view>
+    <view class="quick-item" bindtap="navigateTo" data-page="/pages/availability/availability">
+      <view class="q-icon" style="background:#e6f0fc"><t-icon name="edit-1" size="40rpx" color="#1d4ed8" /></view>
+      <text>预填写</text>
+    </view>
+    <view class="quick-item" bindtap="navigateTo" data-page="/pages/groups/groups">
+      <view class="q-icon" style="background:#fff3e5"><t-icon name="usergroup" size="40rpx" color="#e08827" /></view>
+      <text>我的分组</text>
+    </view>
+    <view class="quick-item" bindtap="navigateTo" data-page="/pages/ocr-schedule/ocr-schedule">
+      <view class="q-icon" style="background:#f3e8ff"><t-icon name="image" size="40rpx" color="#7c3aed" /></view>
+      <text>课表识别</text>
+    </view>
+  </view>
+
+  <!-- ===== 今日班次预告 ===== -->
+  <view class="section-label">今日班次</view>
+  <view wx:if="{{!todaySchedule.length}}" class="today-empty surface">
+    <t-icon name="calendar" size="48rpx" color="#c3cbc6" />
+    <text>今日无待办班次</text>
+    <text class="mini-label">去预填写可用时间，让系统为你匹配合适的班次</text>
+  </view>
+  <view wx:else class="today-list surface">
+    <view wx:for="{{todaySchedule}}" wx:key="id" class="today-item" data-task-id="{{item.taskId}}" bindtap="openTask">
+      <view class="today-time">
+        <text class="time-num">{{item.start}}</text>
+        <text class="time-num">{{item.end}}</text>
+      </view>
+      <view class="today-info">
+        <text class="today-name">{{item.title}}</text>
+        <text class="today-meta">{{item.groupName}} · {{item.location || '在线'}}</text>
+      </view>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
-    <view class="menu-divider"></view>
-    <view class="menu-row" bindtap="navigateTo" data-page="/pages/groups/groups">
-      <view class="menu-icon icon-orange"><t-icon name="usergroup" size="34rpx" color="#e08827" /></view>
-      <text class="menu-title">我的分组</text>
-      <text class="menu-hint">{{stats.groupCount ? stats.groupCount + ' 个活跃分组' : '创建或加入分组'}}</text>
+  </view>
+
+  <!-- ===== 我的分组 ===== -->
+  <view wx:if="{{groups.length}}" class="section-label">我的分组<text class="label-count">{{groups.length}}</text></view>
+  <view wx:if="{{groups.length}}" class="menu-card surface">
+    <view wx:for="{{groups}}" wx:key="id" wx:for-item="g" class="menu-row" bindtap="openGroup" data-id="{{g.id}}">
+      <view class="group-avatar" style="background:{{g.tone === 'green' ? '#e6f6eb' : g.tone === 'blue' ? '#e6f0fc' : '#fff3e5'}}">
+        <t-icon name="usergroup" size="32rpx" color="{{g.tone === 'green' ? '#1e9e5a' : g.tone === 'blue' ? '#1d4ed8' : '#e08827'}}" />
+      </view>
+      <text class="menu-title">{{g.name}}</text>
+      <text class="menu-value">{{g.role === '管理员' ? '我管理的' : '成员'}}</text>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
   </view>
@@ -90,65 +117,29 @@
     </view>
   </view>
 
-  <!-- ===== 版本号（长按可打开隐藏运维面板）===== -->
-  <view class="version" bindlongpress="onVersionLongPress">
-    智能排班 v0.1.0 · 数据仅用于排班协作
-  </view>
+  <view class="version" bindlongpress="onVersionLongPress">智能排班 v0.1.0 · 数据仅用于排班协作</view>
 
-  <!-- ===== 隐藏开发者面板 ===== -->
-
-  <!-- ===== 帮助与反馈面板 ===== -->
+  <!-- ===== 帮助面板 ===== -->
   <view wx:if="{{helpSheetOpen}}" class="sheet-mask" bindtap="closeHelpSheet">
     <view class="help-sheet surface" catchtap="noop">
-      <!-- 拖拽条 -->
       <view class="sheet-handle"><view class="handle-bar"></view></view>
-      <view class="help-header">
-        <text class="help-title">帮助与反馈</text>
-        <t-icon name="close" size="36rpx" color="#9ba79f" bindtap="closeHelpSheet" />
+      <view class="help-header"><text class="help-title">帮助与反馈</text><t-icon name="close" size="36rpx" color="#9ba79f" bindtap="closeHelpSheet" /></view>
+      <view class="help-section"><text class="help-section-title">联系邮箱</text>
+        <view class="help-contact-row"><view class="help-contact-left"><t-icon name="mail" size="36rpx" color="#1e9e5a" /><text class="help-email">deavenhui@163.com</text></view><button class="help-copy-btn" bindtap="copyHelpEmail">复制</button></view>
       </view>
-
-      <!-- 反馈邮箱 -->
-      <view class="help-section">
-        <text class="help-section-title">联系邮箱</text>
-        <view class="help-contact-row">
-          <view class="help-contact-left">
-            <t-icon name="mail" size="36rpx" color="#1e9e5a" />
-            <text class="help-email">deavenhui@163.com</text>
-          </view>
-          <button class="help-copy-btn" bindtap="copyHelpEmail">复制</button>
-        </view>
+      <view class="help-section"><text class="help-section-title">常见问题</text>
+        <view class="help-faq-item"><view class="help-faq-q"><view class="faq-dot">Q</view><text>如何填写可用时间？</text></view><view class="help-faq-a"><view class="faq-dot answer">A</view><text>进入「可用时间」或「预填写」页面，选择日期标记可用/首选/不可用时段提交。</text></view></view>
+        <view class="help-faq-item"><view class="help-faq-q"><view class="faq-dot">Q</view><text>课表识别怎么用？</text></view><view class="help-faq-a"><view class="faq-dot answer">A</view><text>进入「课表识别」上传清晰的课表或排班表图片，系统自动识别并生成本周模板。</text></view></view>
+        <view class="help-faq-item"><view class="help-faq-q"><view class="faq-dot">Q</view><text>如何加入分组？</text></view><view class="help-faq-a"><view class="faq-dot answer">A</view><text>联系管理员获取邀请码，在「我的分组」页输入邀请码即可加入。</text></view></view>
       </view>
-
-      <!-- 常见问题 -->
-      <view class="help-section">
-        <text class="help-section-title">常见问题</text>
-        <view class="help-faq-item">
-          <view class="help-faq-q"><view class="faq-dot">Q</view><text>如何填写可用时间？</text></view>
-          <view class="help-faq-a"><view class="faq-dot answer">A</view><text>进入「可用时间」页面，选择日期并标记可用/首选/不可用时段，提交后发布者即可看到。</text></view>
-        </view>
-        <view class="help-faq-item">
-          <view class="help-faq-q"><view class="faq-dot">Q</view><text>已发布的班次在哪里查看？</text></view>
-          <view class="help-faq-a"><view class="faq-dot answer">A</view><text>在「我的日程」页面或首页下方可看到已分配给你的所有班次。</text></view>
-        </view>
-        <view class="help-faq-item">
-          <view class="help-faq-q"><view class="faq-dot">Q</view><text>如何加入一个排班分组？</text></view>
-          <view class="help-faq-a"><view class="faq-dot answer">A</view><text>联系分组管理员获取邀请码，在「我的分组」页输入邀请码即可加入。</text></view>
-        </view>
-      </view>
-
-      <!-- 底部说明 -->
-      <view class="help-footer">
-        <text>如遇问题或建议，请发送邮件反馈</text>
-        <text>我们会在 1-2 个工作日内回复</text>
-      </view>
+      <view class="help-footer"><text>如遇问题或建议，请发送邮件反馈</text><text>我们会在 1-2 个工作日内回复</text></view>
     </view>
   </view>
 
-  <!-- ===== 隐藏开发者面板 ===== -->
+  <!-- ===== 开发者面板 ===== -->
   <view wx:if="{{devSheetOpen}}" class="dev-mask" bindtap="closeDevSheet">
     <view class="dev-sheet surface" catchtap="noop">
-      <view class="dev-title">开发者选项</view>
-      <view class="mini-label">仅 develop 可见 · 用户界面不展示入口</view>
+      <view class="dev-title">开发者选项</view><view class="mini-label">仅 develop 可见</view>
       <view class="dev-row"><text>登录</text><text class="dev-value">{{authModeLabel}}</text></view>
       <view class="dev-row"><text>API</text><text class="dev-value api">{{apiBaseUrl || '—'}}</text></view>
       <view class="dev-actions">

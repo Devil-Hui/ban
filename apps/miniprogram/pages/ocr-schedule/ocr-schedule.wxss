@@ -1,0 +1,33 @@
+.ocr-page { padding: 0 20rpx calc(48rpx + env(safe-area-inset-bottom)); }
+.ocr-hero { display: flex; flex-direction: column; align-items: center; padding: 80rpx 40rpx 60rpx; text-align: center; }
+.ocr-hero-icon { width: 144rpx; height: 144rpx; border-radius: 50%; background: #f2f5f3; display: flex; align-items: center; justify-content: center; margin-bottom: 32rpx; }
+.ocr-hero-title { font-size: 36rpx; font-weight: 700; color: var(--ink); margin-bottom: 12rpx; }
+.ocr-hero-sub { font-size: 26rpx; color: var(--muted); line-height: 1.5; margin-bottom: 40rpx; }
+.ocr-upload-btn { width: 320rpx; height: 88rpx; line-height: 88rpx; font-size: 30rpx; font-weight: 650; color: #fff; background: var(--brand); border: 0; border-radius: 44rpx; }
+.ocr-hint { margin-top: 24rpx; font-size: 20rpx; color: var(--muted); }
+
+.ocr-preview { padding: 20rpx; border-radius: 20rpx; margin-top: 20rpx; }
+.preview-img { width: 100%; border-radius: 14rpx; }
+.preview-actions { display: flex; gap: 16rpx; margin-top: 20rpx; }
+.action-btn { flex: 1; height: 76rpx; line-height: 76rpx; font-size: 26rpx; font-weight: 600; border: 0; border-radius: 14rpx; padding: 0; }
+.action-btn.primary { color: #fff; background: var(--brand); }
+.action-btn.secondary { color: var(--ink); background: #eef2ef; }
+
+/* 结果 */
+.ocr-result { margin-top: 32rpx; }
+.result-card { border-radius: 20rpx; overflow: hidden; padding: 8rpx 0; }
+.result-week { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 24rpx 8rpx; }
+.result-week > text:first-child { font-size: 28rpx; font-weight: 700; color: var(--ink); }
+.result-item { display: flex; gap: 20rpx; padding: 20rpx 24rpx; border-bottom: 1rpx solid var(--line); }
+.result-item:last-child { border-bottom: 0; }
+.result-time { flex: none; width: 140rpx; display: flex; flex-direction: column; gap: 4rpx; }
+.time-day { font-size: 26rpx; font-weight: 650; color: var(--ink); }
+.time-slot { font-size: 22rpx; color: var(--muted); }
+.result-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4rpx; }
+.result-name { font-size: 28rpx; font-weight: 600; color: var(--ink); }
+.result-location { font-size: 22rpx; color: var(--subtle); }
+.result-actions { display: flex; gap: 16rpx; margin-top: 24rpx; }
+
+.section-label { margin: 32rpx 4rpx 14rpx; font-size: 24rpx; font-weight: 700; color: var(--ink); }
+.state-box { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14rpx; padding: 80rpx 32rpx; text-align: center; color: var(--muted); font-size: 27rpx; border-radius: 20rpx; background: #fff; }
+.state-box .t-icon { margin-bottom: 8rpx; }
