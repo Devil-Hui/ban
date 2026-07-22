@@ -34,6 +34,12 @@ Page({
   data: {
     taskId: '',
     task: null,
+    /**
+     * standalone=true → “预填写可用时间”模式（不依赖具体任务）。
+     * 此时页面标题改为「预填写可用时间」，无 task/landing 上下文，
+     * 提交走 POST /users/me/availability。
+     */
+    standalone: false,
     days: [],
     rows: [],
     mode: 'calendar',
@@ -65,17 +71,62 @@ Page({
 
   onLoad(options) {
     const taskId = options.taskId || wx.getStorageSync('scheduling-current-task');
+    // standalone: 来自「预填写」快捷入口，不依赖任何排班任务
+    const standalone = !taskId || options.standalone === '1';
     const rawToken = options.shareToken
       ? decodeURIComponent(String(options.shareToken))
       : (wx.getStorageSync('scheduling-share-token') || '');
     const shareToken = String(rawToken || '').trim().toUpperCase();
     if (shareToken) wx.setStorageSync('scheduling-share-token', shareToken);
     this.setData({
-      taskId,
+      taskId: standalone ? '' : taskId,
+      standalone,
       shareToken,
       inviteCodeInput: shareToken,
     });
-    this.loadLandingContext();
+    if (standalone) {
+      wx.setNavigationBarTitle({ title: '预填写可用时间' });
+      this.loadStandalone();
+    } else {
+      this.loadLandingContext();
+    }
+  },
+
+  /** 独立预填写：不依赖任务，加载本周默认时段网格 */
+  loadStandalone() {
+    const now = new Date();
+    const day = now.getDay() || 7;
+    const monday = new Date(now); monday.setDate(now.getDate() - day + 1);
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const ds = d.toISOString().slice(0, 10);
+      days.push({ date: ds, day: String(ds).slice(8), week: weekday(ds) });
+    }
+    // 默认时段行: 每 2 小时一段 (8:00-22:00)
+    const slots = [];
+    for (let h = 8; h < 22; h += 2) {
+      const start = String(h).padStart(2, '0') + ':00';
+      const end = String(h + 2).padStart(2, '0') + ':00';
+      const slotDateMap = {};
+      days.forEach((d) => { slotDateMap[d.date] = `${d.date}_${start}`; });
+      slots.push({ label: `${start} - ${end}`, slots: slotDateMap, states: days.map(() => 'unavailable') });
+    }
+    // 尝试拉取已保存的预填写数据
+    api.request('/users/me/availability').then((data) => {
+      const saved = Array.isArray(data) ? data : (data && data.rows) || [];
+      if (saved.length) {
+        const merged = slots.map((row, ri) => ({
+          ...row,
+          states: row.states.map((_, ci) => (saved[ri] && saved[ri][ci]) || row.states[ci]),
+        }));
+        this.setData({ days, rows: merged, loading: false, submitted: false });
+      } else {
+        this.setData({ days, rows: slots, loading: false, submitted: false });
+      }
+    }).catch(() => {
+      this.setData({ days, rows: slots, loading: false, submitted: false });
+    });
   },
 
   onInviteCodeInput(e) {
@@ -285,6 +336,32 @@ Page({
 
   submit() {
     if (this.data.saving) return;
+
+    // ---- standalone 预填写 ----
+    if (this.data.standalone) {
+      const rows = this.data.days[0]
+        ? this.data.rows.map((row) =>
+            this.data.days.map((day, ci) => ({
+              date: day.date,
+              time: row.label,
+              state: (row.states && row.states[ci]) || 'unavailable',
+            }))
+          )
+        : [];
+      this.setData({ saving: true });
+      api
+        .request('/users/me/availability', { method: 'POST', data: { rows } })
+        .then(() => {
+          this.setData({ submitted: true });
+          wx.showToast({ title: '预填写已保存', icon: 'success' });
+          setTimeout(() => wx.navigateBack(), 1200);
+        })
+        .catch(() => wx.showToast({ title: '保存失败', icon: 'none' }))
+        .finally(() => this.setData({ saving: false }));
+      return;
+    }
+    // ---- 原任务相关提交流程 ----
+
     // E3: a one-time share token is consumed on first submit; block resubmission
     // once the external invitee has already submitted.
     if (this.data.submitted && !this.data.isMember && !this.data.shareToken) {

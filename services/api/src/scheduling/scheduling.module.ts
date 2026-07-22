@@ -7,6 +7,7 @@ import { ScheduleController } from './schedule.controller.js';
 import { ScheduleRepository } from './schedule.repository.js';
 import { ScheduleService } from './schedule.service.js';
 import { ShareController } from './share.controller.js';
+import { UserAvailabilityController } from './user-availability.controller.js';
 
-@Module({ controllers: [ScheduleController, ShareController, OcrScheduleController], providers: [AuditService, OutboxService, GroupRepository, ScheduleRepository, ScheduleService], exports: [ScheduleService, ScheduleRepository] })
+@Module({ controllers: [ScheduleController, ShareController, OcrScheduleController, UserAvailabilityController], providers: [AuditService, OutboxService, GroupRepository, ScheduleRepository, ScheduleService], exports: [ScheduleService, ScheduleRepository] })
 export class SchedulingModule {}
