@@ -2,15 +2,37 @@ const api = require('../../utils/api');
 const { writeOverride, clearAppLocalState } = require('../../utils/env-settings');
 const { LOCAL_API_BASE_URL } = require('../../utils/runtime-config');
 
+/** 根据当前小时返回问候语 */
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 6) return '夜深了';
+  if (h < 9) return '早上好';
+  if (h < 12) return '上午好';
+  if (h < 14) return '中午好';
+  if (h < 18) return '下午好';
+  return '晚上好';
+}
+
 Page({
   data: {
+    /** 时段问候 */
+    greeting: getGreeting(),
+    /** 隐私手机号 */
     privacyPhone: '未授权',
+    /** 用户对象 */
     user: {},
+    /** 数据看板 */
+    stats: {
+      groupCount: 0,
+      pendingTasks: 0,
+      submissionCount: 0,
+      totalShifts: 0,
+    },
+    /** 开发环境标志 */
     isDevelop: false,
     authMode: 'production',
     envVersion: '',
     apiBaseUrl: '',
-    // hidden developer sheet (long-press version)
     devSheetOpen: false,
     authModeLabel: '',
   },
@@ -20,6 +42,14 @@ Page({
 
   onShow() {
     this.refreshEnv();
+    this.setData({ greeting: getGreeting() });
+    this.loadUser();
+    this.loadStats();
+  },
+
+  /* ----- 数据加载 ----- */
+
+  loadUser() {
     api
       .login()
       .then((user) => {
@@ -33,6 +63,22 @@ Page({
       });
   },
 
+  /** 拉数据看板（允部分失败） */
+  loadStats() {
+    Promise.allSettled([
+      api.request('/groups').then((data) => {
+        const groups = Array.isArray(data) ? data : data?.items || [];
+        this.setData({ 'stats.groupCount': groups.length });
+      }),
+      api.request('/scheduling/assignments/me?limit=1').then((data) => {
+        const count = typeof data?.total === 'number' ? data.total : (Array.isArray(data) ? data.length : 0);
+        this.setData({ 'stats.totalShifts': count });
+      }),
+    ]).catch(() => {});
+  },
+
+  /* ----- 环境 / 开关 ----- */
+
   refreshEnv() {
     const app = getApp();
     if (typeof app.applyRuntimeConfig === 'function') app.applyRuntimeConfig();
@@ -45,6 +91,33 @@ Page({
       authModeLabel: authMode === 'mock' ? '本地调试' : '微信授权',
     });
   },
+
+  /* ----- 页面路由 ----- */
+
+  navigateTo(e) {
+    const page = e.currentTarget.dataset.page;
+    if (page) wx.navigateTo({ url: page });
+  },
+
+  openHelp() {
+    wx.showModal({
+      title: '帮助与反馈',
+      content: '如遇使用问题，请联系排班管理员或发送邮件至 support@scheduling.example.com。',
+      showCancel: false,
+      confirmText: '知道了',
+    });
+  },
+
+  openAbout() {
+    wx.showModal({
+      title: '智能排班',
+      content: '让团队排班更高效、更透明。\n\n基于可用时间自动匹配，告别手动排班混乱。',
+      showCancel: false,
+      confirmText: '好的',
+    });
+  },
+
+  /* ----- 手机号 / 注销 ----- */
 
   authorizePhone() {
     wx.showModal({
@@ -75,17 +148,14 @@ Page({
     });
   },
 
-  /** User-facing: no dev copy. Long-press opens hidden panel only in develop. */
+  /* ----- 开发者面板 ----- */
+
   onVersionLongPress() {
     if (!this.data.isDevelop) return;
     this.refreshEnv();
     this.setData({ devSheetOpen: true });
   },
-
-  closeDevSheet() {
-    this.setData({ devSheetOpen: false });
-  },
-
+  closeDevSheet() { this.setData({ devSheetOpen: false }); },
   noop() {},
 
   switchAuthMode() {

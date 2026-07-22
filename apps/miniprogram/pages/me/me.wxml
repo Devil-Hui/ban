@@ -1,51 +1,99 @@
 <view class="page me-page">
-  <view class="profile-card surface">
-    <view class="avatar-ring">
-      <t-avatar size="120rpx" shape="circle">{{user.nickname || '我'}}</t-avatar>
-    </view>
-    <view class="profile-copy">
-      <view class="profile-name">{{user.nickname || '未登录'}}</view>
-      <view class="subtitle">排班协作账号</view>
-      <view class="member-id">ID {{user.id || '—'}}</view>
+  <!-- ===== 头部形象区 ===== -->
+  <view class="header-banner">
+    <view class="header-inner">
+      <view class="profile-avatar">
+        <t-avatar size="112rpx" shape="circle" icon="user">{{user.nickname || '我'}}</t-avatar>
+      </view>
+      <view class="profile-info">
+        <view class="greeting">{{greeting}}，{{user.nickname || '同学'}} 👋</view>
+        <view class="profile-meta">
+          <text class="role-tag">排班协作者</text>
+          <text wx:if="{{user.id}}" class="user-id">ID {{user.id}}</text>
+        </view>
+      </view>
     </view>
   </view>
 
+  <!-- ===== 数据看板（4 列卡片）===== -->
+  <view class="stats-row">
+    <view class="stat-item"><text class="stat-num">{{stats.groupCount || 0}}</text><text class="stat-label">我的分组</text></view>
+    <view class="stat-item"><text class="stat-num">{{stats.pendingTasks || 0}}</text><text class="stat-label">待办班次</text></view>
+    <view class="stat-item"><text class="stat-num">{{stats.submissionCount || 0}}</text><text class="stat-label">可用时间</text></view>
+    <view class="stat-item"><text class="stat-num">{{stats.totalShifts || 0}}</text><text class="stat-label">累计班次</text></view>
+  </view>
+
+  <!-- ===== 常用服务 ===== -->
+  <view class="section-label">常用服务</view>
+  <view class="menu-card surface">
+    <view class="menu-row" bindtap="navigateTo" data-page="/pages/schedule/schedule">
+      <view class="menu-icon icon-green"><t-icon name="calendar" size="34rpx" color="#1e9e5a" /></view>
+      <text class="menu-title">我的日程</text>
+      <text class="menu-hint">查看已发布班次</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-row" bindtap="navigateTo" data-page="/pages/availability/availability">
+      <view class="menu-icon icon-blue"><t-icon name="edit-1" size="34rpx" color="#1d4ed8" /></view>
+      <text class="menu-title">可用时间</text>
+      <text class="menu-hint">填写我的空闲时段</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-row" bindtap="navigateTo" data-page="/pages/groups/groups">
+      <view class="menu-icon icon-orange"><t-icon name="usergroup" size="34rpx" color="#e08827" /></view>
+      <text class="menu-title">我的分组</text>
+      <text class="menu-hint">{{stats.groupCount ? stats.groupCount + ' 个活跃分组' : '创建或加入分组'}}</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
+    </view>
+  </view>
+
+  <!-- ===== 账号与隐私 ===== -->
   <view class="section-label">账号与隐私</view>
-  <view class="settings surface">
-    <view class="setting-row" bindtap="authorizePhone">
-      <view class="setting-icon green-bg"><t-icon name="mobile" size="32rpx" color="#1e9e5a" /></view>
-      <view class="setting-copy">
-        <text class="setting-title">手机号</text>
-        <text class="mini-label">{{privacyPhone}}</text>
-      </view>
-      <t-icon name="chevron-right" size="30rpx" color="#9ba79f" />
+  <view class="menu-card surface">
+    <view class="menu-row" bindtap="authorizePhone">
+      <view class="menu-icon icon-green"><t-icon name="mobile" size="34rpx" color="#1e9e5a" /></view>
+      <text class="menu-title">手机号</text>
+      <text class="menu-value mono">{{privacyPhone}}</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
-    <view class="setting-row" bindtap="requestDeletion">
-      <view class="setting-icon red-bg"><t-icon name="delete" size="32rpx" color="#df5c4c" /></view>
-      <view class="setting-copy">
-        <text class="setting-title danger-text">注销账号</text>
-        <text class="mini-label">30 天冷静期后匿名化</text>
-      </view>
-      <t-icon name="chevron-right" size="30rpx" color="#9ba79f" />
+    <view class="menu-divider"></view>
+    <view class="menu-row" bindtap="requestDeletion">
+      <view class="menu-icon icon-red"><t-icon name="delete" size="34rpx" color="#df5c4c" /></view>
+      <text class="menu-title danger-text">注销账号</text>
+      <text class="menu-value mini-label">30 天冷静期后匿名化</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
   </view>
 
-  <view class="section-label">会话</view>
-  <view class="settings surface">
-    <view class="setting-row" bindtap="logout">
-      <view class="setting-icon gray-bg"><t-icon name="logout" size="32rpx" color="#68766d" /></view>
-      <view class="setting-copy">
-        <text class="setting-title">退出登录</text>
-        <text class="mini-label">清除当前设备令牌</text>
-      </view>
+  <!-- ===== 其他 ===== -->
+  <view class="section-label">其他</view>
+  <view class="menu-card surface">
+    <view class="menu-row" bindtap="openHelp">
+      <view class="menu-icon icon-gray"><t-icon name="help-circle" size="34rpx" color="#68766d" /></view>
+      <text class="menu-title">帮助与反馈</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-row" bindtap="openAbout">
+      <view class="menu-icon icon-gray"><t-icon name="info-circle" size="34rpx" color="#68766d" /></view>
+      <text class="menu-title">关于智能排班</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-row" bindtap="logout">
+      <view class="menu-icon icon-gray"><t-icon name="logout" size="34rpx" color="#68766d" /></view>
+      <text class="menu-title">退出登录</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
   </view>
 
-  <!-- 用户只看到版本号；开发版长按可打开隐藏运维面板 -->
+  <!-- ===== 版本号（长按可打开隐藏运维面板）===== -->
   <view class="version" bindlongpress="onVersionLongPress">
     智能排班 v0.1.0 · 数据仅用于排班协作
   </view>
 
+  <!-- ===== 隐藏开发者面板 ===== -->
   <view wx:if="{{devSheetOpen}}" class="dev-mask" bindtap="closeDevSheet">
     <view class="dev-sheet surface" catchtap="noop">
       <view class="dev-title">开发者选项</view>
