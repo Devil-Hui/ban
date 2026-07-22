@@ -100,11 +100,22 @@ Page({
   },
 
   openHelp() {
-    wx.showModal({
-      title: '帮助与反馈',
-      content: '如遇使用问题，请联系排班管理员或发送邮件至 support@scheduling.example.com。',
-      showCancel: false,
-      confirmText: '知道了',
+    wx.showActionSheet({
+      itemList: ['复制邮箱地址'],
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          wx.setClipboardData({
+            data: 'deavenhui@163.com',
+            success: () => wx.showToast({ title: '已复制 deavenhui@163.com', icon: 'success' }),
+          });
+        }
+      },
+      fail: () => {
+        wx.setClipboardData({
+          data: 'deavenhui@163.com',
+          success: () => wx.showToast({ title: '已复制 deavenhui@163.com', icon: 'success' }),
+        });
+      },
     });
   },
 

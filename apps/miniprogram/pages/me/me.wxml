@@ -1,26 +1,36 @@
 <view class="page me-page">
-  <!-- ===== 头部形象区 ===== -->
-  <view class="header-banner">
-    <view class="header-inner">
-      <view class="profile-avatar">
-        <t-avatar size="112rpx" shape="circle" icon="user">{{user.nickname || '我'}}</t-avatar>
-      </view>
-      <view class="profile-info">
-        <view class="greeting">{{greeting}}，{{user.nickname || '同学'}} 👋</view>
-        <view class="profile-meta">
-          <text class="role-tag">排班协作者</text>
-          <text wx:if="{{user.id}}" class="user-id">ID {{user.id}}</text>
-        </view>
+  <!-- ===== 头部信息卡（白底，与首页 topbar 画风一致）===== -->
+  <view class="profile-card surface">
+    <view class="profile-avatar">
+      <t-avatar size="104rpx" shape="circle">{{user.nickname || '我'}}</t-avatar>
+    </view>
+    <view class="profile-info">
+      <view class="greeting">{{greeting}}，{{user.nickname || '同学'}}</view>
+      <view class="profile-meta">
+        <text class="role-tag">排班协作者</text>
+        <text wx:if="{{user.id}}" class="user-id">ID {{user.id}}</text>
       </view>
     </view>
   </view>
 
   <!-- ===== 数据看板（4 列卡片）===== -->
-  <view class="stats-row">
+  <view class="stats-row surface">
     <view class="stat-item"><text class="stat-num">{{stats.groupCount || 0}}</text><text class="stat-label">我的分组</text></view>
     <view class="stat-item"><text class="stat-num">{{stats.pendingTasks || 0}}</text><text class="stat-label">待办班次</text></view>
     <view class="stat-item"><text class="stat-num">{{stats.submissionCount || 0}}</text><text class="stat-label">可用时间</text></view>
     <view class="stat-item"><text class="stat-num">{{stats.totalShifts || 0}}</text><text class="stat-label">累计班次</text></view>
+  </view>
+
+  <!-- ===== 快捷操作：预填写可用时间 ===== -->
+  <view class="prefill-card surface" bindtap="navigateTo" data-page="/pages/availability/availability">
+    <view class="prefill-left">
+      <view class="prefill-icon"><t-icon name="check-circle" size="44rpx" color="#1e9e5a" /></view>
+      <view class="prefill-copy">
+        <text class="prefill-title">预填写可用时间</text>
+        <text class="prefill-sub">提前设定你的空闲时段，发布后自动匹配班次</text>
+      </view>
+    </view>
+    <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
   </view>
 
   <!-- ===== 常用服务 ===== -->
@@ -30,13 +40,6 @@
       <view class="menu-icon icon-green"><t-icon name="calendar" size="34rpx" color="#1e9e5a" /></view>
       <text class="menu-title">我的日程</text>
       <text class="menu-hint">查看已发布班次</text>
-      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
-    </view>
-    <view class="menu-divider"></view>
-    <view class="menu-row" bindtap="navigateTo" data-page="/pages/availability/availability">
-      <view class="menu-icon icon-blue"><t-icon name="edit-1" size="34rpx" color="#1d4ed8" /></view>
-      <text class="menu-title">可用时间</text>
-      <text class="menu-hint">填写我的空闲时段</text>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
     <view class="menu-divider"></view>
@@ -57,13 +60,6 @@
       <text class="menu-value mono">{{privacyPhone}}</text>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
-    <view class="menu-divider"></view>
-    <view class="menu-row" bindtap="requestDeletion">
-      <view class="menu-icon icon-red"><t-icon name="delete" size="34rpx" color="#df5c4c" /></view>
-      <text class="menu-title danger-text">注销账号</text>
-      <text class="menu-value mini-label">30 天冷静期后匿名化</text>
-      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
-    </view>
   </view>
 
   <!-- ===== 其他 ===== -->
@@ -72,12 +68,19 @@
     <view class="menu-row" bindtap="openHelp">
       <view class="menu-icon icon-gray"><t-icon name="help-circle" size="34rpx" color="#68766d" /></view>
       <text class="menu-title">帮助与反馈</text>
+      <text class="menu-value">deavenhui@163.com</text>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
     <view class="menu-divider"></view>
     <view class="menu-row" bindtap="openAbout">
       <view class="menu-icon icon-gray"><t-icon name="info-circle" size="34rpx" color="#68766d" /></view>
       <text class="menu-title">关于智能排班</text>
+      <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
+    </view>
+    <view class="menu-divider"></view>
+    <view class="menu-row" bindtap="requestDeletion">
+      <view class="menu-icon icon-gray"><t-icon name="delete" size="34rpx" color="#9ba79f" /></view>
+      <text class="menu-title muted-text">注销账号</text>
       <t-icon name="chevron-right" size="28rpx" color="#c3cbc6" />
     </view>
     <view class="menu-divider"></view>
@@ -98,14 +101,8 @@
     <view class="dev-sheet surface" catchtap="noop">
       <view class="dev-title">开发者选项</view>
       <view class="mini-label">仅 develop 可见 · 用户界面不展示入口</view>
-      <view class="dev-row">
-        <text>登录</text>
-        <text class="dev-value">{{authModeLabel}}</text>
-      </view>
-      <view class="dev-row">
-        <text>API</text>
-        <text class="dev-value api">{{apiBaseUrl || '—'}}</text>
-      </view>
+      <view class="dev-row"><text>登录</text><text class="dev-value">{{authModeLabel}}</text></view>
+      <view class="dev-row"><text>API</text><text class="dev-value api">{{apiBaseUrl || '—'}}</text></view>
       <view class="dev-actions">
         <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="switchAuthMode">切换登录方式</button>
         <button class="ui-btn ui-btn-light ui-btn-sm" bindtap="copyApi">复制服务地址</button>
