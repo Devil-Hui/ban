@@ -16,9 +16,9 @@
     </view>
     <t-progress percentage="{{collection.progress}}" stroke-width="10" color="#1e9e5a" track-color="#eaf1ec" />
   </view>
-  <view wx:elif="{{!manage}}" class="block surface">
-    <view class="block-title">我的可用时间</view>
-    <view class="subtitle">{{availabilitySubmitted ? '已提交' : '尚未提交'}}</view>
+  <view wx:elif="{{!manage && task.status === 'collecting'}}" class="block surface">
+    <view class="block-title">{{availabilitySubmitted ? '⏳ 已提交' : '📋 填写可用时间'}}</view>
+    <view class="subtitle">{{availabilitySubmitted ? '你的可用时间已提交，等待管理员排班' : '直接点击课表绿色格子，选出你可排班的时间段'}}</view>
   </view>
 
   <!-- 3. 课表（主交互） -->
@@ -36,9 +36,12 @@
         selectedKeys="{{gridSelectedKeys}}"
         peopleByKey="{{gridPeopleByKey}}"
         bind:celltap="onGridCellTap"
+        bind:selectchange="onSelectChange"
       />
       <view class="mini-label grid-hint">
-        {{task.canStaff ? '绿格可点：查看该时段已填报的人并选择值班' : '绿格为可排班时段；列=任务起止全部日期'}}
+        {{task.canStaff ? '绿格可点：查看该时段已填报的人并选择值班'
+          : (!manage && task.status === 'collecting') ? '点击绿色格子选择你可排班的时间段'
+          : '绿格为可排班时段；列=任务起止全部日期'}}
       </view>
     </view>
     <view wx:else class="empty-hint">暂无时段</view>
@@ -91,9 +94,11 @@
     </view>
   </view>
 
-  <!-- 成员底栏 -->
+  <!-- 成员底栏：收集阶段直接提交 -->
   <view class="fixed-action" wx:if="{{!manage && task.status === 'collecting'}}">
-    <button class="ui-btn ui-btn-primary" bindtap="fill">填写我的可用时间</button>
+    <button class="ui-btn ui-btn-primary" bindtap="submitMemberAvailability" disabled="{{submittingMember || availabilitySubmitted}}">
+      {{submittingMember ? '提交中…' : (availabilitySubmitted ? '已提交' : '提交可用时间')}}
+    </button>
   </view>
 
   <!-- 选人弹层：结束收集后点课表格 -->

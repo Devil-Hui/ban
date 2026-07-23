@@ -107,6 +107,9 @@ Page({
     objections: [],
     collection: null,
     availabilitySubmitted: false,
+    pendingSlots: [],
+    pendingChanged: false,
+    submittingMember: false,
     loading: true,
     solving: false,
     mintingShare: false,
@@ -188,7 +191,9 @@ Page({
     }).then(([task, catalog, members, fixedAssignments, collectionOrAvailability, board, objections = []]) => {
       const decorated = decorateTask(task, catalog);
       const grid = buildSlotGrid(task, fixedAssignments);
-      const gridMode = this.data.manage && decorated.canStaff ? 'staff' : 'readonly';
+      const gridMode = this.data.manage && decorated.canStaff ? 'staff'
+        : (!manage && task.status === 'collecting') ? 'select'
+        : 'readonly';
       const patch = {
         task: decorated,
         slots: task.slots || [],
@@ -209,6 +214,18 @@ Page({
       if (this.data.inviteCode) {
         patch.inviteShareText = inviteShareText(decorated, this.data.inviteCode);
       }
+      // 成员收集阶段：将已提交的可用时段标记为已选
+      if (!manage && task.status === 'collecting' && Array.isArray(collectionOrAvailability)) {
+        const existingKeys = [];
+        const keyBySlotId = {};
+        Object.keys(grid.slotIdByKey).forEach((k) => { keyBySlotId[grid.slotIdByKey[k]] = k; });
+        collectionOrAvailability.forEach((item) => {
+          const k = keyBySlotId[item.slotId];
+          if (k) existingKeys.push(k);
+        });
+        patch.gridSelectedKeys = existingKeys;
+        patch.pendingSlots = collectionOrAvailability.map((item) => ({ slotId: item.slotId, state: item.state || 'available' }));
+      }
       this.setData(patch);
     }).catch(() => this.setData({ loading: false }));
   },
@@ -216,6 +233,51 @@ Page({
   fill() {
     wx.setStorageSync('scheduling-current-task', this.data.taskId);
     wx.navigateTo({ url: `/pages/availability/availability?taskId=${this.data.taskId}` });
+  },
+
+  /** 非管理员在收集阶段点选课表格子 */
+  onSelectChange(e) {
+    if (this.data.manage) return;
+    const keys = e.detail?.keys;
+    if (!Array.isArray(keys)) return;
+    const selectedKeys = keys.slice();
+    const slotIdByKey = this.data.slotIdByKey;
+    const slots = [];
+    selectedKeys.forEach((key) => {
+      const slotId = slotIdByKey[key];
+      if (slotId) slots.push({ slotId, state: 'available' });
+    });
+    this.setData({
+      gridSelectedKeys: selectedKeys,
+      pendingSlots: slots,
+      pendingChanged: true,
+    });
+  },
+
+  /** 成员提交可用时间 */
+  submitMemberAvailability() {
+    if (this.data.submittingMember) return;
+    const slots = this.data.pendingSlots;
+    if (!slots || !slots.length) {
+      wx.showToast({ title: '请至少选择一个时段', icon: 'none' });
+      return;
+    }
+    this.setData({ submittingMember: true });
+    api.request(`/tasks/${this.data.taskId}/availability`, {
+      method: 'POST',
+      data: { slots },
+    }).then(() => {
+      wx.showToast({ title: '提交成功', icon: 'success' });
+      this.setData({
+        availabilitySubmitted: true,
+        pendingChanged: false,
+        submittingMember: false,
+      });
+    }).catch((error) => {
+      const msg = api.errorMessage(error, '') || '提交失败，请重试';
+      wx.showToast({ title: msg, icon: 'none' });
+      this.setData({ submittingMember: false });
+    });
   },
 
   onGridCellTap(e) {
