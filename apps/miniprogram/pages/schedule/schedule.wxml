@@ -1,1 +1,154 @@
-<view class="page schedule-page"><view class="topbar"><view><view class="eyebrow">MY SCHEDULE</view><view class="title">我的日程</view><view class="subtitle">只显示已发布且分配给你的班次</view></view><view class="month-switch"><t-icon name="calendar" size="34rpx" color="#1e9e5a" /><text>{{assignments.length}} 人次</text></view></view><view class="mode-switch"><view class="mode {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="setMode"><t-icon name="view-list" size="28rpx" />列表</view><view class="mode {{mode === 'calendar' ? 'active' : ''}}" data-mode="calendar" bindtap="setMode"><t-icon name="calendar" size="28rpx" />日历</view></view><view wx:if="{{loading}}" class="state-box">正在加载我的班次...</view><view wx:elif="{{!assignments.length}}" class="state-box surface"><t-icon name="calendar" size="64rpx" color="#9ba79f" /><text>暂无已发布班次</text><text class="mini-label">完成可用时间填写后，发布结果会显示在这里</text></view><block wx:else><block wx:if="{{mode === 'list'}}"><view wx:for="{{grouped}}" wx:key="date" class="assignment-list surface"><view class="section-head"><text class="section-title">{{item.label}}</text><text class="mini-label">{{item.items.length}} 人次</text></view><view wx:for="{{item.items}}" wx:key="id" class="assignment" data-task-id="{{item.taskId}}" bindtap="openTask"><view class="date-badge"><text>{{item.startTime}}</text><text>班次</text></view><view class="assignment-copy"><text class="task-name">{{item.taskTitle}}</text><text class="mini-label">{{item.groupName}} · {{item.startTime}} - {{item.endTime}}</text></view><t-icon name="chevron-right" size="28rpx" color="#9ba79f" /></view></view></block><block wx:else><view class="calendar-board surface"><view class="calendar-title">{{monthLabel}}</view><view class="calendar-week"><text wx:for="{{weekdays}}" wx:key="*this">{{item}}</text></view><view class="calendar-grid"><view wx:for="{{calendarDays}}" wx:key="date" class="calendar-cell {{item.inMonth ? '' : 'outside'}} {{selectedDate === item.date ? 'selected' : ''}}" data-date="{{item.date}}" bindtap="selectDate"><text>{{item.day}}</text><view wx:if="{{item.items.length}}" class="shift-dot"></view></view></view></view><view class="assignment-list surface"><view class="section-head"><text class="section-title">{{selectedDate || '选择日期'}}</text><text class="mini-label">{{selectedItems.length}} 人次</text></view><view wx:if="{{!selectedItems.length}}" class="calendar-empty">当天没有班次</view><view wx:for="{{selectedItems}}" wx:key="id" class="assignment" data-task-id="{{item.taskId}}" bindtap="openTask"><view class="date-badge"><text>{{item.startTime}}</text><text>班次</text></view><view class="assignment-copy"><text class="task-name">{{item.taskTitle}}</text><text class="mini-label">{{item.groupName}} · {{item.startTime}} - {{item.endTime}}</text></view><t-icon name="chevron-right" size="28rpx" color="#9ba79f" /></view></view></block></block></view>
+<view class="page schedule-page">
+  <!-- 顶部标题栏 -->
+  <view class="topbar">
+    <view>
+      <view class="eyebrow">MY SCHEDULE</view>
+      <view class="title">我的日程</view>
+      <view class="subtitle">查看已发布的排班安排</view>
+    </view>
+    <view class="month-switch">
+      <t-icon name="calendar" size="34rpx" color="#1e9e5a" />
+      <text>{{assignments.length}} 人次</text>
+    </view>
+  </view>
+
+  <!-- 视图切换 -->
+  <view class="mode-switch">
+    <view class="mode {{mode === 'list' ? 'active' : ''}}" data-mode="list" bindtap="setMode">
+      <t-icon name="view-list" size="28rpx" />列表
+    </view>
+    <view class="mode {{mode === 'calendar' ? 'active' : ''}}" data-mode="calendar" bindtap="setMode">
+      <t-icon name="calendar" size="28rpx" />日历
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view wx:if="{{loading}}" class="state-box">
+    <t-icon name="loading" size="48rpx" color="#9ba79f" />
+    <text>正在加载日程...</text>
+  </view>
+
+  <!-- ========== 列表视图 ========== -->
+  <block wx:elif="{{mode === 'list'}}">
+    <view wx:if="{{!assignments.length && !loading}}" class="state-box surface">
+      <t-icon name="calendar" size="64rpx" color="#9ba79f" />
+      <text>暂无已发布班次</text>
+      <text class="mini-label">完成可用时间填写后，发布结果会显示在这里</text>
+    </view>
+    <block wx:else>
+      <view wx:for="{{grouped}}" wx:key="date" class="assignment-list surface">
+        <view class="section-head">
+          <text class="section-title">{{item.label}}</text>
+          <text class="mini-label">{{item.items.length}} 人次</text>
+        </view>
+        <view
+          wx:for="{{item.items}}"
+          wx:key="id"
+          class="assignment"
+          data-task-id="{{item.taskId}}"
+          bindtap="openTask"
+        >
+          <view class="date-badge">
+            <text>{{item.startTime}}</text>
+            <text>班次</text>
+          </view>
+          <view class="assignment-copy">
+            <text class="task-name">{{item.taskTitle}}</text>
+            <text class="mini-label">{{item.groupName}} · {{item.startTime}} - {{item.endTime}}</text>
+          </view>
+          <t-icon name="chevron-right" size="28rpx" color="#9ba79f" />
+        </view>
+      </view>
+    </block>
+  </block>
+
+  <!-- ========== 日历视图 ========== -->
+  <block wx:else>
+    <!-- 月历面板 - 始终显示 -->
+    <view class="calendar-board surface">
+      <!-- 月份导航 -->
+      <view class="calendar-nav">
+        <view class="nav-arrows">
+          <view class="nav-btn" bindtap="goToPrevMonth">
+            <t-icon name="chevron-left" size="36rpx" color="#1f2a24" />
+          </view>
+          <text class="calendar-month-title">{{monthLabel}}</text>
+          <view class="nav-btn" bindtap="goToNextMonth">
+            <t-icon name="chevron-right" size="36rpx" color="#1f2a24" />
+          </view>
+        </view>
+        <view class="today-btn {{monthLabel === todayMonthLabel ? 'disabled' : ''}}" bindtap="goToToday">
+          <t-icon name="refresh" size="24rpx" color="#1e9e5a" />
+          <text>今天</text>
+        </view>
+      </view>
+
+      <!-- 星期头 -->
+      <view class="calendar-week">
+        <text wx:for="{{weekdays}}" wx:key="*this" class="weekday-item {{index === 0 || index === 6 ? 'weekend' : ''}}">{{item}}</text>
+      </view>
+
+      <!-- 日期网格 -->
+      <view class="calendar-grid">
+        <view
+          wx:for="{{calendarDays}}"
+          wx:key="date"
+          class="calendar-cell
+            {{item.inMonth ? '' : 'outside'}}
+            {{item.isToday ? 'today' : ''}}
+            {{selectedDate === item.date ? 'selected' : ''}}"
+          data-date="{{item.date}}"
+          bindtap="selectDate"
+        >
+          <text class="cell-day">{{item.day}}</text>
+          <!-- 班次标记点 -->
+          <view wx:if="{{item.hasShift}}" class="shift-dot {{selectedDate === item.date ? 'selected' : ''}}"></view>
+          <!-- 今日标记环 -->
+          <view wx:if="{{item.isToday && selectedDate !== item.date}}" class="today-ring"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 选中日期的排班详情 -->
+    <view wx:if="{{selectedItems.length > 0}}" class="selected-schedule surface">
+      <view class="section-head">
+        <text class="section-title">{{selectedDate}} 排班</text>
+        <text class="mini-label">{{selectedItems.length}} 人次</text>
+      </view>
+      <view
+        wx:for="{{selectedItems}}"
+        wx:key="id"
+        class="assignment"
+        data-task-id="{{item.taskId}}"
+        bindtap="openTask"
+      >
+        <view class="date-badge">
+          <text>{{item.startTime}}</text>
+          <text>班次</text>
+        </view>
+        <view class="assignment-copy">
+          <text class="task-name">{{item.taskTitle}}</text>
+          <text class="mini-label">{{item.groupName}} · {{item.startTime}} - {{item.endTime}}</text>
+        </view>
+        <t-icon name="chevron-right" size="28rpx" color="#9ba79f" />
+      </view>
+    </view>
+
+    <!-- 选中日期无排班的空状态 -->
+    <view wx:elif="{{selectedDate && selectedItems.length === 0}}" class="selected-schedule surface">
+      <view class="section-head">
+        <text class="section-title">{{selectedDate}}</text>
+      </view>
+      <view class="empty-schedule">
+        <t-icon name="calendar" size="48rpx" color="#c3cbc6" />
+        <text class="empty-text">当天暂无排班安排</text>
+      </view>
+    </view>
+
+    <!-- 无排班数据时的提示（日历下方） -->
+    <view wx:if="{{!assignments.length && !loading}}" class="no-data-hint surface">
+      <t-icon name="info-circle" size="32rpx" color="#7b8780" />
+      <text class="mini-label">暂未收到排班安排，日历可自由浏览</text>
+    </view>
+  </block>
+</view>

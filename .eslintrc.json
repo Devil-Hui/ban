@@ -1,0 +1,26 @@
+{
+  "env": { "browser": true, "es2022": true, "node": true },
+  "globals": { "wx": "readonly", "getApp": "readonly", "getCurrentPages": "readonly", "App": "readonly", "Page": "readonly", "Component": "readonly" },
+  "parserOptions": { "ecmaVersion": 2022, "sourceType": "module" },
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-console": "off",
+    "no-debugger": "warn",
+    "no-duplicate-imports": "error",
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": ["error", "always", { "null": "ignore" }]
+  },
+  "overrides": [
+    {
+      "files": ["services/**/*.ts"],
+      "parser": "@typescript-eslint/parser",
+      "plugins": ["@typescript-eslint"],
+      "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "warn",
+        "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
+      }
+    }
+  ]
+}

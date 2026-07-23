@@ -29,11 +29,27 @@
     </view>
   </view>
 
-  <view wx:if="{{loading}}" class="state-box">正在加载...</view>
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="state-box surface">
+    <t-icon name="loading" size="48rpx" color="var(--brand)" />
+    <text class="state-title">正在加载...</text>
+  </view>
+
+  <!-- 筛选后空结果（有分组但被筛选过滤） -->
+  <view wx:elif="{{groups.length && !filteredGroups.length}}" class="state-box surface state-filter-empty">
+    <t-icon name="filter" size="56rpx" color="{{roleFilter === 'member' ? '#6b9fe0' : '#6ba37c'}}" />
+    <text class="state-title">当前筛选下暂无分组</text>
+    <text class="state-subtitle">你还没有以「{{roleFilter === 'member' ? '成员' : '发布者'}}」身份加入的分组，试试切换到「全部」查看</text>
+    <view class="filter-empty-actions">
+      <view class="filter-chip-action" data-key="all" catchtap="setRoleFilter">查看全部分组</view>
+    </view>
+  </view>
+
+  <!-- 完全无分组 -->
   <view wx:elif="{{!filteredGroups.length}}" class="state-box surface">
-    <t-icon name="usergroup" size="64rpx" color="#9ba79f" />
-    <text>{{groups.length ? '当前筛选下暂无分组' : '暂无分组'}}</text>
-    <text class="mini-label">{{groups.length ? '试试切换右侧筛选' : '创建自己的分组，或使用邀请码加入'}}</text>
+    <t-icon name="usergroup" size="72rpx" color="#9ba79f" />
+    <text class="state-title">暂无分组</text>
+    <text class="state-subtitle">创建自己的分组，或使用管理员分享的邀请码加入已有分组</text>
   </view>
 
   <view
@@ -72,8 +88,8 @@
   <view wx:if="{{showJoin}}" class="modal-mask" catchtap="closeJoin">
     <view class="join-modal surface" catchtap="noop">
       <view class="modal-title">加入分组</view>
-      <view class="modal-subtitle">请输入管理员分享的 6 位邀请码</view>
-      <input class="code-input" maxlength="6" value="{{code}}" bindinput="onCode" placeholder="例如 2FK8QZ" />
+      <view class="modal-subtitle">请输入管理员分享的邀请码</view>
+      <input class="code-input" maxlength="8" value="{{code}}" bindinput="onCode" placeholder="例如 2FK8QZNS" />
       <button class="ui-btn ui-btn-primary" bindtap="confirmJoin" disabled="{{joining}}">
         {{joining ? '加入中...' : '确认加入'}}
       </button>

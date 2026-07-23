@@ -47,12 +47,18 @@ function taskFromRow(row: any, reservedNames: string[] = []): ScheduleTask {
     else if (rules.reservedNames) nextRules.reservedNames = rules.reservedNames;
     else delete nextRules.reservedNames;
   }
+  // 防御性状态计算：如果 deadline-worker 未及时更新，读取时自动修正
+  const effectiveStatus =
+    row.status === 'collecting' && row.deadline instanceof Date && row.deadline.getTime() <= Date.now()
+      ? 'ready'
+      : row.status;
+
   return {
     id: stringifyId(row.id),
     groupId: stringifyId(row.group_id),
     title: row.title,
     description: row.description,
-    status: row.status,
+    status: effectiveStatus,
     dateStart: asYmd(row.date_start),
     dateEnd: asYmd(row.date_end),
     deadline: row.deadline,

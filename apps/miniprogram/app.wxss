@@ -45,3 +45,63 @@ button::after { border: 0; }
 .avatar-stack t-avatar { margin-left: -10rpx; border: 3rpx solid #fff; }
 .avatar-stack t-avatar:first-child { margin-left: 0; }
 .pill { padding: 7rpx 14rpx; border-radius: 999rpx; background: var(--brand-soft); color: var(--brand); font-size: 22rpx; }
+
+/* ===== 全局空状态样式 ===== */
+.state-box {
+  min-height: 380rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18rpx;
+  padding: 60rpx 40rpx;
+  text-align: center;
+  color: var(--muted);
+  font-size: 27rpx;
+}
+.state-box .t-icon { margin-bottom: 6rpx; }
+.state-box .state-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+.state-box .state-subtitle {
+  font-size: 24rpx;
+  color: var(--subtle);
+  line-height: 1.55;
+  max-width: 440rpx;
+}
+/* 筛选空状态 — 更紧凑 */
+.state-box.state-filter-empty {
+  min-height: 260rpx;
+  padding: 48rpx 32rpx;
+  gap: 14rpx;
+}
+
+/* ===== 全局弹窗遮罩 =====
+ * 所有页面需要居中弹窗时使用 .modal-mask + 自定义 modal 类
+ * 示例：<view class="modal-mask" catchtap="onClose"><view class="my-modal surface" catchtap="noop">...</view></view>
+ */
+.modal-mask {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 27, 20, 0.42);
+}
+
+/* ===== 底部按钮行 =====
+ * 双按钮并排：<view class="btn-row"><button class="ui-btn ui-btn-light">上一步</button><button class="ui-btn ui-btn-primary">下一步</button></view>
+ */
+.btn-row {
+  display: flex;
+  align-items: stretch;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.btn-row .ui-btn {
+  flex: 1;
+}

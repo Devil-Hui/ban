@@ -93,43 +93,34 @@ function buildPeriods(opts = {}) {
   const base = PRESET_DEFAULTS[presetKey];
   const tweaks = opts.tweaks || {};
 
-  const firstStartMinute = parseHhmm(
-    tweaks.firstStart != null ? tweaks.firstStart : base.firstStart,
-    parseHhmm(base.firstStart, 8 * 60)
-  );
-  const durationMin = toPositiveInt(
-    tweaks.durationMin != null ? tweaks.durationMin : base.durationMin,
-    base.durationMin
-  );
-  const breakMin = toNonNegInt(
-    tweaks.breakMin != null ? tweaks.breakMin : base.breakMin,
-    base.breakMin
-  );
-  const morningCount = toNonNegInt(
-    tweaks.morningCount != null ? tweaks.morningCount : base.morningCount,
-    base.morningCount
-  );
-  const afternoonCount = toNonNegInt(
-    tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount,
-    base.afternoonCount
-  );
-  const eveningCount = toNonNegInt(
-    tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount,
-    base.eveningCount
-  );
+  const firstStartMinute = parseHhmm(tweaks.firstStart != null ? tweaks.firstStart : base.firstStart, parseHhmm(base.firstStart, 8 * 60));
+  const durationMin = toPositiveInt(tweaks.durationMin != null ? tweaks.durationMin : base.durationMin, base.durationMin);
+  const breakMin = toNonNegInt(tweaks.breakMin != null ? tweaks.breakMin : base.breakMin, base.breakMin);
+  const morningCount = toNonNegInt(tweaks.morningCount != null ? tweaks.morningCount : base.morningCount, base.morningCount);
+  const afternoonCount = toNonNegInt(tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount, base.afternoonCount);
+  const eveningCount = toNonNegInt(tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount, base.eveningCount);
 
-  const total = morningCount + afternoonCount + eveningCount;
+  // 午休 / 晚饭 只在用户启用时才生效
+  const hasLunch = tweaks.hasLunch && morningCount > 0 && afternoonCount > 0;
+  const lunchStartMinute = hasLunch ? parseHhmm(tweaks.lunchStart, 12 * 60) : 0;
+  const lunchEndMinute = hasLunch ? parseHhmm(tweaks.lunchEnd, 13 * 60 + 30) : 0;
+  const hasDinner = tweaks.hasDinner && afternoonCount > 0 && eveningCount > 0;
+  const dinnerStartMinute = hasDinner ? parseHhmm(tweaks.dinnerStart, 17 * 60 + 30) : 0;
+  const dinnerEndMinute = hasDinner ? parseHhmm(tweaks.dinnerEnd, 19 * 60) : 0;
+
   const periods = [];
   let cursor = firstStartMinute;
+  let seq = 1;
 
-  for (let i = 1; i <= total; i += 1) {
+  function pushSeq() {
     const startMinute = cursor;
     const endMinute = startMinute + durationMin;
     const startLabel = minuteToHhmm(startMinute);
     const endLabel = minuteToHhmm(endMinute);
     periods.push({
-      code: `p${i}`,
-      label: `第${i}节 ${startLabel}-${endLabel}`,
+      code: `p${seq}`,
+      label: `第${seq}节 ${startLabel}-${endLabel}`,
+      timeRange: `${startLabel}-${endLabel}`,
       startMinute,
       endMinute,
       minPeople: 1,
@@ -137,7 +128,48 @@ function buildPeriods(opts = {}) {
       maxPeople: 1,
     });
     cursor = endMinute + breakMin;
+    seq += 1;
   }
+
+  function pushRest(label, startMinute, endMinute) {
+    periods.push({
+      code: `rest${seq}`,
+      label,
+      timeRange: `${minuteToHhmm(startMinute)}-${minuteToHhmm(endMinute)}`,
+      startMinute,
+      endMinute,
+      minPeople: 0,
+      targetPeople: 0,
+      maxPeople: 0,
+      rest: true,
+    });
+  }
+
+  // 上午
+  for (let i = 0; i < morningCount; i += 1) pushSeq();
+
+  // 午休
+  if (hasLunch) {
+    pushRest(`午休 ${minuteToHhmm(lunchStartMinute)}-${minuteToHhmm(lunchEndMinute)}`, lunchStartMinute, lunchEndMinute);
+    // 只有"午休时间不排"开启时才跳过午休时段
+    if (tweaks.lunchBlocked != null ? tweaks.lunchBlocked : true) {
+      cursor = lunchEndMinute;
+    }
+  }
+
+  // 下午
+  for (let i = 0; i < afternoonCount; i += 1) pushSeq();
+
+  // 晚饭
+  if (hasDinner) {
+    pushRest(`晚饭 ${minuteToHhmm(dinnerStartMinute)}-${minuteToHhmm(dinnerEndMinute)}`, dinnerStartMinute, dinnerEndMinute);
+    if (tweaks.dinnerBlocked != null ? tweaks.dinnerBlocked : true) {
+      cursor = dinnerEndMinute;
+    }
+  }
+
+  // 晚上
+  for (let i = 0; i < eveningCount; i += 1) pushSeq();
 
   return periods;
 }

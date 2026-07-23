@@ -8,7 +8,7 @@ export class OcrScheduleController {
   @Post('ocr-schedule')
   @HttpCode(HttpStatus.OK)
   async ocrSchedule(@Req() request: FastifyRequest) {
-    const file = await request.file();
+    const file = await (request as any).file();
     if (!file) throw new (await import('@nestjs/common')).BadRequestException('请上传图片');
 
     // 生产环境替换为调用 OCR 云服务（腾讯云 OCR / 阿里云 OCR / 微信 OCR）
@@ -19,7 +19,7 @@ export class OcrScheduleController {
 
   @Post('ocr-schedule/apply')
   @HttpCode(HttpStatus.OK)
-  applyOcrResult(@Body() body: { schedule?: any[] }) {
+  async applyOcrResult(@Body() body: { schedule?: any[] }) {
     if (!body.schedule || !Array.isArray(body.schedule)) {
       throw new (await import('@nestjs/common')).BadRequestException('缺少 schedule 数组');
     }

@@ -94,23 +94,6 @@
   opacity: 0.55;
 }
 
-.state-box {
-  min-height: 56vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14rpx;
-  padding: 40rpx 32rpx;
-  text-align: center;
-  color: var(--muted);
-  font-size: 27rpx;
-}
-
-.state-box .t-icon {
-  margin-bottom: 8rpx;
-}
-
 .state-title {
   font-size: 32rpx;
   font-weight: 650;

@@ -9,12 +9,7 @@ import {
 } from '@nestjs/common';
 import { canGroup, type GroupAction } from './group.policy.js';
 import { GroupRepository, type GroupSummary, type MemberRecord } from './group.repository.js';
-
-const INVITE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-
-function inviteCode(): string {
-  return Array.from({ length: 6 }, () => INVITE_ALPHABET[randomInt(INVITE_ALPHABET.length)]).join('');
-}
+import { generateInviteCode } from '../utils/invite-code.js';
 
 function duplicateKey(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ER_DUP_ENTRY';
@@ -46,7 +41,7 @@ export class GroupService {
         const createOptions: { description?: string; ownerDisplayName?: string } = {};
         if (description) createOptions.description = description;
         if (ownerDisplayName) createOptions.ownerDisplayName = ownerDisplayName;
-        return await this.repository.createGroup(ownerId, finalName, inviteCode(), requestId, createOptions);
+        return await this.repository.createGroup(ownerId, finalName, generateInviteCode(), requestId, createOptions);
       } catch (error) {
         if (!duplicateKey(error)) throw error;
       }

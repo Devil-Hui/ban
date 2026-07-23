@@ -17,7 +17,7 @@
 
     <view class="form surface">
       <view class="field">
-        <text>任务名称</text>
+        <text class="required">任务名称</text>
         <input
           placeholder="请输入任务名称"
           value="{{title}}"
@@ -26,13 +26,13 @@
         />
       </view>
       <view class="field">
-        <text>开始日期</text>
+        <text class="required">开始日期</text>
         <picker mode="date" value="{{dateStart}}" data-field="dateStart" bindchange="onDateChange">
           <view class="picker-value">{{dateStart}} <t-icon name="chevron-down" size="26rpx" /></view>
         </picker>
       </view>
       <view class="field">
-        <text>结束日期</text>
+        <text class="required">结束日期</text>
         <picker mode="date" value="{{dateEnd}}" data-field="dateEnd" bindchange="onDateChange">
           <view class="picker-value">{{dateEnd}} <t-icon name="chevron-down" size="26rpx" /></view>
         </picker>
@@ -49,7 +49,7 @@
       </view>
     </view>
 
-    <button class="ui-btn ui-btn-primary" bindtap="nextFromStep1">下一步</button>
+    <button class="ui-btn ui-btn-primary ui-btn-full" bindtap="nextFromStep1">下一步</button>
   </view>
 
   <!-- Step 2: 时段与规则 -->
@@ -64,18 +64,18 @@
     </view>
     <view class="chip-row">
       <view
-        class="chip {{modeFlags.range ? 'active' : ''}}"
+        class="chip mode-range {{modeFlags.range ? 'active' : ''}}"
         data-key="range"
         bindtap="toggleMode"
       >时间段</view>
       <view
-        class="chip {{modeFlags.section ? 'active' : ''}}"
+        class="chip mode-section {{modeFlags.section ? 'active' : ''}}"
         data-key="section"
         bindtap="toggleMode"
       >节次</view>
       <view
         wx:if="{{showCustomChip}}"
-        class="chip {{modeFlags.custom ? 'active' : ''}}"
+        class="chip mode-custom {{modeFlags.custom ? 'active' : ''}}"
         data-key="custom"
         bindtap="toggleMode"
       >自定义</view>
@@ -97,35 +97,75 @@
     </view>
 
     <view wx:if="{{presetChosen}}" class="form surface tweak-form">
-      <view class="field">
-        <text>首节开始</text>
-        <picker mode="time" value="{{tweaks.firstStart}}" bindchange="onTweakTimeChange">
-          <view class="picker-value">{{tweaks.firstStart}} <t-icon name="chevron-down" size="26rpx" /></view>
-        </picker>
-      </view>
-      <view class="field">
-        <text>单节时长（分钟）</text>
-        <input type="number" value="{{tweaks.durationMin}}" data-field="durationMin" bindinput="onTweakInput" />
-      </view>
-      <view class="field">
-        <text>上午节数</text>
-        <input type="number" value="{{tweaks.morningCount}}" data-field="morningCount" bindinput="onTweakInput" />
-      </view>
-      <view class="field">
-        <text>下午节数</text>
-        <input type="number" value="{{tweaks.afternoonCount}}" data-field="afternoonCount" bindinput="onTweakInput" />
-      </view>
-      <view class="field">
-        <text>晚上节数</text>
-        <input type="number" value="{{tweaks.eveningCount}}" data-field="eveningCount" bindinput="onTweakInput" />
-      </view>
-      <view class="field">
-        <text>节间休息（分钟）</text>
-        <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
+      <view class="tweak-grid">
+        <!-- 左列 -->
+        <view class="tweak-col">
+          <view class="field">
+            <text>首节开始</text>
+            <picker mode="time" value="{{tweaks.firstStart}}" bindchange="onTweakTimeChange">
+              <view class="picker-value">{{tweaks.firstStart}} <t-icon name="chevron-down" size="26rpx" /></view>
+            </picker>
+          </view>
+          <view class="field">
+            <text>单节时长（分钟）</text>
+            <input type="number" value="{{tweaks.durationMin}}" data-field="durationMin" bindinput="onTweakInput" />
+          </view>
+          <view class="field">
+            <text>上午节数</text>
+            <input type="number" value="{{tweaks.morningCount}}" data-field="morningCount" bindinput="onTweakInput" />
+          </view>
+          <!-- 午休时间（可选） -->
+          <view class="field">
+            <view class="field-head">
+              <text>午休时间</text>
+              <switch checked="{{tweaks.hasLunch}}" data-key="lunch" bindchange="onBreakSwitch" color="#1e9e5a" />
+            </view>
+            <view wx:if="{{tweaks.hasLunch}}" class="time-range">
+              <picker mode="time" value="{{tweaks.lunchStart}}" data-field="lunchStart" bindchange="onTweakRangeChange">
+                <view class="picker-value-sm">{{tweaks.lunchStart}}</view>
+              </picker>
+              <text class="range-sep">—</text>
+              <picker mode="time" value="{{tweaks.lunchEnd}}" data-field="lunchEnd" bindchange="onTweakRangeChange">
+                <view class="picker-value-sm">{{tweaks.lunchEnd}}</view>
+              </picker>
+            </view>
+          </view>
+        </view>
+        <!-- 右列 -->
+        <view class="tweak-col">
+          <view class="field">
+            <text>下午节数</text>
+            <input type="number" value="{{tweaks.afternoonCount}}" data-field="afternoonCount" bindinput="onTweakInput" />
+          </view>
+          <view class="field">
+            <text>晚上节数</text>
+            <input type="number" value="{{tweaks.eveningCount}}" data-field="eveningCount" bindinput="onTweakInput" />
+          </view>
+          <view class="field">
+            <text>节间休息（分钟）</text>
+            <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
+          </view>
+          <!-- 晚饭时间（可选） -->
+          <view class="field">
+            <view class="field-head">
+              <text>晚饭时间</text>
+              <switch checked="{{tweaks.hasDinner}}" data-key="dinner" bindchange="onBreakSwitch" color="#1e9e5a" />
+            </view>
+            <view wx:if="{{tweaks.hasDinner}}" class="time-range">
+              <picker mode="time" value="{{tweaks.dinnerStart}}" data-field="dinnerStart" bindchange="onTweakRangeChange">
+                <view class="picker-value-sm">{{tweaks.dinnerStart}}</view>
+              </picker>
+              <text class="range-sep">—</text>
+              <picker mode="time" value="{{tweaks.dinnerEnd}}" data-field="dinnerEnd" bindchange="onTweakRangeChange">
+                <view class="picker-value-sm">{{tweaks.dinnerEnd}}</view>
+              </picker>
+            </view>
+          </view>
+        </view>
       </view>
     </view>
 
-    <button class="ui-btn ui-btn-primary" bindtap="generatePeriods">生成课表骨架</button>
+    <button class="ui-btn ui-btn-primary ui-btn-full" bindtap="generatePeriods">生成课表骨架</button>
 
     <view wx:if="{{periods.length}}" class="period-preview surface">
       <view class="between">
@@ -133,9 +173,9 @@
         <text class="pill">{{periods.length}} 节</text>
       </view>
       <view class="period-grid">
-        <view wx:for="{{periods}}" wx:key="code" class="period-card">
-          <text class="period-code">{{item.code}}</text>
-          <text class="period-label">{{item.label}}</text>
+        <view wx:for="{{periods}}" wx:key="code" class="period-card {{item.rest ? 'rest' : ''}}">
+          <text class="period-code">{{item.rest ? '' : item.code}}</text>
+          <text class="period-time">{{item.timeRange || item.label}}</text>
         </view>
       </view>
     </view>
@@ -185,6 +225,18 @@
       <text class="mini-label">默认全不选 · 绿格为可排班</text>
     </view>
 
+    <!-- 午休/晚饭排班开关（仅时间段启用时显示） -->
+    <view wx:if="{{tweaks.hasLunch || tweaks.hasDinner}}" class="break-toggle-row">
+      <view wx:if="{{tweaks.hasLunch}}" class="break-toggle lunch {{tweaks.lunchBlocked ? '' : 'open'}}" data-key="lunch" bindtap="onBreakToggle">
+        <text>午休{{tweaks.lunchBlocked ? '不排' : '可排'}}</text>
+        <switch checked="{{!tweaks.lunchBlocked}}" color="#1e9e5a" />
+      </view>
+      <view wx:if="{{tweaks.hasDinner}}" class="break-toggle dinner {{tweaks.dinnerBlocked ? '' : 'open'}}" data-key="dinner" bindtap="onBreakToggle">
+        <text>晚饭{{tweaks.dinnerBlocked ? '不排' : '可排'}}</text>
+        <switch checked="{{!tweaks.dinnerBlocked}}" color="#e6a21a" />
+      </view>
+    </view>
+
     <view class="grid-wrap surface">
       <schedule-grid
         id="slotSelectGrid"
@@ -200,6 +252,18 @@
     <view class="bottom-actions">
       <button class="ui-btn ui-btn-light" bindtap="back">上一步</button>
       <button class="ui-btn ui-btn-primary" bindtap="nextFromStep4">下一步</button>
+    </view>
+
+    <!-- 午休/晚饭全时段排班确认弹窗（仅 Step 4 内） -->
+    <view wx:if="{{breakConfirm.show}}" class="modal-mask" catchtap="closeBreakConfirm">
+      <view class="break-confirm-modal surface" catchtap="noop">
+        <text class="confirm-title">{{breakConfirm.title}}</text>
+        <text class="confirm-desc">将「{{breakConfirm.key === 'lunch' ? '午休' : '晚饭'}}时间不排」切换为「全时间段可排」后，该时段将允许排入课程。</text>
+        <view class="confirm-buttons">
+          <button class="ui-btn ui-btn-light" bindtap="closeBreakConfirm">取消</button>
+          <button class="ui-btn ui-btn-primary" bindtap="confirmBreakToggle">确认开启</button>
+        </view>
+      </view>
     </view>
   </view>
 

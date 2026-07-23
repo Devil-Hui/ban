@@ -51,7 +51,6 @@ Page({
     this.setData({ greeting: getGreeting() });
     this.loadUser();
     this.loadStats();
-    this.loadToday();
     this.loadGroups();
   },
 
@@ -71,36 +70,42 @@ Page({
       });
   },
 
-  /** 拉数据看板（允部分失败） */
+  /** 拉数据看板 + 今日班次预告 */
   loadStats() {
-    Promise.allSettled([
-      api.request('/groups').then((data) => {
-        const groups = Array.isArray(data) ? data : data?.items || [];
+    // 获取分组数量和今日排班（从同一接口提取）
+    api.request('/groups')
+      .then((data) => {
+        const groups = Array.isArray(data) ? data : (data && data.items) || [];
         this.setData({ 'stats.groupCount': groups.length });
-      }),
-      api.request('/users/me/schedule').then((data) => {
-        const count = Array.isArray(data) ? data.length : (typeof data?.total === 'number' ? data.total : 0);
-        this.setData({ 'stats.totalShifts': count });
-      }),
-    ]).catch(() => {});
-  },
+      })
+      .catch(() => {});
 
-  /** 今日班次预告 */
-  loadToday() {
-    api.request('/scheduling/assignments/me?limit=5').then((data) => {
-      const list = Array.isArray(data) ? data : data?.items || [];
-      const today = new Date().toISOString().slice(0, 10);
-      const todayItems = list.filter((a) => a.date === today).slice(0, 3);
-      this.setData({ todaySchedule: todayItems, 'stats.pendingTasks': todayItems.length });
-    }).catch(() => {});
+    api.request('/users/me/schedule')
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data && data.items) || [];
+        const total = list.length;
+        // 筛选今日班次
+        const today = new Date().toISOString().slice(0, 10);
+        const todayItems = list
+          .filter(function (item) { return (item.slotDate || item.date) === today; })
+          .slice(0, 3);
+        this.setData({
+          todaySchedule: todayItems,
+          'stats.totalShifts': total,
+          'stats.pendingTasks': todayItems.length,
+        });
+      })
+      .catch(() => {});
   },
 
   /** 我的分组列表 */
   loadGroups() {
-    api.request('/groups').then((data) => {
-      const list = Array.isArray(data) ? data : data?.items || [];
-      this.setData({ groups: list.slice(0, 5) });
-    }).catch(() => {});
+    api.request('/groups')
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data && data.items) || [];
+        this.setData({ groups: list.slice(0, 5) });
+      })
+      .catch(() => {});
   },
 
   /* ----- 环境 / 开关 ----- */

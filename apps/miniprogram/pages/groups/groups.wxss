@@ -33,6 +33,18 @@
 .list-foot { display: flex; justify-content: space-between; padding-top: 18rpx; border-top: 1rpx solid var(--line); }
 .foot-role { color: var(--brand); font-weight: 600; }
 .invite-hint { display: flex; align-items: center; gap: 12rpx; color: var(--subtle); font-size: 22rpx; line-height: 1.45; padding: 16rpx 4rpx; }
+/* 筛选空状态快捷操作 */
+.filter-empty-actions { margin-top: 8rpx; }
+.filter-chip-action {
+  display: inline-flex;
+  align-items: center;
+  padding: 12rpx 28rpx;
+  border-radius: 999rpx;
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: 25rpx;
+  font-weight: 600;
+}
 .modal-mask { position: fixed; z-index: 10; inset: 0; display: flex; align-items: flex-end; background: rgba(17, 27, 20, .42); }
 .join-modal { width: 100%; padding: 34rpx 28rpx 52rpx; border-radius: 26rpx 26rpx 0 0; }
 .modal-title { font-size: 38rpx; font-weight: 700; }

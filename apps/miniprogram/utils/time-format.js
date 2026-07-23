@@ -153,6 +153,7 @@ module.exports = {
   formatRange,
   formatSlotLabel,
   formatDeadline,
+  localTodayYmd,
   enumerateDates,
   addDaysYmd,
   inclusiveDaySpan,

@@ -59,6 +59,14 @@ function presetsFromApi(list) {
       afternoonCount: Number(item.afternoonCount) || 4,
       eveningCount: Number(item.eveningCount) || 0,
       breakMin: Number(item.breakMin) || 10,
+      lunchStart: item.lunchStart || '12:00',
+      lunchEnd: item.lunchEnd || '13:30',
+      hasLunch: Boolean(item.hasLunch),
+      lunchBlocked: item.lunchBlocked == null ? true : Boolean(item.lunchBlocked),
+      dinnerStart: item.dinnerStart || '18:00',
+      dinnerEnd: item.dinnerEnd || '19:00',
+      hasDinner: Boolean(item.hasDinner),
+      dinnerBlocked: item.dinnerBlocked == null ? true : Boolean(item.dinnerBlocked),
     };
     chips.push({ code, label: item.label || code });
   });
@@ -89,7 +97,7 @@ function applyCatalog(catalog) {
     presetChips: chips,
     presetTweaks: map,
     preset: firstCode,
-    tweaks: { ...(map[firstCode] || { firstStart: '08:00', durationMin: 45, morningCount: 4, afternoonCount: 4, eveningCount: 0, breakMin: 10 }) },
+    tweaks: { ...(map[firstCode] || { firstStart: '08:00', durationMin: 45, morningCount: 4, afternoonCount: 4, eveningCount: 0, breakMin: 10, lunchStart: '12:00', lunchEnd: '13:30', hasLunch: false, lunchBlocked: true, dinnerStart: '18:00', dinnerEnd: '19:00', hasDinner: false, dinnerBlocked: true }) },
     requiredFieldOptions: requiredFields,
     requiredFieldMap,
     participantScopeOptions: participantScopes,
@@ -182,6 +190,9 @@ Page({
     dates: [],
     selectedKeys: [],
     peopleByKey: {},
+
+    // 午休/晚饭确认弹窗
+    breakConfirm: { show: false, key: '', title: '' },
 
     // Step 5 — task-level rules (labels from DB catalog)
     requiredFieldOptions: BOOT.requiredFieldOptions,
@@ -295,6 +306,70 @@ Page({
       periods: [],
     });
   },
+
+  onTweakRangeChange(e) {
+    const field = e.currentTarget.dataset.field;
+    if (!field) return;
+    this.setData({
+      [`tweaks.${field}`]: e.detail.value,
+      periods: [],
+    });
+  },
+
+  onTweakSwitch(e) {
+    const field = e.currentTarget.dataset.field;
+    if (!field) return;
+    const negate = e.currentTarget.dataset.negate;
+    const value = negate ? !e.detail.value : e.detail.value;
+    this.setData({
+      [`tweaks.${field}`]: value,
+      periods: [],
+    });
+  },
+
+  /** Step2 午休/晚饭主开关 → 直接切换 */
+  onBreakSwitch(e) {
+    const key = e.currentTarget.dataset.key;
+    if (!key) return;
+    const cap = key === 'lunch' ? 'Lunch' : 'Dinner';
+    this.setData({ [`tweaks.has${cap}`]: e.detail.value, periods: [] });
+  },
+
+  /** 时间选定页胶囊开关：阻塞 → 弹窗确认；可排 → 直接切回阻塞 */
+  onBreakToggle(e) {
+    const key = e.currentTarget.dataset.key;
+    if (!key) return;
+    const cap = key === 'lunch' ? 'Lunch' : 'Dinner';
+    const blocked = this.data.tweaks[`${key}Blocked`];
+    if (blocked) {
+      // 当前不排 → 弹窗确认改为"全时间段可排"
+      this.setData({
+        breakConfirm: {
+          show: true,
+          key,
+          title: key === 'lunch' ? '午休时段设为可排' : '晚饭时段设为可排',
+        },
+      });
+    } else {
+      // 当前可排 → 直接切回不排
+      this.setData({ [`tweaks.${key}Blocked`]: true });
+    }
+  },
+
+  closeBreakConfirm() {
+    this.setData({ breakConfirm: { show: false, key: '', title: '' } });
+  },
+
+  confirmBreakToggle() {
+    const key = this.data.breakConfirm.key;
+    if (!key) return this.closeBreakConfirm();
+    this.setData({
+      [`tweaks.${key}Blocked`]: false,
+      breakConfirm: { show: false, key: '', title: '' },
+    });
+  },
+
+  noop() {},
 
   toggleMode(e) {
     const key = e.currentTarget.dataset.key;

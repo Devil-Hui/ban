@@ -128,8 +128,9 @@ Page({
   },
 
   confirmJoin() {
-    if (this.data.code.length !== 6) {
-      return wx.showToast({ title: '请输入 6 位邀请码', icon: 'none' });
+    const code = (this.data.code || '').trim();
+    if (code.length !== 8) {
+      return wx.showToast({ title: '请输入8位邀请码', icon: 'none' });
     }
     this.setData({ joining: true });
     api

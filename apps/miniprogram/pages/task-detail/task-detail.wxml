@@ -47,7 +47,7 @@
   <!-- 4. 邀请（仅收集中） -->
   <view wx:if="{{manage && task.canMintShare}}" class="block surface">
     <view class="block-title">收集邀请</view>
-    <view class="subtitle">微信分享或邀请码</view>
+    <view class="subtitle">微信分享或邀请码 · 受邀者在可用时间填写页输入</view>
     <view wx:if="{{!inviteCode}}" class="mini-label" style="margin-top:8rpx;">生成邀请码后即可微信分享</view>
     <view wx:if="{{inviteCode}}" class="invite-code-block">
       <text class="mini-label">邀请码</text>

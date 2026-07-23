@@ -75,10 +75,3 @@
 .ui-btn::after { border: 0; }
 .ui-btn-primary { background: #1d4ed8; color: #fff; }
 .ui-btn-light { background: #eef2ff; color: #1e293b; }
-.state-box {
-  min-height: 400rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
-}

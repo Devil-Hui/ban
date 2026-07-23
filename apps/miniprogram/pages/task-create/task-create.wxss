@@ -84,6 +84,11 @@
   font-size: 23rpx;
 }
 
+.field > text.required::after {
+  content: ' *';
+  color: #df5c4c;
+}
+
 .field input,
 .picker-value {
   color: var(--ink);
@@ -192,12 +197,177 @@
   font-weight: 600;
 }
 
+/* 展示模式差异色 */
+.chip.mode-range.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.chip.mode-section.active {
+  border-color: #1e9e5a;
+  background: #e8f7ef;
+  color: #1e9e5a;
+}
+
+.chip.mode-custom.active {
+  border-color: #e6a21a;
+  background: #fef9ee;
+  color: #e6a21a;
+}
+
 .mode-hint {
   margin-bottom: 8rpx;
 }
 
 .tweak-form {
   margin-top: 8rpx;
+}
+
+.tweak-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 24rpx;
+}
+
+.tweak-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* 时间区间选择器 */
+.time-range {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.time-range .range-sep {
+  color: var(--muted);
+  font-size: 24rpx;
+  flex-shrink: 0;
+}
+
+.picker-value-sm {
+  color: var(--ink);
+  font-size: 26rpx;
+  padding: 5rpx 12rpx;
+  border-radius: 8rpx;
+  background: var(--canvas);
+}
+
+/* 字段头部（标签 + 开关） */
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field-head > text {
+  color: var(--subtle);
+  font-size: 23rpx;
+}
+
+/* 午休/晚饭排班开关胶囊行 */
+.break-toggle-row {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.break-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2rpx;
+  padding: 4rpx 8rpx 4rpx 16rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid var(--line);
+  background: #f5f7f6;
+}
+
+.break-toggle.lunch.open {
+  background: #e8f7ef;
+  border-color: #1e9e5a;
+}
+
+.break-toggle.dinner.open {
+  background: #fef6e8;
+  border-color: #e6a21a;
+}
+
+.break-toggle > text {
+  font-size: 22rpx;
+  color: var(--subtle);
+  line-height: 1;
+}
+
+.break-toggle.lunch.open > text { color: #1e9e5a; font-weight: 600; }
+.break-toggle.dinner.open > text { color: #e6a21a; font-weight: 600; }
+
+/* 午休/晚饭确认弹窗 */
+.modal-mask {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 27, 20, 0.42);
+}
+
+.break-confirm-modal {
+  width: 560rpx;
+  padding: 36rpx 32rpx;
+  border-radius: 20rpx;
+  text-align: center;
+}
+
+.confirm-title {
+  font-size: 32rpx;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.confirm-desc {
+  display: block;
+  margin-top: 16rpx;
+  color: var(--subtle);
+  font-size: 25rpx;
+  line-height: 1.5;
+}
+
+.confirm-buttons {
+  display: flex;
+  align-items: stretch;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+
+.confirm-buttons .ui-btn {
+  flex: 1;
+  margin: 0;
+  width: auto;
+  min-height: 84rpx;
+  line-height: 84rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 0 28rpx;
+  border: 0;
+}
+
+.confirm-buttons .ui-btn::after {
+  border: 0;
+}
+
+.confirm-buttons .ui-btn-light {
+  background: #f2f3f5;
+  color: #4e5969;
+}
+
+.confirm-buttons .ui-btn-primary {
+  background: #1d4ed8;
+  color: #fff;
 }
 
 .period-preview {
@@ -288,11 +458,12 @@
 
 .bottom-actions {
   display: flex;
+  align-items: stretch;
   gap: 16rpx;
   margin-top: 22rpx;
 }
 
-.bottom-actions .ui-btn-primary {
+.bottom-actions .ui-btn {
   flex: 1;
 }
 
@@ -312,16 +483,18 @@
 }
 
 .ui-btn-primary {
-  width: 100%;
-  margin-top: 22rpx;
   background: #1d4ed8;
   color: #fff;
 }
 
+.ui-btn-full {
+  width: 100%;
+  margin-top: 22rpx;
+}
+
 .ui-btn-light {
-  background: #eef2ff;
-  color: #1e293b;
-  min-width: 180rpx;
+  background: #f2f3f5;
+  color: #4e5969;
 }
 
 .ui-btn-sm {
@@ -333,9 +506,6 @@
   margin-top: 0;
 }
 
-.ui-btn[disabled] {
-  opacity: 0.55;
-}
 
 /* 本周/下周 快捷按钮 (E5) */
 .quick-week {
@@ -370,11 +540,14 @@
 .period-card {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 4rpx;
   padding: 16rpx 18rpx;
   border-radius: 12rpx;
   background: var(--surface);
   border: 1rpx solid var(--line);
+  text-align: center;
 }
 
 .period-card .period-code {
@@ -383,9 +556,20 @@
   font-size: 26rpx;
 }
 
-.period-card .period-label {
+.period-card .period-time {
   color: var(--ink);
-  font-size: 24rpx;
+  font-size: 22rpx;
+}
+
+/* 休息时段卡片（午休/晚饭） */
+.period-card.rest {
+  background: var(--canvas);
+  border: 1rpx dashed var(--line);
+}
+
+.period-card.rest .period-time {
+  color: var(--subtle);
+  font-size: 20rpx;
 }
 
 /* 自定义必填项输入行 (E6) */

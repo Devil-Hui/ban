@@ -133,6 +133,40 @@ function login(options = {}) {
   });
 }
 
+/** 微信手机号一键授权登录 */
+function phoneLogin(options = {}) {
+  if (wx.getStorageSync('scheduling-access-token')) return Promise.resolve(wx.getStorageSync('scheduling-user'));
+
+  const saveTokens = (data) => {
+    wx.setStorageSync('scheduling-access-token', data.accessToken);
+    wx.setStorageSync('scheduling-refresh-token', data.refreshToken);
+    wx.setStorageSync('scheduling-user', data.user);
+    app.globalData.user = data.user;
+    return data.user;
+  };
+
+  if (app.globalData.authMode === 'mock') {
+    const mockUserId = /^U(?:0[1-9]|1[0-3])$/.test(options.mockUserId || '') ? options.mockUserId : 'U03';
+    return rawRequest('/auth/wechat/login', { method: 'POST', data: { code: `mock:${mockUserId}` } }).then(saveTokens);
+  }
+
+  const phoneCode = options.phoneCode;
+  if (!phoneCode) return Promise.reject(new Error('phoneCode is required'));
+
+  return new Promise((resolve, reject) => {
+    wx.login({
+      success(result) {
+        if (!result.code) return reject(new Error('微信登录未返回有效凭证'));
+        return rawRequest('/auth/wechat/phone-login', {
+          method: 'POST',
+          data: { code: result.code, phoneCode },
+        }).then(saveTokens).then(resolve, reject);
+      },
+      fail(error) { reject(Object.assign(error || new Error('微信登录失败'), { message: errorMessage(error, '微信登录失败') })); },
+    });
+  });
+}
+
 function logout() {
   const refreshToken = wx.getStorageSync('scheduling-refresh-token');
   const done = () => {
@@ -165,4 +199,4 @@ function uploadFile(path, filePath, formKey = 'image') {
   });
 }
 
-module.exports = { clearSession, errorMessage, login, logout, request, uploadFile };
+module.exports = { clearSession, errorMessage, login, phoneLogin, logout, request, uploadFile };

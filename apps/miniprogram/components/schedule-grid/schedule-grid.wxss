@@ -38,8 +38,7 @@
 
 .sg-label {
   flex: 0 0 148rpx;
-  justify-content: flex-start;
-  padding-left: 14rpx;
+  justify-content: center;
   background: #fbfcfe;
 }
 

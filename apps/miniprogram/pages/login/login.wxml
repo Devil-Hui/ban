@@ -2,7 +2,7 @@
   <view class="brand-mark"><t-icon name="calendar" size="52rpx" color="#ffffff" /></view>
   <view class="eyebrow">SMART SCHEDULING</view>
   <view class="title">登录智能排班</view>
-  <view class="subtitle">使用微信身份进入你的排班工作区</view>
+  <view class="subtitle">授权手机号即可登录，信息仅用于排班协作</view>
 
   <view wx:if="{{configurationError}}" class="error-panel">
     <t-icon name="error-circle" size="36rpx" color="#c64f42" />
@@ -14,13 +14,27 @@
 
   <view wx:if="{{error}}" class="login-error">{{error}}</view>
 
+  <!-- 生产模式：微信手机号授权弹窗 -->
   <button
+    wx:if="{{authMode !== 'mock'}}"
+    class="ui-btn ui-btn-primary login-btn"
+    loading="{{loading}}"
+    disabled="{{!!configurationError || loading}}"
+    open-type="getPhoneNumber"
+    bindgetphonenumber="onGetPhoneNumber"
+  >
+    微信授权登录
+  </button>
+
+  <!-- 开发/Mock 模式：直接静默登录 -->
+  <button
+    wx:else
     class="ui-btn ui-btn-primary login-btn"
     loading="{{loading}}"
     disabled="{{!!configurationError || loading}}"
     bindtap="submit"
   >
-    微信登录
+    微信登录（开发模式）
   </button>
-  <view class="privacy-note">登录即表示你同意仅将账号信息用于排班协作</view>
+  <view class="privacy-note">授权手机号仅用于排班身份识别，不会泄露给第三方</view>
 </view>

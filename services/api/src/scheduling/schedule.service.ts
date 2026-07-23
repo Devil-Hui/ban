@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Redis } from 'ioredis';
+import { generateInviteCode } from '../utils/invite-code.js';
 import { GroupRepository, type MemberRecord } from '../groups/group.repository.js';
 import { canGroup, type GroupAction } from '../groups/group.policy.js';
 import { REDIS } from '../redis/redis.tokens.js';
@@ -377,21 +378,13 @@ export class ScheduleService {
     if (task.status !== 'collecting') throw new ConflictException('Collection shares can only be minted while collecting');
     const hours = Math.min(Math.max(Number(expiresInHours) || 24, 1), 24 * 30);
     // Short invite code doubles as shareToken (campus UX: 邀请码 + 微信分享), not a long opaque path.
-    const inviteCode = this.mintInviteCode();
+    const inviteCode = generateInviteCode();
     const tokenHash = createHash('sha256').update(inviteCode).digest('hex');
     const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
     const share = await this.schedules.createCollectionShare(taskId, tokenHash, expiresAt, actorId);
     return { ...share, token: inviteCode, inviteCode };
   }
 
-  /** 8-char Crockford-like code, uppercase, no ambiguous 0/O/1/I. */
-  private mintInviteCode(length = 8): string {
-    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const bytes = randomBytes(length);
-    let out = '';
-    for (let i = 0; i < length; i += 1) out += alphabet[bytes[i]! % alphabet.length];
-    return out;
-  }
   async revokeShare(actorId: string, shareId: string) { try { await this.schedules.revokeShare(shareId, actorId); } catch { throw new NotFoundException('Share link not found'); } }
   async publicShare(token: string) { const tokenHash = createHash('sha256').update(token).digest('hex'); const result = await this.schedules.publicShare(tokenHash); if (!result) throw new NotFoundException('Share link is invalid or expired'); return result; }
   async published(actorId: string, taskId: string) { await this.requireTask(actorId, taskId, 'view'); const result = await this.schedules.publishedSchedule(taskId); if (!result) throw new NotFoundException('Published schedule not found'); return result; }

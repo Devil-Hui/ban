@@ -13,6 +13,16 @@ export class AuthController {
     if (!code) throw new BadRequestException('code is required');
     return this.auth.login(code, request);
   }
+
+  @Post('wechat/phone-login')
+  @HttpCode(HttpStatus.CREATED)
+  async wechatPhoneLogin(@Body() body: unknown, @Req() request: FastifyRequest) {
+    const code = typeof body === 'object' && body !== null && 'code' in body && typeof body.code === 'string' ? body.code.trim() : '';
+    const phoneCode = typeof body === 'object' && body !== null && 'phoneCode' in body && typeof body.phoneCode === 'string' ? body.phoneCode.trim() : '';
+    if (!code) throw new BadRequestException('code is required');
+    if (!phoneCode) throw new BadRequestException('phoneCode is required');
+    return this.auth.phoneLogin(code, phoneCode, request);
+  }
   @Post('refresh') @HttpCode(HttpStatus.OK)
   refresh(@Body() body: any, @Req() request: FastifyRequest) { const token = typeof body?.refreshToken === 'string' ? body.refreshToken : ''; if (!token) throw new BadRequestException('refreshToken is required'); return this.auth.refresh(token, request); }
   @Post('logout') @HttpCode(HttpStatus.NO_CONTENT)
