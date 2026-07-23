@@ -19,6 +19,7 @@
       <view class="field">
         <text class="required">任务名称</text>
         <input
+          class="fi-input"
           placeholder="请输入任务名称"
           value="{{title}}"
           maxlength="160"
@@ -108,11 +109,11 @@
           </view>
           <view class="field">
             <text>单节时长（分钟）</text>
-            <input type="number" value="{{tweaks.durationMin}}" data-field="durationMin" bindinput="onTweakInput" />
+            <input type="number" class="fi-input" value="{{tweaks.durationMin}}" data-field="durationMin" bindinput="onTweakInput" />
           </view>
           <view class="field">
             <text>上午节数</text>
-            <input type="number" value="{{tweaks.morningCount}}" data-field="morningCount" bindinput="onTweakInput" />
+            <input type="number" class="fi-input" value="{{tweaks.morningCount}}" data-field="morningCount" bindinput="onTweakInput" />
           </view>
           <!-- 午休 -->
           <view class="field field-break-row">
@@ -138,7 +139,7 @@
         <view class="tweak-col">
           <view class="field">
             <text>下午节数</text>
-            <input type="number" value="{{tweaks.afternoonCount}}" data-field="afternoonCount" bindinput="onTweakInput" />
+            <input type="number" class="fi-input" value="{{tweaks.afternoonCount}}" data-field="afternoonCount" bindinput="onTweakInput" />
           </view>
           <!-- 大小课间开关 -->
           <view class="field">
@@ -150,15 +151,15 @@
           </view>
           <view wx:if="{{!tweaks.hasBigBreak}}" class="field">
             <text>节间休息（分钟）</text>
-            <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
+            <input type="number" class="fi-input" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
           </view>
           <view wx:if="{{tweaks.hasBigBreak}}" class="field">
             <text class="break-inline-label"><text>上课间休息（分钟）</text><text class="info-dot" data-key="short-break" bindtap="showBreakInfo">ⓘ</text></text>
-            <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
+            <input type="number" class="fi-input" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
           </view>
           <view wx:if="{{tweaks.hasBigBreak}}" class="field">
             <text class="break-inline-label"><text>普通课间（分钟）</text><text class="info-dot" data-key="long-break" bindtap="showBreakInfo">ⓘ</text></text>
-            <input type="number" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" />
+            <input type="number" class="fi-input" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" />
           </view>
         </view>
       </view>
@@ -379,7 +380,7 @@
       </view>
       <view wx:if="{{allowEditAfterSubmit}}" class="field">
         <text>可修改次数</text>
-        <input type="number" value="{{maxEditCount}}" bindinput="onMaxEditCountInput" />
+        <input type="number" class="fi-input" value="{{maxEditCount}}" bindinput="onMaxEditCountInput" />
       </view>
       <view class="field">
         <text>截止前提醒</text>
@@ -396,7 +397,7 @@
       </view>
       <view wx:if="{{saveAsTemplate}}" class="field">
         <text>模板名称</text>
-        <input placeholder="请输入模板名称" value="{{templateName}}" maxlength="120" bindinput="onTemplateNameInput" />
+         class="fi-input"<input placeholder="请输入模板名称" value="{{templateName}}" maxlength="120" bindinput="onTemplateNameInput" />
       </view>
     </view>
 

@@ -89,7 +89,7 @@
   color: #df5c4c;
 }
 
-.field input,
+.fi-input,
 .picker-value {
   color: var(--ink);
   font-size: 29rpx;
