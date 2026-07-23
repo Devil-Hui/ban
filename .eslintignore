@@ -1,0 +1,5 @@
+apps/miniprogram/miniprogram_npm/**
+services/*/dist/**
+**/node_modules/**
+**/*.d.ts
+packages/contracts/src/*.ts

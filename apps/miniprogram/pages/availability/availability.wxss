@@ -1,3 +1,4 @@
+@import '../../common-styles.wxss';
 @import "../schedule/schedule.wxss";
 
 .profile-card {

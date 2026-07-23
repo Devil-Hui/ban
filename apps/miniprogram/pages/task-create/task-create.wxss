@@ -1,3 +1,4 @@
+@import '../../common-styles.wxss';
 .create-page {
   padding-top: 24rpx;
 }

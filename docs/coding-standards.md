@@ -61,12 +61,44 @@ view { }
 - 后端路由以 NestJS 启动日志中的 `Mapped` 为准
 - 前后端路径不一致是编译期 bug，必须对齐
 
+## 微信开发者工具操作 🚨
+
+```
+改前端代码 → 清缓存 → 全部清除 → 重新编译 → 验证无红色错误
+```
+
+**常见症状（都是缓存引起的）：**
+- 接口返回 404 但 curl 验证正常
+- 页面样式不更新（改了半天没变化）
+- JS 报错行号与实际代码不符
+- switch/input 颜色异常
+
 ## 代码审查清单 (Code Review)
 
-提交 PR 前自查：
+提交 PR 前必须自查：
 
-- [ ] 没有标签选择器或属性选择器在 WXSS 中
-- [ ] 组件属性中没有使用 CSS 变量
+- [ ] WXSS 无标签选择器（`input{}`、`switch{}`、`text{}`）→ 用 class
+- [ ] WXSS 无属性选择器（`button[disabled]`）
+- [ ] 组件属性无 CSS 变量（`color="var(--brand)"` → `color="#1e9e5a"`）
+- [ ] 无重复样式（先检查 `common-styles.wxss` 是否已有）
+- [ ] 无重复函数（先检查 `utils/` 和 `domain/`）
+- [ ] API 路径与 `docs/api-routes.md` 对照表一致
+- [ ] `npm run lint` 零错误
+- [ ] `npm run typecheck` 零错误
+- [ ] 微信开发者工具清除缓存后测试通过
+- [ ] 新功能不与已有功能冲突
+
+## 提交规范
+
+```bash
+# 提交前必须
+npm run lint        # 代码检查（阻止重复代码、TS 错误）
+npm run typecheck   # TypeScript 类型检查
+
+# 自动修复
+npm run lint:fix    # ESLint 自动修复
+npm run format      # Prettier 格式化
+```
 - [ ] 没有重复样式（检查 app.wxss 是否已有）
 - [ ] 没有重复函数实现（检查 utils/ 和 domain/）
 - [ ] API 路径在 api-types.js 中有对应类型

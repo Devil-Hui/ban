@@ -1,0 +1,105 @@
+/**
+ * 全局公共样式 — 所有页面引用此文件后无需重复定义以下类
+ *
+ * 引用方式：在页面 wxss 顶部加 @import '../../common-styles.wxss';
+ *
+ * 包含：
+ *   - 空状态 .state-box / .state-title / .state-subtitle
+ *   - 弹窗遮罩 .modal-mask
+ *   - 按钮行 .btn-row
+ *   - 卡片组件 .surface / .pill / .mini-label / .chip
+ *   - 空提示 .empty-hint
+ *   - 范围分隔符 .range-sep
+ */
+
+/* ── 空状态 ── */
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx 24rpx;
+}
+
+.state-title {
+  font-size: 28rpx;
+  color: var(--ink);
+  margin-top: 12rpx;
+  font-weight: 600;
+}
+
+.state-subtitle {
+  font-size: 24rpx;
+  color: var(--subtle);
+  margin-top: 8rpx;
+}
+
+/* ── 弹窗遮罩 ── */
+.modal-mask {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 27, 20, 0.42);
+}
+
+/* ── 底部按钮行 ── */
+.btn-row {
+  display: flex;
+  align-items: stretch;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.btn-row .ui-btn {
+  flex: 1;
+}
+
+/* ── 卡片组件 ── */
+.surface {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 22rpx 26rpx;
+  box-shadow: 0 2rpx 12rpx rgba(23, 34, 27, 0.06);
+}
+
+.pill {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: var(--brand);
+  background: var(--brand-soft);
+}
+
+.mini-label {
+  font-size: 22rpx;
+  color: var(--subtle);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6rpx 20rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid var(--line);
+  font-size: 24rpx;
+  color: var(--subtle);
+  gap: 8rpx;
+}
+
+/* ── 空提示 ── */
+.empty-hint {
+  text-align: center;
+  padding: 48rpx 24rpx;
+  color: var(--subtle);
+}
+
+/* ── 范围分隔符 ── */
+.range-sep {
+  margin: 0 8rpx;
+  color: var(--subtle);
+  font-size: 24rpx;
+}

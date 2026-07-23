@@ -6,28 +6,13 @@ const { TIME_MODES, DEFAULT_TASK_TIME_MODE } = require('../constants/time-modes'
 
 const PRESET_DEFAULTS = {
   start0800_45: {
-    firstStart: '08:00',
-    durationMin: 45,
-    morningCount: 4,
-    afternoonCount: 4,
-    eveningCount: 0,
-    breakMin: 10,
+    firstStart: '08:00', durationMin: 45, morningCount: 4, afternoonCount: 4, breakMin: 10,
   },
   start0830_45: {
-    firstStart: '08:30',
-    durationMin: 45,
-    morningCount: 4,
-    afternoonCount: 4,
-    eveningCount: 0,
-    breakMin: 10,
+    firstStart: '08:30', durationMin: 45, morningCount: 4, afternoonCount: 4, breakMin: 10,
   },
   manual: {
-    firstStart: '08:00',
-    durationMin: 45,
-    morningCount: 4,
-    afternoonCount: 4,
-    eveningCount: 0,
-    breakMin: 10,
+    firstStart: '08:00', durationMin: 45, morningCount: 4, afternoonCount: 4, breakMin: 10,
   },
 };
 
@@ -100,7 +85,6 @@ function buildPeriods(opts = {}) {
   const isBigBreakMode = tweaks.hasBigBreak && bigBreakMin > 0;
   const morningCount = toNonNegInt(tweaks.morningCount != null ? tweaks.morningCount : base.morningCount, base.morningCount);
   const afternoonCount = toNonNegInt(tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount, base.afternoonCount);
-  const eveningCount = toNonNegInt(tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount, base.eveningCount);
 
   // 午休 / 晚饭 只在用户启用时才生效
   const hasLunch = tweaks.hasLunch && morningCount > 0 && afternoonCount > 0;
