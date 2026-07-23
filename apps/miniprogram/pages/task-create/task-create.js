@@ -324,10 +324,11 @@ Page({
     if (!field) return;
     const negate = e.currentTarget.dataset.negate;
     const value = negate ? !e.detail.value : e.detail.value;
-    this.setData({
-      [`tweaks.${field}`]: value,
-      periods: [],
-    });
+    this.setData({ [`tweaks.${field}`]: value, periods: [] });
+    // 大小课间开启后自动生成骨架
+    if (field === 'hasBigBreak' && value) {
+      this.generatePeriods();
+    }
   },
 
   /** Step2 午休/晚饭主开关 → 直接切换 */
@@ -376,6 +377,14 @@ Page({
   },
 
   noop() {},
+
+  showBreakInfo(e) {
+    const key = e.currentTarget.dataset.key;
+    const msg = key === 'short-break'
+      ? '两节连排为一次课，节间短暂休息（如5分钟），用于翻书/换教室。'
+      : '两次课之间的常规休息（如20分钟），学生可自由活动。';
+    wx.showModal({ title: key === 'short-break' ? '上课间休息' : '普通课间', content: msg, showCancel: false, confirmText: '知道了' });
+  },
 
   toggleMode(e) {
     const key = e.currentTarget.dataset.key;

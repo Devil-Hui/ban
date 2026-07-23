@@ -47,5 +47,6 @@
   "libVersion": "3.17.0",
   "compileType": "miniprogram",
   "simulatorPluginLibVersion": {},
-  "editorSetting": {}
+  "editorSetting": {},
+  "testRoot": "minitest/"
 }

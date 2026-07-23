@@ -127,7 +127,7 @@ function buildPeriods(opts = {}) {
         minPeople: 1,
         targetPeople: 1,
         maxPeople: 1,
-        breakType: isBigGap ? '大课间' : '小课间',
+        breakType: isBigGap ? '普通课间' : '上课间休息',
         breakMinute: isBigGap ? bigBreakMin : breakMin,
       });
       seq += 1;

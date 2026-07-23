@@ -600,6 +600,25 @@
   font-size: 20rpx;
 }
 
+/* 课间标签解释图标 */
+.info-dot {
+  margin-left: 4rpx;
+  font-size: 22rpx;
+  color: var(--brand);
+}
+
+.break-inline-label {
+  display: flex;
+  align-items: center;
+  gap: 2rpx;
+}
+
+.hint {
+  display: block;
+  margin-top: 6rpx;
+  line-height: 1.4;
+}
+
 /* 大小课间标签 */
 .period-break {
   font-size: 18rpx;
@@ -608,14 +627,14 @@
   margin-top: 2rpx;
 }
 
-.period-break.big {
+.period-break.normal {
   background: #fef6e8;
   color: #e6a21a;
 }
 
-.period-break.small {
-  background: #f2f3f5;
-  color: #8b9aad;
+.period-break.session {
+  background: #e8f0fe;
+  color: #5b8def;
 }
 
 /* 自定义必填项输入行 (E6) */

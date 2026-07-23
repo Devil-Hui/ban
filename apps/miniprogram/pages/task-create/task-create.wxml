@@ -166,20 +166,25 @@
               <text class="field-label">大小课间</text>
               <switch checked="{{tweaks.hasBigBreak}}" data-field="hasBigBreak" bindchange="onTweakSwitch" color="#1e9e5a" />
             </view>
+            <text wx:if="{{tweaks.hasBigBreak}}" class="mini-label hint">两节连排为一次课，其间为上课间休息；两次课之间为普通课间</text>
           </view>
-          <view class="field">
-            <text>{{tweaks.hasBigBreak ? '小课间（分钟）' : '节间休息（分钟）'}}</text>
+          <view wx:if="{{!tweaks.hasBigBreak}}" class="field">
+            <text>节间休息（分钟）</text>
             <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
           </view>
           <view wx:if="{{tweaks.hasBigBreak}}" class="field">
-            <text>大课间时长（分钟）</text>
+            <text class="break-inline-label"><text>上课间休息（分钟）</text><text class="info-dot" data-key="short-break" bindtap="showBreakInfo">ⓘ</text></text>
+            <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
+          </view>
+          <view wx:if="{{tweaks.hasBigBreak}}" class="field">
+            <text class="break-inline-label"><text>普通课间（分钟）</text><text class="info-dot" data-key="long-break" bindtap="showBreakInfo">ⓘ</text></text>
             <input type="number" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" />
           </view>
         </view>
       </view>
     </view>
 
-    <button class="ui-btn ui-btn-primary ui-btn-full" bindtap="generatePeriods">生成课表骨架</button>
+    <button wx:if="{{!tweaks.hasBigBreak}}" class="ui-btn ui-btn-primary ui-btn-full" bindtap="generatePeriods">生成课表骨架</button>
 
     <view wx:if="{{periods.length}}" class="period-preview surface">
       <view class="between">
@@ -190,7 +195,7 @@
         <view wx:for="{{periods}}" wx:key="code" class="period-card {{item.rest ? 'rest' : ''}}">
           <text class="period-code">{{item.rest ? '' : item.code}}</text>
           <text class="period-time">{{item.timeRange || item.label}}</text>
-          <text wx:if="{{item.breakType}}" class="period-break {{item.breakType === '大课间' ? 'big' : 'small'}}">{{item.breakType}} {{item.breakMinute}}'</text>
+          <text wx:if="{{item.breakType}}" class="period-break {{item.breakType === '普通课间' ? 'normal' : 'session'}}">{{item.breakType}} {{item.breakMinute}}'</text>
         </view>
       </view>
     </view>
