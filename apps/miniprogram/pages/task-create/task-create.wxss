@@ -629,14 +629,13 @@
 /* 晚上课时两列布局 */
 .evening-grid {
   display: flex;
-  flex-wrap: wrap;
   gap: 12rpx;
   margin-bottom: 8rpx;
 }
 
 .evening-cell {
   flex: 1;
-  min-width: calc(50% - 6rpx);
+  min-width: 0;
   padding: 12rpx 14rpx;
   border-radius: 12rpx;
   background: var(--canvas);
