@@ -98,7 +98,7 @@ function buildPeriods(opts = {}) {
   const breakMin = toNonNegInt(tweaks.breakMin != null ? tweaks.breakMin : base.breakMin, base.breakMin);
   const bigBreakMin = toNonNegInt(tweaks.bigBreakMin || 0, 0);
   const bigBreakEvery = toNonNegInt(tweaks.bigBreakEvery || 0, 0);
-  const hasBigBreak = bigBreakMin > 0 && bigBreakEvery > 0;
+  const isBigBreakMode = tweaks.hasBigBreak && bigBreakMin > 0 && bigBreakEvery > 0;
   const morningCount = toNonNegInt(tweaks.morningCount != null ? tweaks.morningCount : base.morningCount, base.morningCount);
   const afternoonCount = toNonNegInt(tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount, base.afternoonCount);
   const eveningCount = toNonNegInt(tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount, base.eveningCount);
@@ -116,6 +116,23 @@ function buildPeriods(opts = {}) {
   let seq = 1;
 
   function pushSeq() {
+    if (isBigBreakMode) {
+      const isBigGap = seq % bigBreakEvery === 0;
+      periods.push({
+        code: `p${seq}`,
+        label: `第${seq}节 待定`,
+        timeRange: '待定',
+        startMinute: 0,
+        endMinute: durationMin,
+        minPeople: 1,
+        targetPeople: 1,
+        maxPeople: 1,
+        breakType: isBigGap ? '大课间' : '小课间',
+        breakMinute: isBigGap ? bigBreakMin : breakMin,
+      });
+      seq += 1;
+      return;
+    }
     const startMinute = cursor;
     const endMinute = startMinute + durationMin;
     const startLabel = minuteToHhmm(startMinute);
@@ -130,8 +147,7 @@ function buildPeriods(opts = {}) {
       targetPeople: 1,
       maxPeople: 1,
     });
-    // 每 N 节后大课间：匹配 bigBreakEvery 的整数倍
-    cursor = endMinute + (hasBigBreak && seq % bigBreakEvery === 0 ? bigBreakMin : breakMin);
+    cursor = endMinute + (isBigBreakMode ? 0 : breakMin);
     seq += 1;
   }
 

@@ -256,6 +256,34 @@
   background: var(--canvas);
 }
 
+/* 午休+晚饭同行 */
+.field-break-row {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 0;
+  min-height: auto;
+  padding: 16rpx 0;
+}
+
+.break-inline {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.break-inline .field-label {
+  font-size: 22rpx;
+}
+
+/* 灰色禁用字段 */
+.field-muted {
+  opacity: 0.45;
+}
+
+.field-muted input {
+  color: var(--muted);
+}
+
 /* 字段头部（标签 + 开关） */
 .field-head {
   display: flex;
@@ -570,6 +598,24 @@
 .period-card.rest .period-time {
   color: var(--subtle);
   font-size: 20rpx;
+}
+
+/* 大小课间标签 */
+.period-break {
+  font-size: 18rpx;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+  margin-top: 2rpx;
+}
+
+.period-break.big {
+  background: #fef6e8;
+  color: #e6a21a;
+}
+
+.period-break.small {
+  background: #f2f3f5;
+  color: #8b9aad;
 }
 
 /* 自定义必填项输入行 (E6) */
