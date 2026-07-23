@@ -20,8 +20,8 @@ function resolveRuntimeConfig({ accountInfo = {}, extConfig = {}, override = {} 
   if (isDevelop) {
     const apiBaseUrl = configuredUrl || LOCAL_API_BASE_URL;
     const valid = /^https?:\/\//i.test(apiBaseUrl);
-    // Priority: storage override > extConfig > default mock（开发工具无法走真实微信授权）
-    let authMode = 'mock';
+    // Priority: storage override > extConfig > default production (真实微信授权)
+    let authMode = 'production';
     if (extConfig.authMode === 'production' || extConfig.authMode === 'mock') {
       authMode = extConfig.authMode;
     }
