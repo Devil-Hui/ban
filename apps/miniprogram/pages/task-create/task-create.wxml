@@ -175,10 +175,6 @@
             <text>大课间时长（分钟）</text>
             <input type="number" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" />
           </view>
-          <view wx:if="{{tweaks.hasBigBreak}}" class="field">
-            <text>大课间每几节一次</text>
-            <input type="number" value="{{tweaks.bigBreakEvery}}" data-field="bigBreakEvery" bindinput="onTweakInput" />
-          </view>
         </view>
       </view>
     </view>
