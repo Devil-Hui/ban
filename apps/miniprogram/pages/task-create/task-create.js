@@ -192,7 +192,7 @@ Page({
     peopleByKey: {},
 
     // 午休/晚饭确认弹窗
-    breakConfirm: { show: false, key: '', title: '' },
+    breakConfirm: { show: false, key: '', title: '', desc: '' },
 
     // Step 5 — task-level rules (labels from DB catalog)
     requiredFieldOptions: BOOT.requiredFieldOptions,
@@ -347,7 +347,10 @@ Page({
         breakConfirm: {
           show: true,
           key,
-          title: key === 'lunch' ? '午休时段设为可排' : '晚饭时段设为可排',
+          title: key === 'lunch' ? '确认开启午休全时段排版' : '确认开启晚饭全时段排版',
+          desc: key === 'lunch'
+            ? '开启后午休时间将不再锁定，所有人可在午休时段提交可用时间。'
+            : '开启后晚饭时间将不再锁定，所有人可在晚饭时段提交可用时间。',
         },
       });
     } else {
@@ -357,7 +360,7 @@ Page({
   },
 
   closeBreakConfirm() {
-    this.setData({ breakConfirm: { show: false, key: '', title: '' } });
+    this.setData({ breakConfirm: { show: false, key: '', title: '', desc: '' } });
   },
 
   confirmBreakToggle() {
@@ -365,7 +368,7 @@ Page({
     if (!key) return this.closeBreakConfirm();
     this.setData({
       [`tweaks.${key}Blocked`]: false,
-      breakConfirm: { show: false, key: '', title: '' },
+      breakConfirm: { show: false, key: '', title: '', desc: '' },
     });
   },
 

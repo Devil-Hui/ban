@@ -260,10 +260,10 @@
     <view wx:if="{{breakConfirm.show}}" class="modal-mask" catchtap="closeBreakConfirm">
       <view class="break-confirm-modal surface" catchtap="noop">
         <text class="confirm-title">{{breakConfirm.title}}</text>
-        <text class="confirm-desc">将「{{breakConfirm.key === 'lunch' ? '午休' : '晚饭'}}时间不排」切换为「全时间段可排」后，该时段将允许排入课程。</text>
+        <text class="confirm-desc">{{breakConfirm.desc}}</text>
         <view class="confirm-buttons">
-          <button class="ui-btn ui-btn-light" bindtap="closeBreakConfirm">取消</button>
-          <button class="ui-btn ui-btn-primary" bindtap="confirmBreakToggle">确认开启</button>
+          <button class="ui-btn ui-btn-light" bindtap="closeBreakConfirm">保持不排</button>
+          <button class="ui-btn ui-btn-primary" bindtap="confirmBreakToggle">确认开启全时段</button>
         </view>
       </view>
     </view>
@@ -349,7 +349,7 @@
       </view>
       <view class="field field-row">
         <view class="field-row-main">
-          <text>提交后允许修改</text>
+          <text class="fm-title">提交后允许修改</text>
           <text class="mini-label">开启后需设置可修改次数</text>
         </view>
         <switch checked="{{allowEditAfterSubmit}}" color="#1e9e5a" bindchange="onAllowEditChange" />
@@ -366,7 +366,7 @@
       </view>
       <view class="field field-row">
         <view class="field-row-main">
-          <text>保存为模板</text>
+          <text class="fm-title">保存为模板</text>
           <text class="mini-label">复用本次时段骨架</text>
         </view>
         <switch checked="{{saveAsTemplate}}" color="#1e9e5a" bindchange="onSaveAsTemplateChange" />
