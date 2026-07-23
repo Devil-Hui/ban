@@ -27,7 +27,7 @@
     bindtouchcancel="onRowTouchEnd"
   >
     <view class="sg-cell sg-label" id="sg-label-{{row.code}}">
-      <text class="sg-period-label">{{row.label}}</text>
+      <text class="sg-period-label">{{row.rest ? '✕ ' : ''}}{{row.label}}</text>
     </view>
     <view
       class="sg-cell sg-slot {{item.selected ? 'is-selected' : ''}} {{item.disabled ? 'is-disabled' : ''}} {{item.interactive ? 'is-interactive' : ''}}"

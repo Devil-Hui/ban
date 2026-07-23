@@ -20,15 +20,24 @@
   background: var(--color-brand-soft, #e8f7ef);
 }
 
-/* 休息时段行（午休/晚饭）— 不可选、灰色显示 */
+/* 休息时段行（午休/晚饭）— 深灰斜纹，不可选 */
 .sg-row-rest {
-  background: #f8f9fa;
-  opacity: 0.55;
+  background: repeating-linear-gradient(
+    -45deg,
+    #e8e8e8,
+    #e8e8e8 6rpx,
+    #ddd 6rpx,
+    #ddd 12rpx
+  );
   pointer-events: none;
 }
 
 .sg-row-rest .sg-label {
-  color: #999;
+  color: #aaa;
+}
+
+.sg-row-rest .sg-slot .sg-dot {
+  display: none;
 }
 
 .sg-cell {
