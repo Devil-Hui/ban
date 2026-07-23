@@ -20,6 +20,17 @@
   background: var(--color-brand-soft, #e8f7ef);
 }
 
+/* 休息时段行（午休/晚饭）— 不可选、灰色显示 */
+.sg-row-rest {
+  background: #f8f9fa;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.sg-row-rest .sg-label {
+  color: #999;
+}
+
 .sg-cell {
   flex: 1;
   min-width: 0;

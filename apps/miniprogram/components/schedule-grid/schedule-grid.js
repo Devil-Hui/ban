@@ -19,6 +19,8 @@ Component({
     selectedKeys: { type: Array, value: [] },
     peopleByKey: { type: Object, value: {} },
     activeTool: { type: null, value: null }, // number | 'erase' | null
+    lunchBlocked: { type: Boolean, value: true },
+    dinnerBlocked: { type: Boolean, value: true },
   },
 
   data: {
@@ -27,7 +29,7 @@ Component({
   },
 
   observers: {
-    'periods, dates, selectedKeys, peopleByKey, mode, timeMode': function () {
+    'periods, dates, selectedKeys, peopleByKey, mode, timeMode, lunchBlocked, dinnerBlocked': function () {
       this.rebuildGrid();
     },
   },
@@ -57,12 +59,14 @@ Component({
       const rows = periods.map((period, rowIndex) => {
         const code = period.code || period.id || period.periodCode || `p${rowIndex + 1}`;
         const rowLabel = period.label || this.periodFallbackLabel(period, code, timeMode);
+        const isRest = !!(period.rest || (period.minPeople != null && period.minPeople === 0 && period.maxPeople === 0));
+        // 休息行根据 blocked 状态决定是否可交互
+        const restBlocked = isRest && this._isRestBlocked(rowLabel);
         const cells = dates.map((date, dateIndex) => {
           const key = slotKey(date, code);
           const selected = !!selectedSet[key];
           const people = peopleByKey[key];
           const hasPeople = people != null && people !== '';
-          // paint/staff: non-selected cells look disabled; select/readonly never disable visually for empty
           const disabled = (mode === 'paint' || mode === 'staff') && !selected;
           return {
             key,
@@ -70,7 +74,7 @@ Component({
             dateIndex,
             selected,
             disabled,
-            interactive: isCellInteractive(mode, key, selectedKeys),
+            interactive: restBlocked ? false : isCellInteractive(mode, key, selectedKeys),
             people: hasPeople ? people : null,
             showPeople: hasPeople,
           };
@@ -80,10 +84,18 @@ Component({
           label: rowLabel,
           rowIndex,
           cells,
+          rest: restBlocked,
         };
       });
 
       this.setData({ dateHeaders, rows });
+    },
+
+    _isRestBlocked(label) {
+      if (!label) return false;
+      if (label.indexOf('午休') !== -1) return this.properties.lunchBlocked;
+      if (label.indexOf('晚饭') !== -1) return this.properties.dinnerBlocked;
+      return false;
     },
 
     periodFallbackLabel(period, code, timeMode) {

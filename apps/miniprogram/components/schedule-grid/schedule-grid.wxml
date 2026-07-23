@@ -15,7 +15,7 @@
 
   <!-- Body: one row per period -->
   <view
-    class="sg-row"
+    class="sg-row {{row.rest ? 'sg-row-rest' : ''}}"
     wx:for="{{rows}}"
     wx:for-item="row"
     wx:key="code"

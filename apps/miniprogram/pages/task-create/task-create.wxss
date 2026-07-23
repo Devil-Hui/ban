@@ -79,12 +79,12 @@
   border-bottom: 0;
 }
 
-.field > text {
+.field-label {
   color: var(--subtle);
   font-size: 23rpx;
 }
 
-.field > text.required::after {
+.field-label.required::after {
   content: ' *';
   color: #df5c4c;
 }
@@ -263,7 +263,7 @@
   justify-content: space-between;
 }
 
-.field-head > text {
+.field-head .field-label {
   color: var(--subtle);
   font-size: 23rpx;
 }
@@ -295,14 +295,14 @@
   border-color: #e6a21a;
 }
 
-.break-toggle > text {
+.break-toggle .break-text {
   font-size: 22rpx;
   color: var(--subtle);
   line-height: 1;
 }
 
-.break-toggle.lunch.open > text { color: #1e9e5a; font-weight: 600; }
-.break-toggle.dinner.open > text { color: #e6a21a; font-weight: 600; }
+.break-toggle.lunch.open .break-text { color: #1e9e5a; font-weight: 600; }
+.break-toggle.dinner.open .break-text { color: #e6a21a; font-weight: 600; }
 
 /* 午休/晚饭确认弹窗 */
 .modal-mask {
