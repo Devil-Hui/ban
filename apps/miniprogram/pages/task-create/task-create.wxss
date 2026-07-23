@@ -275,14 +275,6 @@
   font-size: 22rpx;
 }
 
-/* 灰色禁用字段 */
-.field-muted {
-  opacity: 0.45;
-}
-
-.field-muted input {
-  color: var(--muted);
-}
 
 /* 字段头部（标签 + 开关） */
 .field-head {
@@ -617,6 +609,21 @@
   display: block;
   margin-top: 6rpx;
   line-height: 1.4;
+}
+
+/* 收起/设置按钮 */
+.add-toggle {
+  padding: 4rpx 16rpx;
+  border-radius: 999rpx;
+  border: 1rpx solid var(--line);
+  font-size: 22rpx;
+  color: var(--subtle);
+}
+
+.add-toggle.open {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand);
 }
 
 /* 大小课间标签 */

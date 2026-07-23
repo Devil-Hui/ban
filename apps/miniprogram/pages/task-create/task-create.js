@@ -190,8 +190,10 @@ Page({
     selectedKeys: [],
     peopleByKey: {},
 
-    // 午休/晚饭确认弹窗
+    // 午休确认弹窗
     breakConfirm: { show: false, key: '', title: '', desc: '' },
+
+    showEveningTime: false,
 
     // Step 5 — task-level rules (labels from DB catalog)
     requiredFieldOptions: BOOT.requiredFieldOptions,
@@ -382,6 +384,10 @@ Page({
       ? '两节连排为一次课，节间短暂休息（如5分钟），用于翻书/换教室。'
       : '两次课之间的常规休息（如20分钟），学生可自由活动。';
     wx.showModal({ title: key === 'short-break' ? '上课间休息' : '普通课间', content: msg, showCancel: false, confirmText: '知道了' });
+  },
+
+  toggleEveningTime() {
+    this.setData({ showEveningTime: !this.data.showEveningTime });
   },
 
   toggleMode(e) {
