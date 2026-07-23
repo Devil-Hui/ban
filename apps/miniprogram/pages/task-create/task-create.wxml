@@ -114,15 +114,11 @@
             <text>上午节数</text>
             <input type="number" value="{{tweaks.morningCount}}" data-field="morningCount" bindinput="onTweakInput" />
           </view>
-          <!-- 午休 + 晚饭同行 -->
+          <!-- 午休 -->
           <view class="field field-break-row">
             <view class="break-inline">
               <text class="field-label">午休</text>
               <switch checked="{{tweaks.hasLunch}}" data-key="lunch" bindchange="onBreakSwitch" color="#1e9e5a" />
-            </view>
-            <view class="break-inline">
-              <text class="field-label">晚饭</text>
-              <switch checked="{{tweaks.hasDinner}}" data-key="dinner" bindchange="onBreakSwitch" color="#e6a21a" />
             </view>
           </view>
           <view wx:if="{{tweaks.hasLunch}}" class="field">
@@ -137,18 +133,6 @@
               </picker>
             </view>
           </view>
-          <view wx:if="{{tweaks.hasDinner}}" class="field">
-            <text>晚饭时段</text>
-            <view class="time-range">
-              <picker mode="time" value="{{tweaks.dinnerStart}}" data-field="dinnerStart" bindchange="onTweakRangeChange">
-                <view class="picker-value-sm">{{tweaks.dinnerStart}}</view>
-              </picker>
-              <text class="range-sep">—</text>
-              <picker mode="time" value="{{tweaks.dinnerEnd}}" data-field="dinnerEnd" bindchange="onTweakRangeChange">
-                <view class="picker-value-sm">{{tweaks.dinnerEnd}}</view>
-              </picker>
-            </view>
-          </view>
         </view>
         <!-- 右列 -->
         <view class="tweak-col">
@@ -159,6 +143,12 @@
           <view class="field">
             <text>晚上节数</text>
             <input type="number" value="{{tweaks.eveningCount}}" data-field="eveningCount" bindinput="onTweakInput" />
+          </view>
+          <view wx:if="{{tweaks.eveningCount > 0}}" class="field">
+            <text>晚上首节</text>
+            <picker mode="time" value="{{tweaks.eveningStart || '18:30'}}" data-field="eveningStart" bindchange="onTweakTimeChange">
+              <view class="picker-value">{{tweaks.eveningStart || '18:30'}} <t-icon name="chevron-down" size="26rpx" /></view>
+            </picker>
           </view>
           <!-- 大小课间开关 -->
           <view class="field">
@@ -245,15 +235,11 @@
       <text class="mini-label">默认全不选 · 绿格为可排班</text>
     </view>
 
-    <!-- 午休/晚饭排班开关（仅时间段启用时显示） -->
-    <view wx:if="{{tweaks.hasLunch || tweaks.hasDinner}}" class="break-toggle-row">
-      <view wx:if="{{tweaks.hasLunch}}" class="break-toggle lunch {{tweaks.lunchBlocked ? '' : 'open'}}" data-key="lunch" bindtap="onBreakToggle">
+    <!-- 午休排班开关（仅午休启用时显示） -->
+    <view wx:if="{{tweaks.hasLunch}}" class="break-toggle-row">
+      <view class="break-toggle lunch {{tweaks.lunchBlocked ? '' : 'open'}}" data-key="lunch" bindtap="onBreakToggle">
         <text class="break-text">午休{{tweaks.lunchBlocked ? '不排' : '可排'}}</text>
         <switch checked="{{!tweaks.lunchBlocked}}" color="#1e9e5a" />
-      </view>
-      <view wx:if="{{tweaks.hasDinner}}" class="break-toggle dinner {{tweaks.dinnerBlocked ? '' : 'open'}}" data-key="dinner" bindtap="onBreakToggle">
-        <text class="break-text">晚饭{{tweaks.dinnerBlocked ? '不排' : '可排'}}</text>
-        <switch checked="{{!tweaks.dinnerBlocked}}" color="#e6a21a" />
       </view>
     </view>
 
@@ -266,7 +252,7 @@
         timeMode="{{timeMode}}"
         selectedKeys="{{selectedKeys}}"
         lunchBlocked="{{tweaks.lunchBlocked}}"
-        dinnerBlocked="{{tweaks.dinnerBlocked}}"
+        dinnerBlocked="{{false}}"
         bind:selectchange="onSelectChange"
       />
     </view>

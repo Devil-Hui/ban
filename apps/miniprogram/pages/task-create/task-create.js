@@ -65,10 +65,7 @@ function presetsFromApi(list) {
       lunchEnd: item.lunchEnd || '13:30',
       hasLunch: Boolean(item.hasLunch),
       lunchBlocked: item.lunchBlocked == null ? true : Boolean(item.lunchBlocked),
-      dinnerStart: item.dinnerStart || '18:00',
-      dinnerEnd: item.dinnerEnd || '19:00',
-      hasDinner: Boolean(item.hasDinner),
-      dinnerBlocked: item.dinnerBlocked == null ? true : Boolean(item.dinnerBlocked),
+      eveningStart: item.eveningStart || '18:30',
     };
     chips.push({ code, label: item.label || code });
   });
@@ -99,7 +96,7 @@ function applyCatalog(catalog) {
     presetChips: chips,
     presetTweaks: map,
     preset: firstCode,
-    tweaks: { ...(map[firstCode] || { firstStart: '08:00', durationMin: 45, morningCount: 4, afternoonCount: 4, eveningCount: 0, breakMin: 10, bigBreakMin: 0, bigBreakEvery: 0, hasBigBreak: false, lunchStart: '12:00', lunchEnd: '13:30', hasLunch: false, lunchBlocked: true, dinnerStart: '18:00', dinnerEnd: '19:00', hasDinner: false, dinnerBlocked: true }) },
+    tweaks: { ...(map[firstCode] || { firstStart: '08:00', durationMin: 45, morningCount: 4, afternoonCount: 4, eveningCount: 0, breakMin: 10, bigBreakMin: 0, hasBigBreak: false, lunchStart: '12:00', lunchEnd: '13:30', hasLunch: false, lunchBlocked: true, eveningStart: '18:30' }) },
     requiredFieldOptions: requiredFields,
     requiredFieldMap,
     participantScopeOptions: participantScopes,
@@ -303,8 +300,10 @@ Page({
   },
 
   onTweakTimeChange(e) {
+    // 支持 firstStart 和 eveningStart
+    const field = e.currentTarget.dataset.field || 'firstStart';
     this.setData({
-      'tweaks.firstStart': e.detail.value,
+      [`tweaks.${field}`]: e.detail.value,
       periods: [],
     });
   },

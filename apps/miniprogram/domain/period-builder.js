@@ -106,9 +106,7 @@ function buildPeriods(opts = {}) {
   const hasLunch = tweaks.hasLunch && morningCount > 0 && afternoonCount > 0;
   const lunchStartMinute = hasLunch ? parseHhmm(tweaks.lunchStart, 12 * 60) : 0;
   const lunchEndMinute = hasLunch ? parseHhmm(tweaks.lunchEnd, 13 * 60 + 30) : 0;
-  const hasDinner = tweaks.hasDinner && afternoonCount > 0 && eveningCount > 0;
-  const dinnerStartMinute = hasDinner ? parseHhmm(tweaks.dinnerStart, 17 * 60 + 30) : 0;
-  const dinnerEndMinute = hasDinner ? parseHhmm(tweaks.dinnerEnd, 19 * 60) : 0;
+  const eveningStartMinute = eveningCount > 0 ? parseHhmm(tweaks.eveningStart, 18 * 60 + 30) : 0;
 
   const periods = [];
   let cursor = firstStartMinute;
@@ -182,17 +180,12 @@ function buildPeriods(opts = {}) {
   segPos = 0;
   for (let i = 0; i < afternoonCount; i += 1) pushSeq();
 
-  // 晚饭
-  if (hasDinner) {
-    pushRest(`晚饭 ${minuteToHhmm(dinnerStartMinute)}-${minuteToHhmm(dinnerEndMinute)}`, dinnerStartMinute, dinnerEndMinute);
-    if (tweaks.dinnerBlocked != null ? tweaks.dinnerBlocked : true) {
-      cursor = dinnerEndMinute;
-    }
+  // 晚上（手动指定开始时间）
+  if (eveningCount > 0) {
+    cursor = eveningStartMinute;
+    segPos = 0;
+    for (let i = 0; i < eveningCount; i += 1) pushSeq();
   }
-
-  // 晚上
-  segPos = 0;
-  for (let i = 0; i < eveningCount; i += 1) pushSeq();
 
   return periods;
 }
