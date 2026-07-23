@@ -372,8 +372,9 @@
   border-radius: 16rpx;
   font-size: 28rpx;
   font-weight: 600;
-  padding: 0 28rpx;
+  padding: 0 12rpx;
   border: 0;
+  white-space: nowrap;
 }
 
 .confirm-buttons .ui-btn::after {
