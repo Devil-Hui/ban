@@ -60,7 +60,6 @@ function presetsFromApi(list) {
       eveningCount: Number(item.eveningCount) || 0,
       breakMin: Number(item.breakMin) || 10,
       bigBreakMin: Number(item.bigBreakMin) || 0,
-      bigBreakEvery: Number(item.bigBreakEvery) || 0,
       hasBigBreak: Boolean(item.hasBigBreak),
       lunchStart: item.lunchStart || '12:00',
       lunchEnd: item.lunchEnd || '13:30',

@@ -184,7 +184,7 @@
       </view>
     </view>
 
-    <button wx:if="{{!tweaks.hasBigBreak}}" class="ui-btn ui-btn-primary ui-btn-full" bindtap="generatePeriods">生成课表骨架</button>
+    <button class="ui-btn ui-btn-primary ui-btn-full" bindtap="generatePeriods">生成课表骨架</button>
 
     <view wx:if="{{periods.length}}" class="period-preview surface">
       <view class="between">

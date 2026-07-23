@@ -97,8 +97,7 @@ function buildPeriods(opts = {}) {
   const durationMin = toPositiveInt(tweaks.durationMin != null ? tweaks.durationMin : base.durationMin, base.durationMin);
   const breakMin = toNonNegInt(tweaks.breakMin != null ? tweaks.breakMin : base.breakMin, base.breakMin);
   const bigBreakMin = toNonNegInt(tweaks.bigBreakMin || 0, 0);
-  const bigBreakEvery = toNonNegInt(tweaks.bigBreakEvery || 0, 0);
-  const isBigBreakMode = tweaks.hasBigBreak && bigBreakMin > 0 && bigBreakEvery > 0;
+  const isBigBreakMode = tweaks.hasBigBreak && bigBreakMin > 0;
   const morningCount = toNonNegInt(tweaks.morningCount != null ? tweaks.morningCount : base.morningCount, base.morningCount);
   const afternoonCount = toNonNegInt(tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount, base.afternoonCount);
   const eveningCount = toNonNegInt(tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount, base.eveningCount);
@@ -114,10 +113,12 @@ function buildPeriods(opts = {}) {
   const periods = [];
   let cursor = firstStartMinute;
   let seq = 1;
+  let segPos = 0; // 段内位置，每个时段段(上午/下午/晚上)独立计数
 
   function pushSeq() {
+    segPos += 1;
     if (isBigBreakMode) {
-      const isBigGap = seq % bigBreakEvery === 0;
+      const isBigGap = segPos % 2 === 0;
       periods.push({
         code: `p${seq}`,
         label: `第${seq}节 待定`,
@@ -166,18 +167,19 @@ function buildPeriods(opts = {}) {
   }
 
   // 上午
+  segPos = 0;
   for (let i = 0; i < morningCount; i += 1) pushSeq();
 
   // 午休
   if (hasLunch) {
     pushRest(`午休 ${minuteToHhmm(lunchStartMinute)}-${minuteToHhmm(lunchEndMinute)}`, lunchStartMinute, lunchEndMinute);
-    // 只有"午休时间不排"开启时才跳过午休时段
     if (tweaks.lunchBlocked != null ? tweaks.lunchBlocked : true) {
       cursor = lunchEndMinute;
     }
   }
 
   // 下午
+  segPos = 0;
   for (let i = 0; i < afternoonCount; i += 1) pushSeq();
 
   // 晚饭
@@ -189,6 +191,7 @@ function buildPeriods(opts = {}) {
   }
 
   // 晚上
+  segPos = 0;
   for (let i = 0; i < eveningCount; i += 1) pushSeq();
 
   return periods;
