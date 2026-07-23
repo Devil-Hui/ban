@@ -97,8 +97,8 @@ function buildPeriods(opts = {}) {
   const durationMin = toPositiveInt(tweaks.durationMin != null ? tweaks.durationMin : base.durationMin, base.durationMin);
   const breakMin = toNonNegInt(tweaks.breakMin != null ? tweaks.breakMin : base.breakMin, base.breakMin);
   const bigBreakMin = toNonNegInt(tweaks.bigBreakMin || 0, 0);
-  const bigBreakAfter = toNonNegInt(tweaks.bigBreakAfter || 0, 0);
-  const hasBigBreak = bigBreakMin > 0 && bigBreakAfter > 0;
+  const bigBreakEvery = toNonNegInt(tweaks.bigBreakEvery || 0, 0);
+  const hasBigBreak = bigBreakMin > 0 && bigBreakEvery > 0;
   const morningCount = toNonNegInt(tweaks.morningCount != null ? tweaks.morningCount : base.morningCount, base.morningCount);
   const afternoonCount = toNonNegInt(tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount, base.afternoonCount);
   const eveningCount = toNonNegInt(tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount, base.eveningCount);
@@ -130,8 +130,8 @@ function buildPeriods(opts = {}) {
       targetPeople: 1,
       maxPeople: 1,
     });
-    // 当前节次匹配大课间位置 → 用长休息
-    cursor = endMinute + (hasBigBreak && seq === bigBreakAfter ? bigBreakMin : breakMin);
+    // 每 N 节后大课间：匹配 bigBreakEvery 的整数倍
+    cursor = endMinute + (hasBigBreak && seq % bigBreakEvery === 0 ? bigBreakMin : breakMin);
     seq += 1;
   }
 

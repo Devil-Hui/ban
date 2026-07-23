@@ -150,8 +150,8 @@
             <input type="number" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" placeholder="0=关闭" />
           </view>
           <view class="field">
-            <text>大课间位置（第几节后）</text>
-            <input type="number" value="{{tweaks.bigBreakAfter}}" data-field="bigBreakAfter" bindinput="onTweakInput" placeholder="如2" />
+            <text>大课间每几节一次</text>
+            <input type="number" value="{{tweaks.bigBreakEvery}}" data-field="bigBreakEvery" bindinput="onTweakInput" placeholder="如2" />
           </view>
           <!-- 晚饭时间（可选） -->
           <view class="field">
