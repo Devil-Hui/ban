@@ -626,6 +626,11 @@
   color: var(--brand);
 }
 
+/* 晚上课时区域 */
+.evening-section {
+  margin-top: 8rpx;
+}
+
 /* 晚上课时两列布局 */
 .evening-grid {
   display: flex;

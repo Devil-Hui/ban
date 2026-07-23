@@ -133,32 +133,6 @@
               </picker>
             </view>
           </view>
-          <!-- 晚上课时（手动添加，一行两列） -->
-          <view wx:if="{{eveningSlots.length > 0}}" class="field">
-            <view class="field-head">
-              <text class="field-label">晚上课时</text>
-              <view class="add-toggle" bindtap="addEveningPeriod">
-                <text>＋ 添加</text>
-              </view>
-            </view>
-          </view>
-          <view wx:if="{{eveningSlots.length > 0}}" class="evening-grid">
-            <view wx:for="{{eveningSlots}}" wx:key="id" class="evening-cell">
-              <view class="field-head evening-head">
-                <text class="field-label">晚{{index + 1}}</text>
-                <view class="del-btn" data-id="{{item.id}}" bindtap="removeEveningPeriod">✕</view>
-              </view>
-              <view class="time-range">
-                <picker mode="time" value="{{item.start}}" data-id="{{item.id}}" data-field="start" bindchange="onEveningSlotChange">
-                  <view class="picker-value-sm">{{item.start}}</view>
-                </picker>
-                <text class="range-sep">—</text>
-                <picker mode="time" value="{{item.end}}" data-id="{{item.id}}" data-field="end" bindchange="onEveningSlotChange">
-                  <view class="picker-value-sm">{{item.end}}</view>
-                </picker>
-              </view>
-            </view>
-          </view>
         </view>
         <!-- 右列 -->
         <view class="tweak-col">
@@ -185,6 +159,33 @@
           <view wx:if="{{tweaks.hasBigBreak}}" class="field">
             <text class="break-inline-label"><text>普通课间（分钟）</text><text class="info-dot" data-key="long-break" bindtap="showBreakInfo">ⓘ</text></text>
             <input type="number" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 晚上课时（横跨全宽，一行两列） -->
+      <view class="evening-section">
+        <view class="field-head">
+          <text class="field-label">晚上课时</text>
+          <view class="add-toggle" bindtap="addEveningPeriod">
+            <text>＋ 添加</text>
+          </view>
+        </view>
+        <view wx:if="{{eveningSlots.length > 0}}" class="evening-grid">
+          <view wx:for="{{eveningSlots}}" wx:key="id" class="evening-cell">
+            <view class="field-head evening-head">
+              <text class="field-label">晚{{index + 1}}</text>
+              <view class="del-btn" data-id="{{item.id}}" bindtap="removeEveningPeriod">✕</view>
+            </view>
+            <view class="time-range">
+              <picker mode="time" value="{{item.start}}" data-id="{{item.id}}" data-field="start" bindchange="onEveningSlotChange">
+                <view class="picker-value-sm">{{item.start}}</view>
+              </picker>
+              <text class="range-sep">—</text>
+              <picker mode="time" value="{{item.end}}" data-id="{{item.id}}" data-field="end" bindchange="onEveningSlotChange">
+                <view class="picker-value-sm">{{item.end}}</view>
+              </picker>
+            </view>
           </view>
         </view>
       </view>
