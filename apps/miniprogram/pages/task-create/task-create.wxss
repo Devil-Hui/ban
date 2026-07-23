@@ -626,6 +626,19 @@
   color: var(--brand);
 }
 
+/* 晚上课时列表 */
+.evening-slot {
+  padding-left: 24rpx;
+  border-left: 2rpx solid var(--line);
+  margin-left: 4rpx;
+}
+
+.del-btn {
+  font-size: 24rpx;
+  color: #df5c4c;
+  padding: 2rpx 8rpx;
+}
+
 /* 大小课间标签 */
 .period-break {
   font-size: 18rpx;

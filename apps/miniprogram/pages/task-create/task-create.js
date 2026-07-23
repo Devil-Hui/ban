@@ -193,7 +193,9 @@ Page({
     // 午休确认弹窗
     breakConfirm: { show: false, key: '', title: '', desc: '' },
 
-    showEveningTime: false,
+    // 晚上手动添加课时
+    eveningSlots: [],
+    eveningSlotId: 0,
 
     // Step 5 — task-level rules (labels from DB catalog)
     requiredFieldOptions: BOOT.requiredFieldOptions,
@@ -386,8 +388,25 @@ Page({
     wx.showModal({ title: key === 'short-break' ? '上课间休息' : '普通课间', content: msg, showCancel: false, confirmText: '知道了' });
   },
 
-  toggleEveningTime() {
-    this.setData({ showEveningTime: !this.data.showEveningTime });
+  addEveningPeriod() {
+    const id = this.data.eveningSlotId + 1;
+    const defaultStart = this.data.eveningSlots.length === 0 ? '18:30'
+      : this.data.eveningSlots[this.data.eveningSlots.length - 1].end;
+    const slots = [...this.data.eveningSlots, { id, start: defaultStart, end: '20:30' }];
+    this.setData({ eveningSlots: slots, eveningSlotId: id, periods: [] });
+  },
+
+  removeEveningPeriod(e) {
+    const id = e.currentTarget.dataset.id;
+    const slots = this.data.eveningSlots.filter((s) => s.id !== id);
+    this.setData({ eveningSlots: slots, periods: [] });
+  },
+
+  onEveningSlotChange(e) {
+    const { id, field } = e.currentTarget.dataset;
+    const value = e.detail.value;
+    const slots = this.data.eveningSlots.map((s) => (s.id === id ? { ...s, [field]: value } : s));
+    this.setData({ eveningSlots: slots, periods: [] });
   },
 
   toggleMode(e) {
@@ -435,7 +454,7 @@ Page({
   generatePeriods() {
     const periods = buildPeriods({
       preset: this.data.preset,
-      tweaks: this.data.tweaks,
+      tweaks: { ...this.data.tweaks, eveningSlots: this.data.eveningSlots },
     });
     if (!periods.length) {
       wx.showToast({ title: '请至少设置 1 个节次', icon: 'none' });

@@ -106,7 +106,7 @@ function buildPeriods(opts = {}) {
   const hasLunch = tweaks.hasLunch && morningCount > 0 && afternoonCount > 0;
   const lunchStartMinute = hasLunch ? parseHhmm(tweaks.lunchStart, 12 * 60) : 0;
   const lunchEndMinute = hasLunch ? parseHhmm(tweaks.lunchEnd, 13 * 60 + 30) : 0;
-  const eveningStartMinute = eveningCount > 0 ? parseHhmm(tweaks.eveningStart, 18 * 60 + 30) : 0;
+  const eveningSlots = (tweaks.eveningSlots && tweaks.eveningSlots.length) ? tweaks.eveningSlots : [];
 
   const periods = [];
   let cursor = firstStartMinute;
@@ -180,11 +180,22 @@ function buildPeriods(opts = {}) {
   segPos = 0;
   for (let i = 0; i < afternoonCount; i += 1) pushSeq();
 
-  // 晚上（手动指定开始时间）
-  if (eveningCount > 0) {
-    cursor = eveningStartMinute;
-    segPos = 0;
-    for (let i = 0; i < eveningCount; i += 1) pushSeq();
+  // 晚上（手动添加，每节有独立的开始/结束时间）
+  for (let i = 0; i < eveningSlots.length; i += 1) {
+    const slot = eveningSlots[i];
+    const startMin = parseHhmm(slot.start, 18 * 60 + 30);
+    const endMin = parseHhmm(slot.end, startMin + durationMin);
+    periods.push({
+      code: `p${seq}`,
+      label: `第${seq}节 ${minuteToHhmm(startMin)}-${minuteToHhmm(endMin)}`,
+      timeRange: `${minuteToHhmm(startMin)}-${minuteToHhmm(endMin)}`,
+      startMinute: startMin,
+      endMinute: endMin,
+      minPeople: 1,
+      targetPeople: 1,
+      maxPeople: 1,
+    });
+    seq += 1;
   }
 
   return periods;

@@ -133,17 +133,27 @@
               </picker>
             </view>
           </view>
-          <!-- 晚上首节（晚上有课时可设置） -->
-          <view wx:if="{{tweaks.eveningCount > 0}}" class="field">
+          <!-- 晚上课时（手动添加） -->
+          <view class="field">
             <view class="field-head">
-              <text class="field-label">晚上首节</text>
-              <view class="add-toggle {{showEveningTime ? 'open' : ''}}" bindtap="toggleEveningTime">
-                <text>{{showEveningTime ? '收起' : '设置'}}</text>
+              <text class="field-label">晚上课时</text>
+              <view class="add-toggle" bindtap="addEveningPeriod">
+                <text>＋ 添加</text>
               </view>
             </view>
-            <view wx:if="{{showEveningTime}}">
-              <picker mode="time" value="{{tweaks.eveningStart || '18:30'}}" data-field="eveningStart" bindchange="onTweakTimeChange">
-                <view class="picker-value">{{tweaks.eveningStart || '18:30'}} <t-icon name="chevron-down" size="26rpx" /></view>
+          </view>
+          <view wx:for="{{eveningSlots}}" wx:key="id" class="field evening-slot">
+            <view class="field-head">
+              <text class="field-label">第{{item.id}}节</text>
+              <view class="del-btn" data-id="{{item.id}}" bindtap="removeEveningPeriod">✕</view>
+            </view>
+            <view class="time-range">
+              <picker mode="time" value="{{item.start}}" data-id="{{item.id}}" data-field="start" bindchange="onEveningSlotChange">
+                <view class="picker-value-sm">{{item.start}}</view>
+              </picker>
+              <text class="range-sep">—</text>
+              <picker mode="time" value="{{item.end}}" data-id="{{item.id}}" data-field="end" bindchange="onEveningSlotChange">
+                <view class="picker-value-sm">{{item.end}}</view>
               </picker>
             </view>
           </view>
@@ -153,10 +163,6 @@
           <view class="field">
             <text>下午节数</text>
             <input type="number" value="{{tweaks.afternoonCount}}" data-field="afternoonCount" bindinput="onTweakInput" />
-          </view>
-          <view class="field">
-            <text>晚上节数</text>
-            <input type="number" value="{{tweaks.eveningCount}}" data-field="eveningCount" bindinput="onTweakInput" />
           </view>
           <!-- 大小课间开关 -->
           <view class="field">
