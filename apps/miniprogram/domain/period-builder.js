@@ -117,18 +117,23 @@ function buildPeriods(opts = {}) {
     segPos += 1;
     if (isBigBreakMode) {
       const isBigGap = segPos % 2 === 0;
+      const startMinute = cursor;
+      const endMinute = startMinute + durationMin;
+      const startLabel = minuteToHhmm(startMinute);
+      const endLabel = minuteToHhmm(endMinute);
       periods.push({
         code: `p${seq}`,
-        label: `第${seq}节 待定`,
-        timeRange: '待定',
-        startMinute: 0,
-        endMinute: durationMin,
+        label: `第${seq}节 ${startLabel}-${endLabel}`,
+        timeRange: `${startLabel}-${endLabel}`,
+        startMinute,
+        endMinute,
         minPeople: 1,
         targetPeople: 1,
         maxPeople: 1,
         breakType: isBigGap ? '普通课间' : '上课间休息',
         breakMinute: isBigGap ? bigBreakMin : breakMin,
       });
+      cursor = endMinute + (isBigGap ? bigBreakMin : breakMin);
       seq += 1;
       return;
     }
