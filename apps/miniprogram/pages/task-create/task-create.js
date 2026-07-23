@@ -814,13 +814,24 @@ Page({
       rules.templateName = String(this.data.templateName || '').trim();
     }
 
+    const cleanPeriods = (this.data.periods || []).map((p) => ({
+      code: p.code,
+      label: p.label,
+      timeRange: p.timeRange,
+      startMinute: p.startMinute,
+      endMinute: p.endMinute,
+      minPeople: p.minPeople,
+      targetPeople: p.targetPeople,
+      maxPeople: p.maxPeople,
+    }));
+
     return {
       title: String(this.data.title || '').trim(),
       dateStart: this.data.dateStart,
       dateEnd: this.data.dateEnd,
       deadline: this.data.deadline,
       timeMode: this.data.timeMode,
-      periods: this.data.periods,
+      periods: cleanPeriods,
       selectedSlots,
       rules,
     };
