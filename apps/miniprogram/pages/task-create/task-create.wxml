@@ -145,6 +145,14 @@
             <text>节间休息（分钟）</text>
             <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
           </view>
+          <view class="field">
+            <text>大课间时长（分钟）</text>
+            <input type="number" value="{{tweaks.bigBreakMin}}" data-field="bigBreakMin" bindinput="onTweakInput" placeholder="0=关闭" />
+          </view>
+          <view class="field">
+            <text>大课间位置（第几节后）</text>
+            <input type="number" value="{{tweaks.bigBreakAfter}}" data-field="bigBreakAfter" bindinput="onTweakInput" placeholder="如2" />
+          </view>
           <!-- 晚饭时间（可选） -->
           <view class="field">
             <view class="field-head">

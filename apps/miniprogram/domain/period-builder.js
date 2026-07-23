@@ -96,6 +96,9 @@ function buildPeriods(opts = {}) {
   const firstStartMinute = parseHhmm(tweaks.firstStart != null ? tweaks.firstStart : base.firstStart, parseHhmm(base.firstStart, 8 * 60));
   const durationMin = toPositiveInt(tweaks.durationMin != null ? tweaks.durationMin : base.durationMin, base.durationMin);
   const breakMin = toNonNegInt(tweaks.breakMin != null ? tweaks.breakMin : base.breakMin, base.breakMin);
+  const bigBreakMin = toNonNegInt(tweaks.bigBreakMin || 0, 0);
+  const bigBreakAfter = toNonNegInt(tweaks.bigBreakAfter || 0, 0);
+  const hasBigBreak = bigBreakMin > 0 && bigBreakAfter > 0;
   const morningCount = toNonNegInt(tweaks.morningCount != null ? tweaks.morningCount : base.morningCount, base.morningCount);
   const afternoonCount = toNonNegInt(tweaks.afternoonCount != null ? tweaks.afternoonCount : base.afternoonCount, base.afternoonCount);
   const eveningCount = toNonNegInt(tweaks.eveningCount != null ? tweaks.eveningCount : base.eveningCount, base.eveningCount);
@@ -127,7 +130,8 @@ function buildPeriods(opts = {}) {
       targetPeople: 1,
       maxPeople: 1,
     });
-    cursor = endMinute + breakMin;
+    // 当前节次匹配大课间位置 → 用长休息
+    cursor = endMinute + (hasBigBreak && seq === bigBreakAfter ? bigBreakMin : breakMin);
     seq += 1;
   }
 
