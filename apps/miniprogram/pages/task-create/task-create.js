@@ -814,16 +814,19 @@ Page({
       rules.templateName = String(this.data.templateName || '').trim();
     }
 
-    const cleanPeriods = (this.data.periods || []).map((p) => ({
-      code: p.code,
-      label: p.label,
-      timeRange: p.timeRange,
-      startMinute: p.startMinute,
-      endMinute: p.endMinute,
-      minPeople: p.minPeople,
-      targetPeople: p.targetPeople,
-      maxPeople: p.maxPeople,
-    }));
+    // 过滤掉休息时段，重置人次默认值
+    const cleanPeriods = (this.data.periods || [])
+      .filter((p) => !p.rest && !(p.code && p.code.startsWith('rest')))
+      .map((p) => ({
+        code: p.code,
+        label: p.label,
+        timeRange: p.timeRange,
+        startMinute: p.startMinute,
+        endMinute: p.endMinute,
+        minPeople: Math.max(1, p.minPeople || 1),
+        targetPeople: Math.max(1, p.targetPeople || 1),
+        maxPeople: Math.max(1, p.maxPeople || 1),
+      }));
 
     return {
       title: String(this.data.title || '').trim(),
