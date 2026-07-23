@@ -167,9 +167,9 @@
               <switch checked="{{tweaks.hasBigBreak}}" data-field="hasBigBreak" bindchange="onTweakSwitch" color="#1e9e5a" />
             </view>
           </view>
-          <view class="field {{tweaks.hasBigBreak ? 'field-muted' : ''}}">
-            <text>节间休息（分钟）</text>
-            <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" disabled="{{tweaks.hasBigBreak}}" />
+          <view class="field">
+            <text>{{tweaks.hasBigBreak ? '小课间（分钟）' : '节间休息（分钟）'}}</text>
+            <input type="number" value="{{tweaks.breakMin}}" data-field="breakMin" bindinput="onTweakInput" />
           </view>
           <view wx:if="{{tweaks.hasBigBreak}}" class="field">
             <text>大课间时长（分钟）</text>
